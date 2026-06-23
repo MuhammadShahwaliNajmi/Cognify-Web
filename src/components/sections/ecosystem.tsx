@@ -1,0 +1,84 @@
+"use client";
+
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
+import { Reveal } from "@/components/ui/reveal";
+import { SectionLabel } from "@/components/ui/section-label";
+import { LiquidButton } from "@/components/ui/liquid-button";
+import { cn, spring } from "@/lib/utils";
+
+const ITEMS = [
+  {
+    code: "THE LAB",
+    title: "Cognify Lab",
+    desc: "Every lecture recorded, with slides, summary notes and sample answers — plus an unlimited bank of exam-style questions. Submit as many as you like; trained examiners return personalised feedback in under 24 hours.",
+    cta: "Explore the Lab",
+  },
+  {
+    code: "INTELLIGENCE",
+    title: "Cognify AI",
+    desc: "Your practice, turned into insight. Cognify AI maps every answer to your exact syllabus, tracks an Exam Readiness Score, and gives you a live Predicted Grade — pinpointing the precise micro or macro topics costing you marks.",
+    cta: "See Cognify AI",
+  },
+];
+
+export function Ecosystem() {
+  const [hover, setHover] = useState<number | null>(null);
+
+  return (
+    <section id="ecosystem" className="relative w-full px-6 py-28 md:px-10 md:py-40">
+      <div className="mx-auto max-w-6xl">
+        <Reveal>
+          <SectionLabel index="04">Beyond the Seminar</SectionLabel>
+        </Reveal>
+        <Reveal delay={0.05}>
+          <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+            The Cognify ecosystem,
+            <br />
+            <span className="text-gold">beyond the classroom</span>
+          </h2>
+        </Reveal>
+
+        <div
+          className="mt-14 grid grid-cols-1 md:grid-cols-2"
+          onMouseLeave={() => setHover(null)}
+        >
+          {ITEMS.map((e, i) => (
+            <Reveal key={e.code} delay={i * 0.08}>
+              <motion.div
+                onMouseEnter={() => setHover(i)}
+                animate={{ x: hover === i ? 8 : 0 }}
+                transition={spring.snappy}
+                className={cn(
+                  "border-t border-navy/12 py-8 md:border-t-0",
+                  i === 0 && "md:border-r md:pr-12",
+                  i === 1 && "md:pl-12"
+                )}
+              >
+                <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-gold">
+                  {e.code}
+                </span>
+                <h3
+                  className={cn(
+                    "mt-4 text-2xl font-semibold tracking-tight transition-colors md:text-3xl",
+                    hover === i ? "text-gold" : "text-navy"
+                  )}
+                >
+                  {e.title}
+                </h3>
+                <p className="mt-4 max-w-md text-navy/70">{e.desc}</p>
+                <div className="mt-6">
+                  <LiquidButton href="#apply" variant="primary" className="px-5 py-2.5 text-[13px] text-gold">
+                    {e.cta}
+                    <ArrowUpRight size={15} />
+                  </LiquidButton>
+                </div>
+              </motion.div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
