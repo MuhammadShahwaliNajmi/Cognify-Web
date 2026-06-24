@@ -37,7 +37,7 @@ const FAQS = [
   },
   {
     q: "How are the cohorts structured?",
-    a: "We run three-month cohorts, three times a year (July–September, October–December, January–March), kept intentionally small so classes stay interactive and personalised. Cohort Zero is our founding intake — reviewed individually, and built for students aiming at academic distinction and world-class university placements.",
+    a: "We run three-month cohorts, three times a year (July–September, October–December, January–March), kept intentionally small so classes stay interactive and personalised. Our founding cohort is reviewed individually, and built for students aiming at academic distinction and world-class university placements.",
   },
 ];
 
@@ -61,7 +61,7 @@ export function FAQ() {
           <Reveal delay={0.1}>
             <p className="mt-6 max-w-sm text-navy/70">
               Everything you need to know before you apply. Still have a question
-              we haven&apos;t answered? Apply for Cohort Zero and we&apos;ll
+              we haven&apos;t answered? Apply for Cohort and we&apos;ll
               answer it personally.
             </p>
           </Reveal>

@@ -75,7 +75,7 @@ export function Navbar() {
 
         <div className="hidden md:block">
           <LiquidButton href="#apply" className="px-6 py-2.5 text-[13px]">
-            Apply for Cohort Zero
+            Apply for Cohort
           </LiquidButton>
         </div>
 
@@ -115,7 +115,7 @@ export function Navbar() {
               onClick={() => setOpen(false)}
               className="block px-6 pb-5 pt-2 text-base font-semibold text-gold"
             >
-              Apply for Cohort Zero →
+              Apply for Cohort →
             </a>
           </motion.div>
         )}
