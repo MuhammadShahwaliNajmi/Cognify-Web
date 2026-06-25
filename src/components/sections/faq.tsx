@@ -49,7 +49,7 @@ export function FAQ() {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <Reveal>
-            <SectionLabel index="06">The Info Desk</SectionLabel>
+            <SectionLabel index="08">The Info Desk</SectionLabel>
           </Reveal>
           <Reveal delay={0.05}>
             <h2 className="mt-7 text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">

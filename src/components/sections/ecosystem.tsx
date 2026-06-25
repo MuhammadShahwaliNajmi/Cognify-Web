@@ -30,7 +30,7 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="04">Beyond the Seminar</SectionLabel>
+          <SectionLabel index="05">Beyond the Seminar</SectionLabel>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 import { ConnectingLine } from "@/components/ui/connecting-line";
 import { cn, spring } from "@/lib/utils";
 
@@ -16,7 +15,7 @@ function PillarGlyph({ index }: { index: number }) {
     ? { duration: 0 }
     : { duration: 0.8, ease: [0.22, 1, 0.36, 1] as const };
   const line = {
-    stroke: "#1a2744",
+    stroke: "#FFFFFF",
     strokeWidth: 2,
     fill: "none" as const,
     strokeLinecap: "round" as const,
@@ -25,7 +24,7 @@ function PillarGlyph({ index }: { index: number }) {
   };
 
   return (
-    <svg viewBox="0 0 160 96" className="w-full max-w-[260px]">
+    <svg viewBox="0 0 160 96" className="w-full max-w-[320px]">
       <AnimatePresence mode="wait">
         <motion.g
           key={index}
@@ -39,8 +38,8 @@ function PillarGlyph({ index }: { index: number }) {
               {/* two instructors → one shared room */}
               <motion.path d="M24 24 L80 60" {...line} transition={draw} />
               <motion.path d="M136 24 L80 60" {...line} transition={{ ...draw, delay: 0.1 }} />
-              <circle cx="24" cy="24" r="5" fill="#1a2744" />
-              <circle cx="136" cy="24" r="5" fill="#1a2744" />
+              <circle cx="24" cy="24" r="5" fill="#FFFFFF" />
+              <circle cx="136" cy="24" r="5" fill="#FFFFFF" />
               <circle cx="80" cy="60" r="6.5" fill="#C9A94B" />
             </>
           )}
@@ -51,9 +50,9 @@ function PillarGlyph({ index }: { index: number }) {
               <motion.path d="M80 18 L80 70" {...line} transition={{ ...draw, delay: 0.08 }} />
               <motion.path d="M80 18 L120 70" {...line} transition={{ ...draw, delay: 0.16 }} />
               <circle cx="80" cy="18" r="6.5" fill="#C9A94B" />
-              <circle cx="40" cy="70" r="4.5" fill="#1a2744" />
-              <circle cx="80" cy="70" r="4.5" fill="#1a2744" />
-              <circle cx="120" cy="70" r="4.5" fill="#1a2744" />
+              <circle cx="40" cy="70" r="4.5" fill="#FFFFFF" />
+              <circle cx="80" cy="70" r="4.5" fill="#FFFFFF" />
+              <circle cx="120" cy="70" r="4.5" fill="#FFFFFF" />
             </>
           )}
           {index === 2 && (
@@ -66,7 +65,7 @@ function PillarGlyph({ index }: { index: number }) {
                   cx={x}
                   cy={y}
                   r={3.4}
-                  fill="#1a2744"
+                  fill="#FFFFFF"
                   initial={reduce ? false : { scale: 0 }}
                   animate={reduce ? {} : { scale: 1 }}
                   transition={{ ...spring.snappy, delay: 0.3 + i * 0.06 }}
@@ -85,18 +84,33 @@ function PillarGlyph({ index }: { index: number }) {
 const PILLARS = [
   {
     id: "01",
-    title: "Live, Co-Taught Seminars",
-    body: "Five live classes a week, in deliberately small cohorts. Economics is split between Microeconomics and Macroeconomics specialists — each teaching exactly what they know best, and co-teaching wherever the two collide — so no concept is ever left abstract or half-explained.",
+    glyph: 0,
+    heading: "One Course *|* Two Instructors",
+    result: "Sharper answers, higher grades",
   },
   {
     id: "02",
-    title: "First-Principles Learning",
-    body: "We abandon rote memorization. Students master the core mechanisms of economics and business so deeply that they can rebuild any model from the ground up, under any exam board.",
+    glyph: 1,
+    heading: "Concepts Mastered *|* Not Memorised",
+    result: "Marks that hold under pressure",
   },
   {
     id: "03",
-    title: "The Empirical Edge",
-    body: "We bridge high-school theory with real-world data and analytical intuition — turning textbook diagrams into instincts students can defend, apply, and carry into university.",
+    glyph: 0,
+    heading: "Personalised Learning *|* 5 Times a Week",
+    result: "Taught the way you score best",
+  },
+  {
+    id: "04",
+    glyph: 2,
+    heading: "Examiner Feedback Within 24 Hours",
+    result: "Mistakes caught before the exam",
+  },
+  {
+    id: "05",
+    glyph: 2,
+    heading: "Know Your Predicted Grade",
+    result: "Always know where you stand",
   },
 ];
 
@@ -106,44 +120,21 @@ export function Methodology() {
   return (
     <section id="method" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
-        {/* Pinned left — content-height so it stays pinned through all three
-            pillars and releases only after the connecting line has filled */}
-        <div className="lg:sticky lg:top-[7vh] lg:self-start">
-          <Reveal>
-            <SectionLabel index="01">The Cognify Methodology</SectionLabel>
-          </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="mt-7 text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-              How we teach,
-              <br />
-              <span className="text-gold">deliberately.</span>
-            </h2>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <p className="mt-6 max-w-sm text-navy/70">
-              A boutique academy is defined by its method. Ours rests on three
-              non-negotiable pillars.
-            </p>
-          </Reveal>
+        {/* Pinned left — navy panel that stretches to the visible viewport and
+            stays anchored while the pillars scroll past on the right */}
+        <div className="lg:sticky lg:top-[11vh] lg:h-[86vh] lg:self-start">
+          <div className="glass-navy flex h-full flex-col items-center justify-center rounded-[34px] p-8 text-center md:p-10">
+            <Reveal delay={0.05}>
+              <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.08] tracking-tightest text-white">
+                <span className="block">The Cognify</span>
+                <span className="block text-gold">Methodology</span>
+              </h2>
+            </Reveal>
 
-          {/* animated glyph — integrates the USP visual, swaps per active pillar */}
-          <div className="mt-12 hidden lg:block">
-            <PillarGlyph index={active} />
-          </div>
-
-          {/* progress indicator */}
-          <div className="mt-10 hidden gap-3 lg:flex">
-            {PILLARS.map((pl, i) => (
-              <motion.span
-                key={pl.id}
-                animate={{
-                  width: active === i ? 44 : 20,
-                  backgroundColor: active === i ? "#C9A94B" : "rgba(26,39,68,0.2)",
-                }}
-                transition={spring.snappy}
-                className="h-px"
-              />
-            ))}
+            {/* animated glyph — integrates the USP visual, swaps per active pillar */}
+            <div className="mt-[7.5rem] hidden lg:block">
+              <PillarGlyph index={PILLARS[active].glyph} />
+            </div>
           </div>
         </div>
 
@@ -157,20 +148,22 @@ export function Methodology() {
                 onViewportEnter={() => setActive(i)}
                 viewport={{ amount: 0.6, margin: "-20% 0px -20% 0px" }}
                 className={cn(
-                  "flex min-h-[70vh] flex-col justify-center border-t border-navy/12 py-12",
+                  "flex min-h-[30vh] flex-col justify-center border-t border-navy/12 py-8",
                   i === PILLARS.length - 1 && "border-b"
                 )}
               >
-                <span className="font-mono text-sm text-gold">{pl.id}</span>
+                <span className="font-mono text-xs tracking-[0.2em] text-navy/35">
+                  {pl.id}
+                </span>
                 <TextReveal
                   as="h3"
-                  text={pl.title}
-                  className="mt-5 text-[clamp(1.9rem,4.4vw,3.2rem)] font-semibold leading-[1.02] tracking-tight text-navy"
+                  text={pl.heading}
+                  className="mt-4 text-[clamp(1.3rem,2.7vw,1.75rem)] font-semibold leading-[1.1] tracking-tight text-navy lg:whitespace-nowrap"
                 />
                 <TextReveal
-                  text={pl.body}
+                  text={pl.result}
                   amount={0.4}
-                  className="mt-7 max-w-xl text-lg leading-relaxed text-navy/70"
+                  className="mt-3.5 text-[clamp(0.95rem,1.4vw,1.1rem)] font-medium tracking-tight text-gold"
                 />
               </motion.article>
             ))}

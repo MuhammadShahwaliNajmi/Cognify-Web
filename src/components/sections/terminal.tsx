@@ -267,7 +267,7 @@ export function Terminal() {
       <section id="lab" className="relative flex w-full flex-col justify-center px-6 py-14 md:min-h-screen md:px-10 md:py-16">
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <Reveal>
-            <SectionLabel index="02">The Live Lab</SectionLabel>
+            <SectionLabel index="03">The Live Lab</SectionLabel>
           </Reveal>
           <Reveal delay={0.05}>
             <h2 className="mt-5 max-w-3xl text-[clamp(1.75rem,4vw,3rem)] font-semibold leading-[1.02] tracking-tightest text-navy">

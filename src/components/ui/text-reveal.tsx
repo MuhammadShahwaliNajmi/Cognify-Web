@@ -42,9 +42,17 @@ export function TextReveal({
       <Static className={className}>
         {words.map((w, i) => {
           const gold = w.startsWith("*") && w.endsWith("*");
+          const clean = gold ? w.slice(1, -1) : w;
+          const pipe = clean === "|";
           return (
-            <span key={i} className={gold ? "text-gold" : undefined}>
-              {gold ? w.slice(1, -1) : w}
+            <span
+              key={i}
+              className={cn(
+                gold && "text-gold",
+                pipe && "mx-[0.22em] font-light text-gold/70"
+              )}
+            >
+              {clean}
               {i < words.length - 1 ? " " : ""}
             </span>
           );
@@ -66,11 +74,15 @@ export function TextReveal({
       {words.map((w, i) => {
         const gold = w.startsWith("*") && w.endsWith("*");
         const clean = gold ? w.slice(1, -1) : w;
+        const pipe = clean === "|";
         return (
-          <span key={i} className="inline-flex overflow-hidden pb-[0.18em]">
+          <span
+            key={i}
+            className={cn("inline-flex overflow-hidden pb-[0.18em]", pipe && "mx-[0.22em]")}
+          >
             <motion.span
               variants={wordV}
-              className={cn("inline-block", gold && "text-gold")}
+              className={cn("inline-block", gold && "text-gold", pipe && "font-light text-gold/70")}
             >
               {clean}
               {i < words.length - 1 ? " " : ""}

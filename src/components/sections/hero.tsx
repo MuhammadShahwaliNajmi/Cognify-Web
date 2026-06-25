@@ -480,7 +480,7 @@ export function Hero() {
               </span>
             </div>
             <div className="flex flex-1 items-center justify-center">
-              <div className="aspect-[460/270] w-full scale-x-[1.1] scale-y-[1.6]">
+              <div className="aspect-[460/270] w-full scale-x-[1.25] scale-y-[1.6]">
                 <HeroChart />
               </div>
             </div>
