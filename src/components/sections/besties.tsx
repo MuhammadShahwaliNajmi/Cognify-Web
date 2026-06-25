@@ -262,7 +262,7 @@ function BestieCard({ b, index }: { b: Bestie; index: number }) {
 export function Besties() {
   return (
     <section id="besties" className="relative w-full px-6 py-28 md:px-10 md:py-40">
-      <div className="mx-auto max-w-6xl">
+      <div id="tutors" className="mx-auto max-w-6xl scroll-mt-20">
         <Reveal>
           <div className="flex justify-center">
             <h2 className="inline-flex items-center rounded-full bg-gold px-7 py-3 text-[clamp(1.05rem,2.4vw,1.5rem)] font-semibold tracking-tight text-navy-deep">

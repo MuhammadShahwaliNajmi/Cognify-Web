@@ -9,7 +9,6 @@ import {
 } from "framer-motion";
 import { Star } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 
 type Testimonial = {
   quote: string;
@@ -127,10 +126,7 @@ export function Testimonials() {
     <section id="testimonials" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="06">In Their Words</SectionLabel>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Grades Climbed
             <br />
             <span className="text-gold">So Did Confidence</span>

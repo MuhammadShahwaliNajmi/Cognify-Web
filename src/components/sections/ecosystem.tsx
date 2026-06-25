@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
@@ -19,7 +18,7 @@ const ITEMS = [
   {
     code: "INTELLIGENCE",
     title: "Cognify AI",
-    desc: "Maps every answer to your exact syllabus, tracks an Exam Readiness Score and a live Predicted Grade, pinpointing the precise micro or macro topics costing you marks.",
+    desc: "Maps every answer to your exact syllabus, tracks an Exam Readiness Score and a live Predicted Grade, pinpointing the precise topics costing you marks.",
     result: "Always know what to fix next",
     cta: "See Cognify AI",
   },
@@ -32,10 +31,7 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="04">Beyond the Seminar</SectionLabel>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             The Cognify Ecosystem
             <br />
             <span className="text-gold">Beyond The Classroom</span>

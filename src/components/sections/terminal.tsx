@@ -341,7 +341,7 @@ export function Terminal() {
 
             {/* ---- The Model Viewer (empty until first run) ---- */}
             <Reveal delay={0.08}>
-              <div className="glass-navy flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
+              <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
                     Model Viewer

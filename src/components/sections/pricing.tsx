@@ -3,7 +3,6 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
@@ -17,7 +16,7 @@ type Tier = {
 
 const TIERS: Tier[] = [
   {
-    name: "The Lab",
+    name: "Lab",
     tagline: "Self-paced mastery",
     price: "14,500",
     features: [
@@ -28,12 +27,12 @@ const TIERS: Tier[] = [
     ],
   },
   {
-    name: "Core Cohort",
+    name: "Core",
     tagline: "The complete live experience",
     price: "16,500",
     featured: true,
     features: [
-      "Everything in The Lab",
+      "Everything in Lab",
       "Live, co-taught classes · 5 days a week",
       "Cognify AI: Predicted Grade & readiness",
       "Examiner feedback on every submission",
@@ -44,7 +43,7 @@ const TIERS: Tier[] = [
     tagline: "Maximum support & guarantee",
     price: "17,500",
     features: [
-      "Everything in Core Cohort",
+      "Everything in Core",
       "Priority 24-hour examiner grading",
       "24-hour priority human mentor support",
       "Highest grading caps",
@@ -54,26 +53,22 @@ const TIERS: Tier[] = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="relative w-full px-6 py-28 md:px-10 md:py-40">
+    <section id="pricing" className="relative w-full px-6 py-16 md:px-10 md:py-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="05">Plans &amp; Pricing</SectionLabel>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            One Academy
+          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+            One System
             <br />
             <span className="text-gold">Three Ways In</span>
           </h2>
         </Reveal>
-        <Reveal delay={0.1}>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-navy/70">
-            Every plan begins with a 7-day free trial, no commitment. Need-based
-            and merit scholarships are available for students who earn their place.
+        <Reveal delay={0.05}>
+          <p className="mt-5 text-sm text-navy/60">
+            <span className="text-gold">*</span> Need-Based and Merit Scholarships available
           </p>
         </Reveal>
 
-        <div className="mt-16 grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-3">
           {TIERS.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.08}>
               <motion.div

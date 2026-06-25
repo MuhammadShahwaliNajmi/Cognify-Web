@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 import { cn, spring } from "@/lib/utils";
 
 /* line-art glyph — a question routed into clear answers (white lines, gold node),
@@ -75,10 +74,7 @@ export function FAQ() {
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="glass-navy flex flex-col rounded-[34px] p-8 md:p-10">
             <Reveal>
-              <SectionLabel index="07" className="text-white/55">The Info Desk</SectionLabel>
-            </Reveal>
-            <Reveal delay={0.05}>
-              <h2 className="mt-7 text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-white">
+              <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-white">
                 Questions
                 <br />
                 <span className="text-gold">Answered</span>

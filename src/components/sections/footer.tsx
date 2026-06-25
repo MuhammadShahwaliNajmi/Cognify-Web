@@ -24,8 +24,8 @@ export function Footer() {
 
         <Reveal delay={0.1}>
           <p className="mt-8 max-w-xl text-lg text-navy/70">
-            Distraction-free. Fast-paced. Built for students aiming at A*s,
-            Grade&nbsp;7s, and world-class university placements.
+            Distraction-free. Fast-paced. Built for students aiming at A*s and
+            world-class university placements.
           </p>
         </Reveal>
 

@@ -8,10 +8,13 @@ import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
 const LINKS = [
+  { label: "Home", href: "#top" },
   { label: "Methodology", href: "#method" },
+  { label: "Cognify Tutors", href: "#tutors" },
   { label: "Curriculums", href: "#curriculum" },
   { label: "Ecosystem", href: "#ecosystem" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Testimonials", href: "#testimonials" },
   { label: "Info Desk", href: "#info-desk" },
 ];
 
