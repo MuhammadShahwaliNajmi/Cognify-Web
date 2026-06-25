@@ -1,104 +1,280 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
-import { spring } from "@/lib/utils";
+import { cn, spring } from "@/lib/utils";
 
-const BESTIES = [
+type Tone = "navy" | "gold";
+
+/* line-art placeholder face — gentle float + periodic blink (white/gold, on navy) */
+function AnimatedFace({ variant }: { variant: number }) {
+  const reduce = useReducedMotion();
+  const blinkT = {
+    duration: 4.2,
+    repeat: Infinity,
+    times: [0, 0.9, 0.95, 1],
+    ease: "easeInOut" as const,
+    delay: variant * 1.4,
+  };
+  const eye = reduce ? {} : { scaleY: [1, 1, 0.12, 1] };
+  return (
+    <motion.svg
+      viewBox="0 0 100 100"
+      className="h-[78%] w-[78%]"
+      animate={reduce ? undefined : { y: [0, -4, 0] }}
+      transition={
+        reduce
+          ? undefined
+          : { duration: 4.6 + variant, repeat: Infinity, ease: "easeInOut", delay: variant * 0.5 }
+      }
+    >
+      <circle cx="50" cy="50" r="30" fill="none" stroke="#FFFFFF" strokeOpacity="0.85" strokeWidth="2.4" />
+      <motion.circle
+        cx="40"
+        cy="45"
+        r="3.4"
+        fill="#C9A94B"
+        style={{ transformOrigin: "40px 45px" }}
+        animate={eye}
+        transition={blinkT}
+      />
+      <motion.circle
+        cx="60"
+        cy="45"
+        r="3.4"
+        fill="#C9A94B"
+        style={{ transformOrigin: "60px 45px" }}
+        animate={eye}
+        transition={blinkT}
+      />
+      <path
+        d={variant === 0 ? "M39 60 Q50 69 61 60" : "M39 62 Q50 67 61 62"}
+        fill="none"
+        stroke="#FFFFFF"
+        strokeOpacity="0.85"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+      />
+    </motion.svg>
+  );
+}
+
+type Bestie = {
+  initials: string;
+  name: string;
+  tone: Tone;
+  bio: string;
+  logos: { src: string; alt: string; imgClass?: string }[];
+  stats: { value: string; label: string }[];
+};
+
+const BESTIES: Bestie[] = [
   {
-    initials: "AK",
-    name: "Ayesha Khan",
-    tag: "Your Economics Bestie",
-    chips: ["Microeconomics", "Macroeconomics"],
-    bio: "A former senior examiner who splits your Economics between micro and macro so nothing stays abstract. Famous for turning impossible diagrams into the easiest marks on the paper.",
+    initials: "SN",
+    name: "M. Shahwali Najmi",
+    tone: "navy",
+    bio: "Teaches Economics and Business with relentless focus on exam technique, turning dense theory and case studies into the cleanest marks on the paper.",
+    logos: [
+      { src: "/cambridge-logo.png", alt: "Cambridge" },
+      { src: "/ib-logo.png", alt: "International Baccalaureate" },
+    ],
     stats: [
-      { value: "9 yrs", label: "Teaching" },
-      { value: "A* avg", label: "Cohort grade" },
+      { value: "Coach", label: "Pakistan Team - Int'l Economics Olympiad" },
+      { value: "Team Leader", label: "South Asian Economics Students' Meet" },
     ],
   },
   {
-    initials: "HA",
-    name: "Hamza Ali",
-    tag: "Your Business Bestie",
-    chips: ["Business", "Exam Technique"],
-    bio: "Equal parts strategist and hype-man. He drills case studies, command words and 24-hour feedback until exam-style answers become second nature — and somehow makes 8am classes fun.",
+    initials: "HH",
+    name: "M. Hasaan Haroon",
+    tone: "navy",
+    bio: "Part strategist, part hype-man. Drills command words, diagrams and 24-hour feedback until top-band Economics and Business answers become second nature.",
+    logos: [
+      { src: "/cambridge-logo.png", alt: "Cambridge" },
+      { src: "/pearson-p-logo.jpg", alt: "Pearson Edexcel", imgClass: "scale-[1.5]" },
+    ],
     stats: [
-      { value: "7 yrs", label: "Teaching" },
-      { value: "600+", label: "Students" },
+      { value: "Coach", label: "Pakistan Team - World Youth Forum" },
+      { value: "Mentor", label: "Pakistan Team - Int'l Business Olympiad" },
     ],
   },
 ];
 
-export function Besties() {
-  const reduce = useReducedMotion();
+const RADIUS = 34; // matches rounded-[34px]
+const INSET = 2.5; // half the stroke width — puts the line's outer edge on the card edge
 
+function BestieCard({ b, index }: { b: Bestie; index: number }) {
+  const reduce = useReducedMotion();
+  const navy = b.tone === "navy";
+  const [hover, setHover] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const update = () => setSize({ w: el.offsetWidth, h: el.offsetHeight });
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  // pixel-perfect rounded-rect outline, split at the top-centre so it can grow
+  // both ways and meet at the bottom-centre (one full highlight around the card)
+  const { w, h } = size;
+  const cx = w / 2;
+  const right = w - INSET;
+  const bottom = h - INSET;
+  const r = Math.max(0, Math.min(RADIUS - INSET, w / 2 - INSET, h / 2 - INSET));
+  const rightPath = `M${cx} ${INSET} H${right - r} Q${right} ${INSET} ${right} ${INSET + r} V${bottom - r} Q${right} ${bottom} ${right - r} ${bottom} H${cx}`;
+  const leftPath = `M${cx} ${INSET} H${INSET + r} Q${INSET} ${INSET} ${INSET} ${INSET + r} V${bottom - r} Q${INSET} ${bottom} ${INSET + r} ${bottom} H${cx}`;
+
+  return (
+    <motion.article
+      ref={ref}
+      onHoverStart={() => setHover(true)}
+      onHoverEnd={() => setHover(false)}
+      whileHover={reduce ? undefined : { y: -6 }}
+      transition={spring.snappy}
+      className={cn(
+        "relative flex h-full flex-col items-center rounded-[34px] p-8 text-center shadow-[0_24px_60px_-34px_rgba(26,39,68,0.45)] md:p-10",
+        navy ? "glass-navy text-white" : "bg-gold text-navy-deep"
+      )}
+    >
+      {!reduce && w > 0 && (
+        <svg
+          width={w}
+          height={h}
+          className="pointer-events-none absolute -inset-px z-10 overflow-visible"
+          aria-hidden="true"
+        >
+          {[rightPath, leftPath].map((d, k) => (
+            <motion.path
+              key={k}
+              d={d}
+              fill="none"
+              stroke="#C9A94B"
+              strokeWidth={5}
+              strokeLinecap="round"
+              initial={false}
+              animate={{ pathLength: hover ? 1 : 0, opacity: hover ? 1 : 0 }}
+              transition={{
+                pathLength: { duration: hover ? 3 : 0, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: hover ? 0.08 : 0.25 },
+              }}
+            />
+          ))}
+        </svg>
+      )}
+
+      {/* profile picture space */}
+      <div
+        className={cn(
+          "flex h-36 w-36 items-center justify-center overflow-hidden rounded-full md:h-40 md:w-40",
+          navy
+            ? "bg-white/[0.06] ring-1 ring-white/15"
+            : "bg-navy-deep/10 ring-1 ring-navy-deep/20"
+        )}
+      >
+        <AnimatedFace variant={index} />
+      </div>
+
+      <span
+        className={cn(
+          "mt-7 text-[11px] font-semibold uppercase tracking-[0.22em]",
+          navy ? "text-white/85" : "text-navy-deep/80"
+        )}
+      >
+        Economics
+        <span
+          className={cn("mx-[0.4em] font-light", navy ? "text-gold/80" : "text-navy-deep/45")}
+        >
+          |
+        </span>
+        Business
+      </span>
+
+      <h3
+        className={cn(
+          "mt-2 text-2xl font-semibold tracking-tight",
+          navy ? "text-white" : "text-navy-deep"
+        )}
+      >
+        {b.name}
+      </h3>
+
+      <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+        {b.logos.map((l) => (
+          <span
+            key={l.src}
+            className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white"
+          >
+            <img src={l.src} alt={l.alt} className={cn("h-9 w-9 object-contain", l.imgClass)} />
+          </span>
+        ))}
+      </div>
+
+      <p
+        className={cn(
+          "mt-6 flex-1 text-[15px] leading-relaxed",
+          navy ? "text-white/70" : "text-navy-deep/80"
+        )}
+      >
+        {b.bio}
+      </p>
+
+      <div
+        className={cn(
+          "mt-8 grid w-full grid-cols-2 items-start gap-5 border-t pt-6",
+          navy ? "border-white/15" : "border-navy-deep/20"
+        )}
+      >
+        {b.stats.map((s) => (
+          <div key={s.label} className="flex flex-col items-center text-center">
+            <span
+              className={cn("block text-lg font-semibold", navy ? "text-gold" : "text-navy-deep")}
+            >
+              {s.value}
+            </span>
+            <span
+              className={cn(
+                "mt-2 block w-full text-balance text-center text-[10.5px] uppercase leading-relaxed tracking-[0.12em]",
+                navy ? "text-white" : "text-navy-deep/60"
+              )}
+            >
+              {s.label.split("-").map((part, idx, arr) => (
+                <span key={idx}>
+                  {part.trim()}
+                  {idx < arr.length - 1 && (
+                    <span className="px-[0.35em] font-light text-gold/80">-</span>
+                  )}
+                </span>
+              ))}
+            </span>
+          </div>
+        ))}
+      </div>
+    </motion.article>
+  );
+}
+
+export function Besties() {
   return (
     <section id="besties" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="02">The Teaching Team</SectionLabel>
-        </Reveal>
-        <Reveal delay={0.05}>
-          <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            Meet your
-            <br />
-            <span className="text-gold">Besties.</span>
-          </h2>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <p className="mt-6 max-w-md text-navy/70">
-            Not distant lecturers — mentors in your corner, five days a week, who
-            know your name, your weak spots and your target grade.
-          </p>
+          <div className="flex justify-center">
+            <h2 className="inline-flex items-center rounded-full bg-gold px-7 py-3 text-[clamp(1.05rem,2.4vw,1.5rem)] font-semibold tracking-tight text-navy-deep">
+              Meet The Cognify Tutors
+            </h2>
+          </div>
         </Reveal>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
           {BESTIES.map((b, i) => (
             <Reveal key={b.name} delay={0.15 + i * 0.18}>
-              <motion.article
-                whileHover={reduce ? undefined : { y: -6 }}
-                transition={spring.snappy}
-                className="flex h-full flex-col rounded-[34px] border border-navy/10 bg-white p-8 shadow-[0_24px_60px_-34px_rgba(26,39,68,0.4)] md:p-10"
-              >
-                <div className="flex items-center gap-5">
-                  <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy to-navy-deep text-xl font-semibold tracking-wide text-gold">
-                    {b.initials}
-                  </span>
-                  <div>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold">
-                      {b.tag}
-                    </span>
-                    <h3 className="mt-1 text-2xl font-semibold tracking-tight text-navy">
-                      {b.name}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap gap-2">
-                  {b.chips.map((c) => (
-                    <span
-                      key={c}
-                      className="rounded-full border border-navy/15 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em] text-navy/65"
-                    >
-                      {c}
-                    </span>
-                  ))}
-                </div>
-
-                <p className="mt-6 flex-1 text-[15px] leading-relaxed text-navy/75">{b.bio}</p>
-
-                <div className="mt-8 grid grid-cols-2 gap-4 border-t border-navy/10 pt-6">
-                  {b.stats.map((s) => (
-                    <div key={s.label}>
-                      <span className="block text-xl font-semibold text-navy">{s.value}</span>
-                      <span className="block text-[12px] uppercase tracking-[0.12em] text-navy/50">
-                        {s.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </motion.article>
+              <BestieCard b={b} index={i} />
             </Reveal>
           ))}
         </div>

@@ -388,7 +388,7 @@ export function Hero() {
               className="mb-9 inline-flex min-w-[349px] items-center justify-center gap-2.5 rounded-full bg-navy-deep px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-gold"
             >
               <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" />
-              Cohort — Applications Open
+              Cohort · Applications Open
             </motion.div>
 
             <motion.div variants={itemV}>

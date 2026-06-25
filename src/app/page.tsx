@@ -18,9 +18,9 @@ export default function Home() {
         <Hero />
         <Methodology />
         <Besties />
-        <Terminal />
         <Curriculum />
         <Ecosystem />
+        <Terminal />
         <Pricing />
         <Testimonials />
         <FAQ />

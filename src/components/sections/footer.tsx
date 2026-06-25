@@ -18,7 +18,7 @@ export function Footer() {
 
         <TextReveal
           as="h2"
-          text="Claim your seat in *Cohort* *Zero*"
+          text="Claim Your Seat In The *Cohort*"
           className="mt-7 max-w-3xl text-[clamp(2.4rem,7vw,5.5rem)] font-semibold leading-[1.04] tracking-tightest text-navy"
         />
 

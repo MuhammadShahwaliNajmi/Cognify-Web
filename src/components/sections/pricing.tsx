@@ -35,7 +35,7 @@ const TIERS: Tier[] = [
     features: [
       "Everything in The Lab",
       "Live, co-taught classes · 5 days a week",
-      "Cognify AI — Predicted Grade & readiness",
+      "Cognify AI: Predicted Grade & readiness",
       "Examiner feedback on every submission",
     ],
   },
@@ -57,18 +57,18 @@ export function Pricing() {
     <section id="pricing" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="06">Plans &amp; Pricing</SectionLabel>
+          <SectionLabel index="05">Plans &amp; Pricing</SectionLabel>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            One academy,
+            One Academy
             <br />
-            <span className="text-gold">three ways in.</span>
+            <span className="text-gold">Three Ways In</span>
           </h2>
         </Reveal>
         <Reveal delay={0.1}>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-navy/70">
-            Every plan begins with a 7-day free trial — no commitment. Need-based
+            Every plan begins with a 7-day free trial, no commitment. Need-based
             and merit scholarships are available for students who earn their place.
           </p>
         </Reveal>

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Play } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { SectionLabel } from "@/components/ui/section-label";
 import { SpotlightGrid } from "@/components/ui/spotlight-grid";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
@@ -76,7 +75,7 @@ const MODELS: Model[] = [
       { ys: [176, 154, 132, 110, 88, 66, 44, 30], gold: true },
       { ys: [120, 116, 112, 108, 104, 100, 96, 92] },
     ],
-    node: { x: 162, y: 99 },
+    node: { x: 149, y: 107 },
     result: "break-even Q = 1,240 units",
   },
 ];
@@ -195,7 +194,7 @@ export function Terminal() {
     setCur(null);
 
     const items: Item[] = [
-      { text: `$ run --model ${m.cmd}`, kind: "cmd" },
+      { text: `run --model ${m.cmd}`, kind: "cmd" },
       { text: "compiling model…", kind: "sys" },
       ...m.code.map((c) => ({ text: c, kind: "code" as Kind })),
       { text: "executing…", kind: "sys" },
@@ -267,13 +266,10 @@ export function Terminal() {
       <section id="lab" className="relative flex w-full flex-col justify-center px-6 py-14 md:min-h-screen md:px-10 md:py-16">
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <Reveal>
-            <SectionLabel index="03">The Live Lab</SectionLabel>
-          </Reveal>
-          <Reveal delay={0.05}>
-            <h2 className="mt-5 max-w-3xl text-[clamp(1.75rem,4vw,3rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-              The empirical edge,
+            <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+              The Empirical Edge
               <br />
-              <span className="text-gold">live in the seminar</span>
+              <span className="text-gold">Visual Learning</span>
             </h2>
           </Reveal>
           <div id="terminal" className="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-[1.05fr_0.95fr]">
@@ -282,7 +278,7 @@ export function Terminal() {
               <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <span className="font-mono text-[12px] text-white/55">
-                    cognify@seminar:~/models
+                    The Cognify Terminal
                   </span>
                   <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gold">
                     <span className={cn("h-1.5 w-1.5 rounded-full bg-gold", running && "animate-pulse-node")} />
@@ -293,7 +289,7 @@ export function Terminal() {
                 <div className="thin-scroll mt-3 min-h-0 flex-1 space-y-1 overflow-y-auto font-mono text-[13px] leading-relaxed">
                   {committed.length === 0 && !cur && (
                     <p className="text-white/40">
-                      $ awaiting model — choose a domain and run
+                      Awaiting Model, Choose A Domain And Run
                       <span className="blink text-gold">▍</span>
                     </p>
                   )}
@@ -336,7 +332,7 @@ export function Terminal() {
                       Run model
                     </LiquidButton>
                     <span className="font-mono text-[12px] text-white/40">
-                      active · {MODELS[selected].domain.toLowerCase()}
+                      Active · {MODELS[selected].domain}
                     </span>
                   </div>
                 </div>
@@ -397,16 +393,7 @@ export function Terminal() {
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center gap-5 py-12 text-center">
-                    <svg viewBox="0 0 120 80" className="w-28 opacity-25">
-                      <line x1={16} y1={64} x2={110} y2={64} stroke="white" strokeWidth={1.4} strokeLinecap="round" />
-                      <line x1={16} y1={12} x2={16} y2={64} stroke="white" strokeWidth={1.4} strokeLinecap="round" />
-                    </svg>
-                    <p className="max-w-[17rem] text-sm leading-relaxed text-white/45">
-                      No model loaded. Choose a domain and press{" "}
-                      <span className="text-gold">Run model</span> to render it here.
-                    </p>
-                  </div>
+                  <div className="flex-1" />
                 )}
               </div>
             </Reveal>

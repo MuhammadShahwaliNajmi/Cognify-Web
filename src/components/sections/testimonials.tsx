@@ -21,7 +21,7 @@ type Testimonial = {
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "I went from a shaky C to an A* in Edexcel Economics in one cohort. Splitting micro and macro between two specialists finally made the diagrams click — and the under-24-hour examiner feedback meant I never repeated a mistake.",
+      "I went from a shaky C to an A* in Edexcel Economics in one cohort. Splitting micro and macro between two specialists finally made the diagrams click, and the under-24-hour examiner feedback meant I never repeated a mistake.",
     name: "Zainab R.",
     meta: "A* Economics · Edexcel A Level",
     initials: "ZR",
@@ -35,7 +35,7 @@ const TESTIMONIALS: Testimonial[] = [
   },
   {
     quote:
-      "Five days a week with people who actually answer at midnight. Cognify didn't just get me a 7 in IB Economics — it made me genuinely enjoy the subject for the first time.",
+      "Five days a week with people who actually answer at midnight. Cognify didn't just get me a 7 in IB Economics. It made me genuinely enjoy the subject for the first time.",
     name: "Mahnoor S.",
     meta: "7/7 Economics · IB Diploma",
     initials: "MS",
@@ -127,13 +127,13 @@ export function Testimonials() {
     <section id="testimonials" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="07">In Their Words</SectionLabel>
+          <SectionLabel index="06">In Their Words</SectionLabel>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            Grades climbed.
+            Grades Climbed
             <br />
-            <span className="text-gold">So did confidence.</span>
+            <span className="text-gold">So Did Confidence</span>
           </h2>
         </Reveal>
 

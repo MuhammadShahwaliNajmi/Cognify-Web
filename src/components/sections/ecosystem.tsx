@@ -12,13 +12,15 @@ const ITEMS = [
   {
     code: "THE LAB",
     title: "Cognify Lab",
-    desc: "Every lecture recorded, with slides, summary notes and sample answers — plus an unlimited bank of exam-style questions. Submit as many as you like; trained examiners return personalised feedback in under 24 hours.",
+    desc: "Every lecture recorded with slides, notes and sample answers, plus unlimited exam-style questions, each marked by trained examiners in under 24 hours.",
+    result: "Practice that compounds into marks",
     cta: "Explore the Lab",
   },
   {
     code: "INTELLIGENCE",
     title: "Cognify AI",
-    desc: "Your practice, turned into insight. Cognify AI maps every answer to your exact syllabus, tracks an Exam Readiness Score, and gives you a live Predicted Grade — pinpointing the precise micro or macro topics costing you marks.",
+    desc: "Maps every answer to your exact syllabus, tracks an Exam Readiness Score and a live Predicted Grade, pinpointing the precise micro or macro topics costing you marks.",
+    result: "Always know what to fix next",
     cta: "See Cognify AI",
   },
 ];
@@ -30,13 +32,13 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="05">Beyond the Seminar</SectionLabel>
+          <SectionLabel index="04">Beyond the Seminar</SectionLabel>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            The Cognify ecosystem,
+            The Cognify Ecosystem
             <br />
-            <span className="text-gold">beyond the classroom</span>
+            <span className="text-gold">Beyond The Classroom</span>
           </h2>
         </Reveal>
 
@@ -68,6 +70,9 @@ export function Ecosystem() {
                   {e.title}
                 </h3>
                 <p className="mt-4 max-w-md text-navy/70">{e.desc}</p>
+                <p className="mt-4 text-sm font-medium tracking-tight text-gold">
+                  {e.result}
+                </p>
                 <div className="mt-6">
                   <LiquidButton href="#apply" variant="primary" className="px-5 py-2.5 text-[13px] text-gold">
                     {e.cta}

@@ -16,12 +16,12 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cognify — Learn the theory. Model the market.",
+  title: "Cognify: Learn the theory. Model the market.",
   description:
     "Live, premium online Economics and Business classes for ambitious IB, O Level, IGCSE & Edexcel students. A boutique academy built on first-principles learning.",
   metadataBase: new URL("https://cognifypk.com"),
   openGraph: {
-    title: "Cognify — Learn the theory. Model the market.",
+    title: "Cognify: Learn the theory. Model the market.",
     description:
       "Live, premium online Economics and Business classes for ambitious IB, O Level, IGCSE & Edexcel students.",
     url: "https://cognifypk.com",

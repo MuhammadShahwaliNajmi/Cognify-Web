@@ -74,7 +74,7 @@ export function Logo({
     <a
       href="#top"
       className={cn("group flex items-center gap-2.5", className)}
-      aria-label="Cognify — home"
+      aria-label="Cognify home"
     >
       <LogoMark className="h-8 w-8" />
       {withWordmark && (

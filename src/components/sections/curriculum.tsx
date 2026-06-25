@@ -9,15 +9,18 @@ import { cn, spring } from "@/lib/utils";
 const PROGRAMS = [
   {
     name: "Cambridge O Level, IGCSE & A Level",
-    desc: "Rigorous, structured coverage of the Cambridge Economics and Business syllabi — from O Level and IGCSE through AS & A Level — drilling the precise answer structure that converts understanding into A*s.",
+    desc: "Rigorous, structured coverage of the Cambridge Economics and Business syllabi, from O Level and IGCSE through AS & A Level, drilling the precise answer structure that converts understanding into A*s.",
+    result: "Drilled for the A*",
   },
   {
     name: "Pearson Edexcel · IGCSE & A Level",
     desc: "Theme-by-theme command of the Edexcel Economics and Business specification, from IGCSE through A Level, with exam-board-specific essay technique and quantitative skills woven throughout.",
+    result: "Marks in every theme",
   },
   {
     name: "IB Diploma Programme",
-    desc: "HL & SL mastery of Economics and Business Management — micro, macro, the global economy and the management framework, taught with the analytical depth IB examiners reward.",
+    desc: "HL & SL mastery of Economics and Business Management: micro, macro, the global economy and the management framework, taught with the analytical depth IB examiners reward.",
+    result: "Built for the 7",
   },
 ];
 
@@ -28,13 +31,13 @@ export function Curriculum() {
     <section id="curriculum" className="relative w-full px-6 py-28 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <SectionLabel index="04">Curriculums Offered</SectionLabel>
+          <SectionLabel index="03">Curriculums Offered</SectionLabel>
         </Reveal>
         <Reveal delay={0.05}>
           <h2 className="mt-7 max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            Two subjects.
-            <br />
-            <span className="text-gold">Three boards.</span>
+            Two Subjects
+            <span className="mx-[0.22em] font-light text-gold/70">|</span>
+            Three Boards
           </h2>
         </Reveal>
 
@@ -82,9 +85,14 @@ export function Curriculum() {
                       transition={spring.soft}
                       className="overflow-hidden"
                     >
-                      <p className="max-w-2xl pb-7 pl-8 text-[15px] leading-relaxed text-navy/70">
-                        {prog.desc}
-                      </p>
+                      <div className="max-w-2xl pb-7 pl-8">
+                        <p className="text-[15px] leading-relaxed text-navy/70">
+                          {prog.desc}
+                        </p>
+                        <p className="mt-4 text-sm font-medium tracking-tight text-gold">
+                          {prog.result}
+                        </p>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
