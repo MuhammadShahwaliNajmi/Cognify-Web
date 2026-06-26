@@ -31,7 +31,7 @@ export function Footer() {
 
         <Reveal delay={0.15}>
           <div className="mt-12">
-            <LiquidButton href="#apply" className="px-9 py-[1.15rem] text-base">
+            <LiquidButton href="/apply/" className="px-9 py-[1.15rem] text-base">
               Apply for Cohort
               <ArrowUpRight size={18} />
             </LiquidButton>

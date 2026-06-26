@@ -148,7 +148,7 @@ export function Pricing() {
 
                 <div className="mt-9">
                   <LiquidButton
-                    href="#apply"
+                    href="/apply/"
                     variant={t.featured ? "secondary" : "primary"}
                     className={cn(
                       "w-full px-6 py-3.5 text-[14px]",
