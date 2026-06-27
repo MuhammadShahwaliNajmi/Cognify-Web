@@ -97,7 +97,7 @@ const PILLARS = [
   {
     id: "03",
     glyph: 0,
-    heading: "Personalised Learning *|* 5 Times a Week",
+    heading: "Personalised Learning",
     result: "Taught the way you score best",
   },
   {

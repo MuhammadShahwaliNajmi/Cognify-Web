@@ -16,17 +16,23 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cognify: Learn the theory. Model the market.",
+  title: "Cognify: Master the Subject. Ace the Exam.",
   description:
-    "Live, premium online Economics and Business classes for ambitious IB, O Level, IGCSE & Edexcel students. A boutique academy built on first-principles learning.",
+    "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Cognify AI.",
   metadataBase: new URL("https://cognifypk.com"),
   openGraph: {
-    title: "Cognify: Learn the theory. Model the market.",
+    title: "Cognify: Master the Subject. Ace the Exam.",
     description:
-      "Live, premium online Economics and Business classes for ambitious IB, O Level, IGCSE & Edexcel students.",
+      "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Cognify AI.",
     url: "https://cognifypk.com",
     siteName: "Cognify",
     type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Cognify: Master the Subject. Ace the Exam.",
+    description:
+      "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students.",
   },
 };
 
