@@ -81,7 +81,7 @@ const BESTIES: Bestie[] = [
     ],
     stats: [
       { value: "Coach", label: "Pakistan Team - Int'l Economics Olympiad" },
-      { value: "Team Leader", label: "South Asian Economics Students' Meet" },
+      { value: "Instructor", label: "TNS Beaconhouse - IB Economics" },
     ],
   },
   {

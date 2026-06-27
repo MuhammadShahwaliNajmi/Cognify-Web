@@ -139,8 +139,8 @@ export function Testimonials() {
   const rowB = TESTIMONIALS.slice(4);
 
   return (
-    <section id="testimonials" className="relative w-full py-20 md:py-24">
-      <div className="mx-auto mb-10 max-w-6xl px-6 md:px-10">
+    <section id="testimonials" className="relative w-full px-6 py-20 md:px-10 md:py-24">
+      <div className="mx-auto mb-10 max-w-6xl">
         <Reveal>
           <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Grades Climbed
@@ -152,7 +152,7 @@ export function Testimonials() {
 
       {/* clipped to the site content margins, with edge fades so cards
           dissolve into the gutters rather than hitting the screen edge */}
-      <div className="mx-auto max-w-6xl px-6 md:px-10">
+      <div className="mx-auto max-w-6xl">
         <div className="relative overflow-hidden">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent md:w-24" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent md:w-24" />

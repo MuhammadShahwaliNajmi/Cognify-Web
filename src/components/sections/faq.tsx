@@ -70,7 +70,7 @@ const FAQS = [
 ];
 
 export function FAQ() {
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
 
   return (
     <section id="info-desk" className="relative w-full px-6 py-28 md:px-10 md:py-40">

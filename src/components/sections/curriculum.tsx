@@ -32,8 +32,8 @@ export function Curriculum() {
         <Reveal>
           <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Two Subjects
-            <span className="mx-[0.22em] font-light text-gold/70">|</span>
-            Three Boards
+            <br />
+            <span className="text-gold">Three Boards</span>
           </h2>
         </Reveal>
 
