@@ -1,29 +1,29 @@
 "use client";
 
-import { ArrowUpRight, Instagram, Mail } from "lucide-react";
+import { ArrowUpRight, Facebook, Instagram, Mail } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { LiquidButton } from "@/components/ui/liquid-button";
-import { Logo } from "@/components/ui/logo";
 
 export function Footer() {
   return (
-    <footer id="apply" className="relative w-full border-t border-navy/12 px-6 pb-12 pt-28 md:px-10 md:pt-40">
+    <footer id="apply" className="relative w-full px-6 pb-10 pt-20 md:px-10 md:pt-24">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-gold">
-            Applications Open
-          </p>
+          <span className="inline-flex items-center gap-2.5 rounded-full bg-navy-deep px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-gold">
+            <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" />
+            Cohort · Applications Open
+          </span>
         </Reveal>
 
         <TextReveal
           as="h2"
           text="Claim Your Seat In The *Cohort*"
-          className="mt-7 max-w-3xl text-[clamp(2.4rem,7vw,5.5rem)] font-semibold leading-[1.04] tracking-tightest text-navy"
+          className="mt-6 max-w-3xl text-[clamp(2.2rem,6vw,4.5rem)] font-semibold leading-[1.04] tracking-tightest text-navy"
         />
 
         <Reveal delay={0.1}>
-          <p className="mt-8 max-w-xl text-lg text-navy/70">
+          <p className="mt-6 max-w-xl text-base text-navy/70">
             Distraction-free. Fast-paced. Built for students aiming at A*s and
             world-class university placements.
           </p>
@@ -36,72 +36,68 @@ export function Footer() {
         </Reveal>
 
         <Reveal delay={0.15}>
-          <div className="mt-12">
-            <LiquidButton href="/apply/" className="px-9 py-[1.15rem] text-base">
+          <div className="mt-8">
+            <LiquidButton href="/apply/" className="px-6 py-3 text-sm">
               Apply for Cohort
-              <ArrowUpRight size={18} />
+              <ArrowUpRight size={16} />
             </LiquidButton>
           </div>
         </Reveal>
 
-        <div className="mt-28 border-t border-navy/12 pt-10">
+        <div className="mt-14 border-t border-gold pt-8">
           <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-            <div className="max-w-xs">
-              <Logo />
-              <p className="mt-4 text-sm text-navy/55">
-                Live Economics &amp; Business, taught by two specialists. Built for
-                A* and 7+ students.
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-navy/45">
+                Stay Connected
               </p>
+              <div className="mt-5 space-y-2.5">
+                <a
+                  href="mailto:najmi@cognifypk.com"
+                  className="flex items-center gap-2.5 text-base font-medium tracking-tight text-navy transition-colors hover:text-gold"
+                >
+                  <Mail size={16} className="text-navy" />
+                  najmi@cognifypk.com
+                </a>
+                <a
+                  href="mailto:hasaan@cognifypk.com"
+                  className="flex items-center gap-2.5 text-base font-medium tracking-tight text-navy transition-colors hover:text-gold"
+                >
+                  <Mail size={16} className="text-navy" />
+                  hasaan@cognifypk.com
+                </a>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-10 sm:flex-row sm:gap-16">
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-navy/45">
-                  Contact
-                </h3>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li>
-                    <a href="mailto:najmi@cognifypk.com" className="link-gold inline-flex items-center gap-2">
-                      <Mail size={14} />
-                      najmi@cognifypk.com
-                    </a>
-                  </li>
-                  <li>
-                    <a href="mailto:hasaan@cognifypk.com" className="link-gold inline-flex items-center gap-2">
-                      <Mail size={14} />
-                      hasaan@cognifypk.com
-                    </a>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-navy/45">
-                  Follow
-                </h3>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li>
-                    <a
-                      href="https://instagram.com/cognifyeducation"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="link-gold inline-flex items-center gap-2"
-                    >
-                      <Instagram size={14} />
-                      @Cognifyeducation
-                    </a>
-                  </li>
-                </ul>
+            <div className="md:text-right">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-navy/45">
+                Social Media
+              </p>
+              <div className="mt-5 flex gap-3 md:justify-end">
+                <a
+                  href="https://instagram.com/cognifyeducation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Cognify on Instagram"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
+                >
+                  <Instagram size={18} />
+                </a>
+                <a
+                  href="https://facebook.com/cognifyeducation"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Cognify on Facebook"
+                  className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
+                >
+                  <Facebook size={18} />
+                </a>
               </div>
             </div>
           </div>
 
-          <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-navy/12 pt-6 md:flex-row md:items-center">
-            <p className="text-xs text-navy/40">
-              © {new Date().getFullYear()} Cognify · cognifypk.com
-            </p>
-            <p className="text-xs text-navy/40">All rights reserved.</p>
-          </div>
+          <p className="mt-10 text-center text-xs text-navy/40">
+            © {new Date().getFullYear()} Cognify. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

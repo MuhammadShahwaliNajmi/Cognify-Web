@@ -73,7 +73,7 @@ const TESTIMONIALS: Testimonial[] = [
 
 function TestimonialCard({ t }: { t: Testimonial }) {
   return (
-    <figure className="flex w-[300px] shrink-0 flex-col rounded-[22px] border border-navy/10 bg-white p-5 shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_30px_70px_-34px_rgba(26,39,68,0.5)] md:w-[340px]">
+    <figure className="mr-5 flex w-[300px] shrink-0 flex-col rounded-[22px] border border-navy/10 bg-white p-5 shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_30px_70px_-34px_rgba(26,39,68,0.5)] md:w-[340px]">
       <div className="flex gap-1 text-gold" aria-label="5 out of 5">
         {Array.from({ length: 5 }).map((_, s) => (
           <Star key={s} size={13} className="fill-gold" />
@@ -110,7 +110,7 @@ function MarqueeRow({
 
   if (reduce) {
     return (
-      <div className="flex gap-6 overflow-x-auto pb-2">
+      <div className="flex overflow-x-auto pb-2">
         {items.map((t) => (
           <TestimonialCard key={t.name} t={t} />
         ))}
@@ -119,10 +119,10 @@ function MarqueeRow({
   }
 
   return (
-    <div className="group relative overflow-hidden">
+    <div className="group flex w-max">
       <div
         className={cn(
-          "flex w-max gap-5 group-hover:[animation-play-state:paused]",
+          "flex w-max shrink-0 group-hover:[animation-play-state:paused]",
           reverse ? "animate-marquee-right" : "animate-marquee-left"
         )}
       >
@@ -150,14 +150,17 @@ export function Testimonials() {
         </Reveal>
       </div>
 
-      {/* edge fade so cards dissolve into the page rather than getting clipped */}
-      <div className="relative">
-        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white to-transparent md:w-32" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-white to-transparent md:w-32" />
+      {/* clipped to the site content margins, with edge fades so cards
+          dissolve into the gutters rather than hitting the screen edge */}
+      <div className="mx-auto max-w-6xl px-6 md:px-10">
+        <div className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent md:w-24" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent md:w-24" />
 
-        <div className="flex flex-col gap-5">
-          <MarqueeRow items={rowA} />
-          <MarqueeRow items={rowB} reverse />
+          <div className="flex flex-col gap-5">
+            <MarqueeRow items={rowA} />
+            <MarqueeRow items={rowB} reverse />
+          </div>
         </div>
       </div>
     </section>

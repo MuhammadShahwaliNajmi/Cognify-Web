@@ -3,7 +3,6 @@
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Logo } from "@/components/ui/logo";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
@@ -41,7 +40,9 @@ export function Navbar() {
             : "border-b border-transparent bg-transparent py-5"
         )}
       >
-        <Logo />
+        <a href="#top" aria-label="Cognify home" className="flex items-center">
+          <img src="/cognify-logo-mark.png" alt="Cognify" className="h-9 w-auto md:h-10" />
+        </a>
 
         {/* deep-navy nav pill · gold hover highlight (motion.dev-style glide) */}
         <ul

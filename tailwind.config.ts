@@ -52,8 +52,8 @@ const config: Config = {
       },
       animation: {
         "pulse-node": "pulse-node 2.6s ease-in-out infinite",
-        "marquee-left": "marquee-left 48s linear infinite",
-        "marquee-right": "marquee-right 52s linear infinite",
+        "marquee-left": "marquee-left 32s linear infinite",
+        "marquee-right": "marquee-right 36s linear infinite",
       },
     },
   },

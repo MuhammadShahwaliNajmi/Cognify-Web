@@ -5,6 +5,7 @@ import { Terminal } from "@/components/sections/terminal";
 import { Curriculum } from "@/components/sections/curriculum";
 import { Ecosystem } from "@/components/sections/ecosystem";
 import { Pricing } from "@/components/sections/pricing";
+import { Scholarships } from "@/components/sections/scholarships";
 import { Besties } from "@/components/sections/besties";
 import { Testimonials } from "@/components/sections/testimonials";
 import { FAQ } from "@/components/sections/faq";
@@ -22,6 +23,7 @@ export default function Home() {
         <Ecosystem />
         <Terminal />
         <Pricing />
+        <Scholarships />
         <Testimonials />
         <FAQ />
       </main>
