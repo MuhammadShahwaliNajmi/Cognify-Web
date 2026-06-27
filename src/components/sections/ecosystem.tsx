@@ -11,15 +11,15 @@ const ITEMS = [
   {
     code: "THE LAB",
     title: "Cognify Lab",
-    desc: "Every lecture recorded with slides, notes and sample answers, plus unlimited exam-style questions, each marked by trained examiners in under 24 hours.",
-    result: "Practice that compounds into marks",
+    desc: "Lecture slides, notes, summary sheets, topical past papers and sample essay structures by topic, plus essays and papers marked by a trained examiner within 24 hours.",
+    result: "One complete learning system",
     cta: "Explore the Lab",
   },
   {
     code: "INTELLIGENCE",
     title: "Cognify AI",
-    desc: "Maps every answer to your exact syllabus, tracks an Exam Readiness Score and a live Predicted Grade, pinpointing the precise topics costing you marks.",
-    result: "Always know what to fix next",
+    desc: "Two tools in one: a tutor trained on all three boards that answers your 2am Economics and Business questions, and a data model that tracks your performance to give an exact predicted grade and your weakest topics.",
+    result: "Know your grade, and what to fix",
     cta: "See Cognify AI",
   },
 ];

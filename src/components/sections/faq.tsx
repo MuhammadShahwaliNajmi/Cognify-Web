@@ -32,36 +32,40 @@ function FaqGlyph() {
 
 const FAQS = [
   {
-    q: "I'm struggling and falling behind. Will this actually help?",
-    a: "Yes. Because every seminar is live and small, your confusion gets caught and fixed in the room, not left to fester until the next recorded video. Most students stop feeling lost within the first few sessions, because they finally understand the why behind every model instead of memorising it. You leave each seminar more in control of the material than when you walked in.",
+    q: "I'm falling behind. Will this help?",
+    a: "Yes. Classes are live and small, so confusion gets caught and fixed in the room. Most students stop feeling lost within the first few sessions.",
   },
   {
-    q: "Why choose Cognify over a private tutor?",
-    a: "A private tutor gives you one person, one hour, one topic at a time. Cognify gives you specialist Microeconomics and Macroeconomics instructors, deliberately small live classes, examiner feedback on every question you submit, and Cognify AI tracking exactly where you're losing marks. You're not paying for time; you're paying for the rigour, feedback and intelligence that actually move grades.",
+    q: "Why Cognify over a private tutor?",
+    a: "A private tutor runs PKR 25,000 to 30,000 a month, and you still buy topicals, papers, notes and marking separately. With Cognify it's all included: two specialist teachers, every resource, examiner-marked papers, predicted grades and Cognify AI, for a fraction of the cost.",
   },
   {
-    q: "How do I know it's right for my exam board?",
-    a: "Every class, problem set and piece of feedback is mapped to your exact specification: Cambridge O Level, IGCSE & A Level, Pearson Edexcel (IGCSE & A Level), or the IB Diploma. Nothing is generic. You only spend time on what your board rewards, taught by instructors who know precisely how each one marks.",
+    q: "Why do we have two teachers?",
+    a: "Because A Level Economics is really two subjects. A Microeconomics specialist and a Macroeconomics specialist each teach what they know best, giving you sharper exam prep.",
+  },
+  {
+    q: "Is it tailored to my exam board?",
+    a: "Yes. Every class, paper and piece of feedback is mapped to your exact spec, whether Cambridge, Pearson Edexcel or IB. Nothing generic.",
   },
   {
     q: "What does a typical week look like?",
-    a: "One hour of live, co-taught class a day, five days a week, in a small cohort, with Microeconomics and Macroeconomics each led by a specialist. Around that sit compulsory weekly assignments and a monthly assessment with live exam feedback from trained examiners, so you're always being measured against the real standard.",
+    a: "One hour of live, co-taught class a day, five days a week, plus weekly assignments and a monthly assessment with examiner feedback.",
   },
   {
     q: "How quickly will I see results?",
-    a: "Confidence usually shifts first, within the first couple of weeks, as concepts start to click instead of intimidate. From there, Cognify AI turns your submissions into a live Predicted Grade and Exam Readiness Score, so progress is visible, not guessed at. With consistent engagement across the cohort, grades move as your reasoning deepens.",
+    a: "Confidence usually shifts in the first couple of weeks. From there, Cognify AI turns your work into a live Predicted Grade, so progress is visible, not guessed.",
   },
   {
     q: "Is there enough practice and feedback?",
-    a: "Yes, arguably more than anywhere else. You can submit an unlimited number of exam-style questions, and trained examiners return detailed, personalised feedback in under 24 hours. Add monthly assessments with live exam feedback and a 24/7 Cognify AI tutor, and you always know exactly where you stand and what to fix next.",
+    a: "Yes. Submit unlimited exam-style questions and trained examiners return detailed feedback within 24 hours, backed by a 24/7 Cognify AI tutor.",
   },
   {
-    q: "Is there a free trial or financial support?",
-    a: "Every plan starts with a 7-day free trial, so you can experience the live classes and the Lab before committing. We also offer both need-based and merit scholarships. Cognify should be defined by how driven a student is, not only what they can pay.",
+    q: "Free trial or financial support?",
+    a: "Every plan starts with a 7-day free trial, and we offer both need-based and merit scholarships.",
   },
   {
     q: "How are the cohorts structured?",
-    a: "We run three-month cohorts, three times a year (July–September, October–December, January–March), kept intentionally small so classes stay interactive and personalised. Our founding cohort is reviewed individually, and built for students aiming at academic distinction and world-class university placements.",
+    a: "Three-month cohorts, three times a year, kept small so classes stay personal. Each founding student is reviewed individually.",
   },
 ];
 
@@ -82,9 +86,8 @@ export function FAQ() {
             </Reveal>
             <Reveal delay={0.1}>
               <p className="mt-6 max-w-sm text-white/65">
-                Everything you need to know before you apply. Still have a question
-                we haven&apos;t answered? Apply for Cohort and we&apos;ll answer it
-                personally.
+                Everything you need to know before you apply. Still curious?
+                Apply for Cohort and we&apos;ll answer personally.
               </p>
             </Reveal>
             <div className="mt-12 hidden lg:block">

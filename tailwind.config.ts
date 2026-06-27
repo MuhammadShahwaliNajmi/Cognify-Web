@@ -41,9 +41,19 @@ const config: Config = {
           "0%, 100%": { opacity: "0.45", transform: "scale(1)" },
           "50%": { opacity: "1", transform: "scale(1.15)" },
         },
+        "marquee-left": {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
+        "marquee-right": {
+          from: { transform: "translateX(-50%)" },
+          to: { transform: "translateX(0)" },
+        },
       },
       animation: {
         "pulse-node": "pulse-node 2.6s ease-in-out infinite",
+        "marquee-left": "marquee-left 48s linear infinite",
+        "marquee-right": "marquee-right 52s linear infinite",
       },
     },
   },

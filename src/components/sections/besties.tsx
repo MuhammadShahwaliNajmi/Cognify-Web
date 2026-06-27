@@ -74,7 +74,7 @@ const BESTIES: Bestie[] = [
     initials: "SN",
     name: "M. Shahwali Najmi",
     tone: "navy",
-    bio: "Teaches Economics and Business with relentless focus on exam technique, turning dense theory and case studies into the cleanest marks on the paper.",
+    bio: "The teacher who won't move on until you've got it. He breaks hard topics into clear steps and shows you exactly what examiners want.",
     logos: [
       { src: "/cambridge-logo.png", alt: "Cambridge" },
       { src: "/ib-logo.png", alt: "International Baccalaureate" },
@@ -88,7 +88,7 @@ const BESTIES: Bestie[] = [
     initials: "HH",
     name: "M. Hasaan Haroon",
     tone: "navy",
-    bio: "Part strategist, part hype-man. Drills command words, diagrams and 24-hour feedback until top-band Economics and Business answers become second nature.",
+    bio: "Makes the hard parts feel manageable. Patient with questions, fast with feedback, and sharp at catching the small mistakes that cost you marks.",
     logos: [
       { src: "/cambridge-logo.png", alt: "Cambridge" },
       { src: "/pearson-p-logo.jpg", alt: "Pearson Edexcel", imgClass: "scale-[1.5]" },

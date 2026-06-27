@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  motion,
-  useMotionValue,
-  useSpring,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { Star } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
+import { cn } from "@/lib/utils";
 
 type Testimonial = {
   quote: string;
@@ -20,111 +15,132 @@ type Testimonial = {
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "I went from a shaky C to an A* in Edexcel Economics in one cohort. Splitting micro and macro between two specialists finally made the diagrams click, and the under-24-hour examiner feedback meant I never repeated a mistake.",
+      "A shaky C to an A* in one cohort. Two specialists for micro and macro made it click.",
     name: "Zainab R.",
     meta: "A* Economics · Edexcel A Level",
     initials: "ZR",
   },
   {
     quote:
-      "The live classes feel tiny and personal, never a lecture. My Cognify AI Predicted Grade kept creeping up every week, and by the mocks I knew exactly which topics were costing me marks.",
+      "Examiner feedback in under 24 hours meant I never repeated a mistake twice.",
     name: "Daniyal A.",
     meta: "Grade 9 Business · Cambridge IGCSE",
     initials: "DA",
   },
   {
     quote:
-      "Five days a week with people who actually answer at midnight. Cognify didn't just get me a 7 in IB Economics. It made me genuinely enjoy the subject for the first time.",
+      "Classes are small enough that someone always notices when you're confused, and fixes it.",
     name: "Mahnoor S.",
     meta: "7/7 Economics · IB Diploma",
     initials: "MS",
   },
+  {
+    quote:
+      "Cognify AI showed me exactly which topics were dragging my grade down.",
+    name: "Hamza K.",
+    meta: "A* Economics · Cambridge A Level",
+    initials: "HK",
+  },
+  {
+    quote:
+      "Asking a question at 2am and getting a proper, board-specific answer changed how I studied.",
+    name: "Aliza F.",
+    meta: "A Business · Edexcel A Level",
+    initials: "AF",
+  },
+  {
+    quote:
+      "Two specialist teachers, all the resources and marking, for less than one tutor cost me.",
+    name: "Bilal T.",
+    meta: "Grade 8 Economics · Cambridge IGCSE",
+    initials: "BT",
+  },
+  {
+    quote:
+      "Watching my Predicted Grade climb week by week is what kept me going.",
+    name: "Sana M.",
+    meta: "6 → 7 Economics · IB Diploma",
+    initials: "SM",
+  },
+  {
+    quote:
+      "Five days a week with teachers who actually answer at midnight.",
+    name: "Usman J.",
+    meta: "A* Economics · Edexcel A Level",
+    initials: "UJ",
+  },
 ];
 
-function TestimonialCard({ t, index }: { t: Testimonial; index: number }) {
-  const reduce = useReducedMotion();
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-10, 10]), {
-    stiffness: 150,
-    damping: 15,
-  });
-  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [8, -8]), {
-    stiffness: 150,
-    damping: 15,
-  });
+function TestimonialCard({ t }: { t: Testimonial }) {
+  return (
+    <figure className="flex w-[300px] shrink-0 flex-col rounded-[22px] border border-navy/10 bg-white p-5 shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_30px_70px_-34px_rgba(26,39,68,0.5)] md:w-[340px]">
+      <div className="flex gap-1 text-gold" aria-label="5 out of 5">
+        {Array.from({ length: 5 }).map((_, s) => (
+          <Star key={s} size={13} className="fill-gold" />
+        ))}
+      </div>
 
-  const onMove = (e: React.MouseEvent) => {
-    if (reduce) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set((e.clientX - r.left) / r.width - 0.5);
-    my.set((e.clientY - r.top) / r.height - 0.5);
-  };
-  const onLeave = () => {
-    mx.set(0);
-    my.set(0);
-  };
+      <blockquote className="mt-3 flex-1 text-[14px] leading-snug text-navy/75">
+        &ldquo;{t.quote}&rdquo;
+      </blockquote>
+
+      <figcaption className="mt-4 flex items-center gap-3 border-t border-navy/10 pt-4">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy to-navy-deep text-[12px] font-semibold tracking-wide text-gold">
+          {t.initials}
+        </span>
+        <span>
+          <span className="block text-[13px] font-semibold text-navy">{t.name}</span>
+          <span className="block text-[11px] uppercase tracking-[0.12em] text-navy/50">
+            {t.meta}
+          </span>
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+function MarqueeRow({
+  items,
+  reverse,
+}: {
+  items: Testimonial[];
+  reverse?: boolean;
+}) {
+  const reduce = useReducedMotion();
+
+  if (reduce) {
+    return (
+      <div className="flex gap-6 overflow-x-auto pb-2">
+        {items.map((t) => (
+          <TestimonialCard key={t.name} t={t} />
+        ))}
+      </div>
+    );
+  }
 
   return (
-    <Reveal delay={0.15 + index * 0.18} className="h-full">
-      <div className="h-full [perspective:1100px]" onMouseMove={onMove} onMouseLeave={onLeave}>
-        <motion.figure
-          style={reduce ? undefined : { rotateX, rotateY, transformStyle: "preserve-3d" }}
-          animate={reduce ? undefined : { y: [0, -14, 0] }}
-          transition={
-            reduce
-              ? undefined
-              : {
-                  duration: 4.6 + index * 0.7,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: index * 0.5,
-                }
-          }
-          whileHover={reduce ? undefined : { scale: 1.035 }}
-          className="flex h-full flex-col rounded-[34px] border border-navy/10 bg-white p-8 shadow-[0_24px_60px_-34px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_40px_90px_-30px_rgba(26,39,68,0.55)]"
-        >
-          <div
-            className="flex gap-1 text-gold"
-            style={reduce ? undefined : { transform: "translateZ(45px)" }}
-            aria-label="5 out of 5"
-          >
-            {Array.from({ length: 5 }).map((_, s) => (
-              <Star key={s} size={15} className="fill-gold" />
-            ))}
-          </div>
-
-          <blockquote
-            className="mt-5 flex-1 text-[15px] leading-relaxed text-navy/75"
-            style={reduce ? undefined : { transform: "translateZ(28px)" }}
-          >
-            &ldquo;{t.quote}&rdquo;
-          </blockquote>
-
-          <figcaption
-            className="mt-7 flex items-center gap-3.5 border-t border-navy/10 pt-5"
-            style={reduce ? undefined : { transform: "translateZ(36px)" }}
-          >
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-navy to-navy-deep text-[13px] font-semibold tracking-wide text-gold">
-              {t.initials}
-            </span>
-            <span>
-              <span className="block text-sm font-semibold text-navy">{t.name}</span>
-              <span className="block text-[12px] uppercase tracking-[0.12em] text-navy/50">
-                {t.meta}
-              </span>
-            </span>
-          </figcaption>
-        </motion.figure>
+    <div className="group relative overflow-hidden">
+      <div
+        className={cn(
+          "flex w-max gap-5 group-hover:[animation-play-state:paused]",
+          reverse ? "animate-marquee-right" : "animate-marquee-left"
+        )}
+      >
+        {[...items, ...items].map((t, i) => (
+          <TestimonialCard key={`${t.name}-${i}`} t={t} />
+        ))}
       </div>
-    </Reveal>
+    </div>
   );
 }
 
 export function Testimonials() {
+  const rowA = TESTIMONIALS.slice(0, 4);
+  const rowB = TESTIMONIALS.slice(4);
+
   return (
-    <section id="testimonials" className="relative w-full px-6 py-28 md:px-10 md:py-40">
-      <div className="mx-auto max-w-6xl">
+    <section id="testimonials" className="relative w-full py-20 md:py-24">
+      <div className="mx-auto mb-10 max-w-6xl px-6 md:px-10">
         <Reveal>
           <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Grades Climbed
@@ -132,11 +148,16 @@ export function Testimonials() {
             <span className="text-gold">So Did Confidence</span>
           </h2>
         </Reveal>
+      </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {TESTIMONIALS.map((t, i) => (
-            <TestimonialCard key={t.name} t={t} index={i} />
-          ))}
+      {/* edge fade so cards dissolve into the page rather than getting clipped */}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-gradient-to-r from-white to-transparent md:w-32" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-gradient-to-l from-white to-transparent md:w-32" />
+
+        <div className="flex flex-col gap-5">
+          <MarqueeRow items={rowA} />
+          <MarqueeRow items={rowB} reverse />
         </div>
       </div>
     </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Instagram, Mail } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { LiquidButton } from "@/components/ui/liquid-button";
@@ -29,6 +29,12 @@ export function Footer() {
           </p>
         </Reveal>
 
+        <Reveal delay={0.12}>
+          <p className="mt-4 text-sm text-navy/60">
+            <span className="text-gold">*</span> Need-based and merit scholarships available
+          </p>
+        </Reveal>
+
         <Reveal delay={0.15}>
           <div className="mt-12">
             <LiquidButton href="/apply/" className="px-9 py-[1.15rem] text-base">
@@ -38,18 +44,64 @@ export function Footer() {
           </div>
         </Reveal>
 
-        <div className="mt-28 flex flex-col items-start justify-between gap-6 border-t border-navy/12 pt-8 md:flex-row md:items-center">
-          <Logo />
-          <nav className="flex flex-wrap gap-x-9 gap-y-2 text-sm font-medium text-navy">
-            <a href="#method" className="link-gold">Methodology</a>
-            <a href="#curriculum" className="link-gold">Curriculums</a>
-            <a href="#ecosystem" className="link-gold">Ecosystem</a>
-            <a href="#pricing" className="link-gold">Pricing</a>
-            <a href="#info-desk" className="link-gold">Info Desk</a>
-          </nav>
-          <p className="text-xs text-navy/40">
-            © {new Date().getFullYear()} Cognify · cognifypk.com
-          </p>
+        <div className="mt-28 border-t border-navy/12 pt-10">
+          <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-xs">
+              <Logo />
+              <p className="mt-4 text-sm text-navy/55">
+                Live Economics &amp; Business, taught by two specialists. Built for
+                A* and 7+ students.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-10 sm:flex-row sm:gap-16">
+              <div>
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-navy/45">
+                  Contact
+                </h3>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li>
+                    <a href="mailto:najmi@cognifypk.com" className="link-gold inline-flex items-center gap-2">
+                      <Mail size={14} />
+                      najmi@cognifypk.com
+                    </a>
+                  </li>
+                  <li>
+                    <a href="mailto:hasaan@cognifypk.com" className="link-gold inline-flex items-center gap-2">
+                      <Mail size={14} />
+                      hasaan@cognifypk.com
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] text-navy/45">
+                  Follow
+                </h3>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li>
+                    <a
+                      href="https://instagram.com/cognifyeducation"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="link-gold inline-flex items-center gap-2"
+                    >
+                      <Instagram size={14} />
+                      @Cognifyeducation
+                    </a>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-navy/12 pt-6 md:flex-row md:items-center">
+            <p className="text-xs text-navy/40">
+              © {new Date().getFullYear()} Cognify · cognifypk.com
+            </p>
+            <p className="text-xs text-navy/40">All rights reserved.</p>
+          </div>
         </div>
       </div>
     </footer>
