@@ -7,7 +7,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
-const LEVELS = ["O-Level", "A-Level", "IB"] as const;
+const LEVELS = ["IB", "A-Level", "O-Level"] as const;
 type Level = (typeof LEVELS)[number];
 
 type Tier = {
@@ -33,7 +33,7 @@ const TIERS: Tier[] = [
   {
     name: "Core",
     tagline: "The Complete Live Experience",
-    prices: { "O-Level": "10,500", "A-Level": "14,500", IB: "14,500" },
+    prices: { "O-Level": "11,500", "A-Level": "14,500", IB: "14,500" },
     featured: true,
     features: [
       "Everything In Lab",
@@ -47,7 +47,7 @@ const TIERS: Tier[] = [
   {
     name: "Elite",
     tagline: "Maximum Support & Guarantee",
-    prices: { "O-Level": "12,500", "A-Level": "16,500", IB: "16,500" },
+    prices: { "O-Level": "13,500", "A-Level": "16,500", IB: "16,500" },
     features: [
       "Everything In Core",
       "Weekly 1-On-1 Check-Ins",
@@ -58,7 +58,7 @@ const TIERS: Tier[] = [
 ];
 
 export function Pricing() {
-  const [active, setActive] = useState<number>(0); // default O-Level | IGCSE
+  const [active, setActive] = useState<number>(0); // default IB | HL & SL
   const level = LEVELS[active];
 
   return (
