@@ -49,7 +49,7 @@ const FAQS = [
   },
   {
     q: "What does a typical week look like?",
-    a: "One hour of live, co-taught class a day, five days a week, plus weekly assignments and a monthly assessment with examiner feedback.",
+    a: "One hour of live, co-taught class per session, plus weekly assignments and a monthly assessment with examiner feedback. O-Level runs 3 days a week, A-Level 5, and IB 4.",
   },
   {
     q: "How quickly will I see results?",
@@ -65,7 +65,7 @@ const FAQS = [
   },
   {
     q: "How are the cohorts structured?",
-    a: "Three-month cohorts, three times a year, kept small so classes stay personal. Each founding student is reviewed individually.",
+    a: "Three-month cohorts, three times a year, kept small so classes stay personal. Each student is reviewed individually.",
   },
 ];
 
