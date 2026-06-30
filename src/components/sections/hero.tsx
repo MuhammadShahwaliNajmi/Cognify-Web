@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   motion,
+  AnimatePresence,
   useScroll,
   useSpring,
   useTransform,
@@ -330,6 +331,209 @@ function HeroChart() {
   );
 }
 
+/* ---------- slow, piece-by-piece intro diagram (mobile splash only) ----------
+   Each element draws in turn with a deliberate pause between them. Static once
+   drawn — no live loops; this is a one-time reveal.                            */
+function IntroChart() {
+  const ease = [0.22, 1, 0.36, 1] as const;
+  const SCALE = 0.6; // tighten the whole sequence
+  const drawIn = (delay: number, duration = 1.2) => ({
+    pathLength: { duration: duration * SCALE, ease, delay: delay * SCALE },
+    opacity: { duration: 0.3, delay: delay * SCALE },
+  });
+  const fadeIn = (delay: number) => ({ duration: 0.5, ease, delay: delay * SCALE });
+
+  return (
+    <svg viewBox="0 0 460 270" className="h-full w-full overflow-visible">
+      <defs>
+        <marker id="introAxArrow" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto">
+          <path d="M0 0 L7 3.5 L0 7 Z" fill="rgba(255,255,255,0.42)" />
+        </marker>
+        <radialGradient id="introEqGlow">
+          <stop offset="0%" stopColor="#D4B254" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#D4B254" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      {/* grid */}
+      <motion.g
+        stroke="rgba(255,255,255,0.06)"
+        strokeWidth={1}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.08 }}
+      >
+        {[96, 132, 168].map((y) => (
+          <line key={y} x1={46} y1={y} x2={400} y2={y} />
+        ))}
+        {[130, 214, 298].map((x) => (
+          <line key={x} x1={x} y1={60} x2={x} y2={214} />
+        ))}
+      </motion.g>
+
+      {/* axes draw, one at a time */}
+      <motion.line
+        x1={46}
+        y1={214}
+        x2={46}
+        y2={52}
+        stroke="rgba(255,255,255,0.32)"
+        strokeWidth={1.3}
+        markerEnd="url(#introAxArrow)"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(0.45, 0.8)}
+      />
+      <motion.line
+        x1={46}
+        y1={214}
+        x2={408}
+        y2={214}
+        stroke="rgba(255,255,255,0.32)"
+        strokeWidth={1.3}
+        markerEnd="url(#introAxArrow)"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(1.15, 0.8)}
+      />
+      <motion.text
+        x={30}
+        y={62}
+        fill="rgba(255,255,255,0.5)"
+        fontSize={11}
+        fontFamily={MONO}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fadeIn(1.95)}
+      >
+        P
+      </motion.text>
+      <motion.text
+        x={400}
+        y={232}
+        fill="rgba(255,255,255,0.5)"
+        fontSize={11}
+        fontFamily={MONO}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fadeIn(1.95)}
+      >
+        Q
+      </motion.text>
+
+      {/* supply curve */}
+      <motion.path
+        d={SUPPLY}
+        fill="none"
+        stroke="rgba(255,255,255,0.7)"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(2.55, 1.4)}
+      />
+      <motion.text
+        x={370}
+        y={74}
+        fill="rgba(255,255,255,0.8)"
+        fontSize={13}
+        fontWeight={600}
+        fontFamily={MONO}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fadeIn(3.95)}
+      >
+        S
+      </motion.text>
+
+      {/* demand curve */}
+      <motion.path
+        d={DEMAND}
+        fill="none"
+        stroke="#D4B254"
+        strokeWidth={3}
+        strokeLinecap="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(4.55, 1.4)}
+      />
+      <motion.text
+        x={370}
+        y={210}
+        fill="#D4B254"
+        fontSize={13}
+        fontWeight={600}
+        fontFamily={MONO}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fadeIn(5.95)}
+      >
+        D
+      </motion.text>
+
+      {/* equilibrium guides */}
+      <motion.line
+        x1={46}
+        y1={140}
+        x2={219}
+        y2={140}
+        stroke="rgba(255,255,255,0.45)"
+        strokeWidth={1.2}
+        strokeDasharray="4 5"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(6.45, 0.7)}
+      />
+      <motion.line
+        x1={219}
+        y1={140}
+        x2={219}
+        y2={214}
+        stroke="rgba(255,255,255,0.45)"
+        strokeWidth={1.2}
+        strokeDasharray="4 5"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={drawIn(6.85, 0.6)}
+      />
+
+      {/* equilibrium point */}
+      <motion.circle
+        cx={219}
+        cy={140}
+        r={16}
+        fill="url(#introEqGlow)"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.7 }}
+        transition={fadeIn(7.45)}
+      />
+      <motion.circle
+        cx={219}
+        cy={140}
+        r={5.5}
+        fill="#D4B254"
+        style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 300, damping: 13, delay: 4.5 }}
+      />
+      <motion.text
+        x={230}
+        y={131}
+        fill="#D4B254"
+        fontSize={12}
+        fontWeight={600}
+        fontFamily={MONO}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={fadeIn(7.85)}
+      >
+        E
+      </motion.text>
+    </svg>
+  );
+}
+
 export function Hero() {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
@@ -365,20 +569,92 @@ export function Hero() {
     my.set(0);
   };
 
+  // Scroll parallax + fade only on desktop — on mobile the panel sits below the
+  // text, so fading the hero on scroll would blur it before it's fully seen.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  const fx = isDesktop && !reduce;
+
+  // Mobile-only intro: the equilibrium diagram draws itself, then swooshes away
+  // to reveal the page (which loads underneath). Desktop/reduced-motion skip it.
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    if (reduce || !window.matchMedia("(max-width: 767px)").matches) {
+      setIntro(false);
+      return;
+    }
+    const t = window.setTimeout(() => setIntro(false), 5200);
+    return () => clearTimeout(t);
+  }, [reduce]);
+
   return (
     <section id="top" ref={ref} className="relative min-h-[100svh] w-full overflow-hidden">
+      <AnimatePresence>
+        {intro && (
+          <motion.div
+            key="hero-intro"
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-white px-8 md:hidden"
+            initial={{ opacity: 1 }}
+            exit={{
+              y: reduce ? 0 : ["0vh", "3vh", "-118vh"],
+              scale: reduce ? 1 : [1, 1.015, 0.95],
+              opacity: reduce ? 0 : [1, 1, 0.45],
+              transition: {
+                duration: reduce ? 0 : 0.8,
+                ease: reduce ? undefined : ["easeOut", "easeIn"],
+                times: [0, 0.3, 1],
+              },
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 40 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 130, damping: 18, mass: 0.8 }}
+              className="glass-navy flex w-full max-w-sm flex-col rounded-[28px] p-6"
+            >
+              <div className="mb-4 flex items-center justify-between">
+                <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
+                  Market Equilibrium
+                </span>
+                <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-gold">
+                  <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" />
+                  Live
+                </span>
+              </div>
+              <div className="flex items-center justify-center py-2">
+                <div className="aspect-[460/270] w-full">
+                  <IntroChart />
+                </div>
+              </div>
+              <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
+                <span className="text-sm text-white/60">Equilibrium quantity</span>
+                <span className="text-lg font-semibold tabular-nums text-gold">
+                  Q* {Math.round(qty).toLocaleString()} units
+                </span>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="aura" aria-hidden="true" />
 
       <motion.div
-        style={reduce ? undefined : { opacity: fade }}
-        className="relative z-10 mx-auto grid min-h-[100svh] max-w-6xl grid-cols-1 items-center gap-16 px-6 pt-32 md:px-10 lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:content-start lg:gap-14"
+        style={fx ? { opacity: fade } : undefined}
+        className="relative z-10 mx-auto grid min-h-[100svh] max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-28 md:gap-16 md:px-10 md:pt-32 lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:content-start lg:gap-14"
       >
         {/* Left — copy + CTAs */}
-        <motion.div style={reduce ? undefined : { y: textY }}>
+        <motion.div style={fx ? { y: textY } : undefined}>
           <motion.div variants={colV} initial="hidden" animate="show">
             <motion.div
               variants={itemV}
-              className="mb-9 inline-flex min-w-[349px] items-center justify-center gap-2.5 rounded-full bg-navy-deep px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.26em] text-gold"
+              className="mb-9 inline-flex min-w-0 items-center justify-center gap-2.5 rounded-full bg-navy-deep px-4 py-1.5 text-[10px] tracking-[0.18em] font-semibold uppercase text-gold md:min-w-[349px] md:text-[11px] md:tracking-[0.26em]"
             >
               <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" />
               Cohort · Applications Open
@@ -409,7 +685,7 @@ export function Hero() {
             {/* subjects */}
             <motion.div
               variants={itemV}
-              className="mt-8 flex items-center gap-5 text-lg font-medium uppercase tracking-[0.3em] text-navy/75"
+              className="mt-8 flex items-center gap-4 text-base font-medium uppercase tracking-[0.18em] text-navy/75 md:gap-5 md:text-lg md:tracking-[0.3em]"
             >
               <span>Economics</span>
               <span className="text-gold/70" aria-hidden="true">|</span>
@@ -421,23 +697,23 @@ export function Hero() {
               <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-navy/40">
                 Preparing students for
               </p>
-              <div className="flex flex-wrap items-center gap-x-8 gap-y-4">
+              <div className="flex flex-nowrap items-center gap-x-3 md:flex-wrap md:gap-x-8 md:gap-y-4">
                 <img
                   src="/cambridge-logo.png"
                   alt="Cambridge Assessment International Education"
-                  className="h-[58px] w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0"
+                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[58px]"
                 />
-                <span className="h-11 w-px bg-navy/10" aria-hidden="true" />
+                <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
                   src="/pearson-logo.png"
                   alt="Pearson Edexcel"
-                  className="h-8 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0"
+                  className="h-5 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-8"
                 />
-                <span className="h-11 w-px bg-navy/10" aria-hidden="true" />
+                <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
                   src="/ib-logo.png"
                   alt="International Baccalaureate"
-                  className="h-[60px] w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0"
+                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[60px]"
                 />
               </div>
             </motion.div>
@@ -446,8 +722,8 @@ export function Hero() {
 
         {/* Right — animated graph panel with 3D tilt */}
         <motion.div
-          style={reduce ? undefined : { y: panelY, scale: panelScale }}
-          className="relative mx-auto w-full max-w-md [perspective:1200px] lg:mb-[2px]"
+          style={fx ? { y: panelY, scale: panelScale } : undefined}
+          className="relative mx-auto hidden w-full max-w-md [perspective:1200px] md:block lg:mb-[2px]"
           onMouseMove={onMove}
           onMouseLeave={onLeave}
         >
@@ -492,8 +768,8 @@ export function Hero() {
 
       {/* scroll cue */}
       <motion.div
-        style={reduce ? undefined : { opacity: cueOpacity }}
-        className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-navy/40"
+        style={fx ? { opacity: cueOpacity } : undefined}
+        className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 flex-col items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-navy/40 md:flex"
       >
         Scroll
         <motion.span

@@ -118,7 +118,7 @@ export function Methodology() {
   const [active, setActive] = useState(0);
 
   return (
-    <section id="method" className="relative w-full px-6 pb-28 pt-28 md:px-10 md:pb-40 lg:pt-[calc(10vh+32px)]">
+    <section id="method" className="relative w-full px-6 pb-20 pt-20 md:px-10 md:pb-40 lg:pt-[calc(10vh+32px)]">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
         {/* Pinned left — navy panel centered in the viewport below the fixed
             navbar (equal space above and below), anchored while the pillars
@@ -149,11 +149,24 @@ export function Methodology() {
                 onViewportEnter={() => setActive(i)}
                 viewport={{ amount: 0.6, margin: "-20% 0px -20% 0px" }}
                 className={cn(
-                  "flex min-h-[30vh] flex-col justify-center border-t border-navy/12 py-8",
+                  "relative flex min-h-0 flex-col justify-center border-t border-navy/12 py-7 pl-5 md:min-h-[30vh] md:py-8 md:pl-0",
                   i === PILLARS.length - 1 && "border-b"
                 )}
               >
-                <span className="font-mono text-xs tracking-[0.2em] text-navy/35">
+                {/* mobile-only gold accent that lights up the active pillar */}
+                <motion.span
+                  aria-hidden="true"
+                  className="absolute left-0 top-2 bottom-2 w-[3px] origin-top rounded-full bg-gold md:hidden"
+                  initial={false}
+                  animate={{ scaleY: active === i ? 1 : 0.12, opacity: active === i ? 1 : 0.25 }}
+                  transition={spring.snappy}
+                />
+                <span
+                  className={cn(
+                    "font-mono text-xs tracking-[0.2em] transition-colors md:text-navy/35",
+                    active === i ? "text-gold" : "text-navy/35"
+                  )}
+                >
                   {pl.id}
                 </span>
                 <TextReveal

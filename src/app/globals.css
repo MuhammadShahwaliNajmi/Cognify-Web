@@ -22,6 +22,7 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  overflow-x: hidden;
 }
 
 body {
@@ -29,6 +30,8 @@ body {
   color: var(--foreground);
   font-feature-settings: "ss01", "cv01", "cv11";
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100%;
 }
 
 ::selection {

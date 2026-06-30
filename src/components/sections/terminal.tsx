@@ -173,6 +173,7 @@ export function Terminal() {
 
   const cancelled = useRef(false);
   const timers = useRef<number[]>([]);
+  const viewerRef = useRef<HTMLDivElement>(null);
   const schedule = (fn: () => void, ms: number) => {
     const id = window.setTimeout(fn, ms);
     timers.current.push(id);
@@ -214,6 +215,10 @@ export function Terminal() {
       if ("reveal" in it) {
         setViewerIdx(it.reveal);
         setRunKey((k) => k + 1);
+        // code has finished running — bring the viewer into frame as it animates (mobile)
+        if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
+          viewerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
         schedule(() => runItems(i + 1), reduce ? 0 : 380);
         return;
       }
@@ -341,7 +346,7 @@ export function Terminal() {
 
             {/* ---- The Model Viewer (empty until first run) ---- */}
             <Reveal delay={0.08}>
-              <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
+              <div ref={viewerRef} className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6 scroll-mt-20">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
                     Model Viewer

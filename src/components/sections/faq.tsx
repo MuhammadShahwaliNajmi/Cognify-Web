@@ -73,12 +73,12 @@ export function FAQ() {
   const [open, setOpen] = useState<number | null>(null);
 
   return (
-    <section id="info-desk" className="relative w-full px-6 py-28 md:px-10 md:py-40">
+    <section id="info-desk" className="relative w-full px-6 py-20 md:px-10 md:py-40">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-14 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="glass-navy flex flex-col rounded-[34px] p-8 md:p-10">
             <Reveal>
-              <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-white">
+              <h2 className="text-[1.6rem] font-semibold leading-[1.02] tracking-tightest text-white md:text-[clamp(2rem,5vw,3.6rem)]">
                 Questions
                 <br />
                 <span className="text-gold">Answered</span>

@@ -73,7 +73,7 @@ const TESTIMONIALS: Testimonial[] = [
 
 function TestimonialCard({ t }: { t: Testimonial }) {
   return (
-    <figure className="mr-5 flex w-[300px] shrink-0 flex-col rounded-[22px] border border-navy/10 bg-white p-5 shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_30px_70px_-34px_rgba(26,39,68,0.5)] md:w-[340px]">
+    <figure className="mr-4 flex w-[260px] shrink-0 flex-col rounded-[22px] border border-navy/10 bg-white p-4 shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] transition-[box-shadow,border-color] duration-300 hover:border-gold/40 hover:shadow-[0_30px_70px_-34px_rgba(26,39,68,0.5)] md:mr-5 md:w-[340px] md:p-5">
       <div className="flex gap-1 text-gold" aria-label="5 out of 5">
         {Array.from({ length: 5 }).map((_, s) => (
           <Star key={s} size={13} className="fill-gold" />

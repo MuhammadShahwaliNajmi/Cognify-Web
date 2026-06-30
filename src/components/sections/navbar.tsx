@@ -17,6 +17,44 @@ const LINKS = [
   { label: "Info Desk", href: "#info-desk" },
 ];
 
+/* small brand graph glyph for the mobile menu — white axes, gold regression vector */
+function MenuGlyph() {
+  return (
+    <svg viewBox="0 0 56 56" className="h-24 w-24" fill="none" aria-hidden="true">
+      <motion.path
+        d="M16 8 V44 H52"
+        stroke="#FFFFFF"
+        strokeOpacity={0.45}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.12 }}
+      />
+      <motion.path
+        d="M20 40 L48 14"
+        stroke="#D4B254"
+        strokeWidth={2.6}
+        strokeLinecap="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1], delay: 0.36 }}
+      />
+      <motion.circle
+        cx={48}
+        cy={14}
+        r={4}
+        fill="#D4B254"
+        style={{ transformOrigin: "48px 14px" }}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ ...spring.snappy, delay: 0.72 }}
+      />
+    </svg>
+  );
+}
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -99,28 +137,43 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={spring.snappy}
-            className="overflow-hidden border-b border-navy/12 bg-white md:hidden"
+            className="relative overflow-hidden border-b border-white/10 bg-navy-deep md:hidden"
           >
-            <ul className="flex flex-col px-6 py-2">
-              {LINKS.map((l) => (
-                <li key={l.href} className="border-b border-navy/8 last:border-b-0">
+            <div className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2" aria-hidden="true">
+              <MenuGlyph />
+            </div>
+            <ul className="relative flex w-fit flex-col gap-2.5 px-6 py-5">
+              {LINKS.map((l, i) => (
+                <motion.li
+                  key={l.href}
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 * i, ...spring.snappy }}
+                >
                   <a
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="block py-4 text-base font-medium text-navy transition-colors hover:text-gold"
+                    className="block w-full rounded-full bg-gold px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-navy-deep transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.97]"
                   >
                     {l.label}
                   </a>
-                </li>
+                </motion.li>
               ))}
+              <motion.li
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.04 * LINKS.length, ...spring.snappy }}
+                className="pt-1"
+              >
+                <a
+                  href="/apply/"
+                  onClick={() => setOpen(false)}
+                  className="flex w-full items-center gap-2 rounded-full border border-gold bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-gold transition-colors duration-200 hover:bg-gold hover:text-navy-deep"
+                >
+                  Apply for Cohort →
+                </a>
+              </motion.li>
             </ul>
-            <a
-              href="/apply/"
-              onClick={() => setOpen(false)}
-              className="block px-6 pb-5 pt-2 text-base font-semibold text-gold"
-            >
-              Apply for Cohort →
-            </a>
           </motion.div>
         )}
       </AnimatePresence>

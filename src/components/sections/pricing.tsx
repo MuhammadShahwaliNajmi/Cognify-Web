@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
@@ -61,6 +61,20 @@ export function Pricing() {
   const [active, setActive] = useState<number>(0); // default IB | HL & SL
   const level = LEVELS[active];
 
+  // mobile carousel
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [card, setCard] = useState(0);
+  const onCardScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const stride = el.scrollWidth / TIERS.length;
+    setCard(Math.min(TIERS.length - 1, Math.round(el.scrollLeft / stride)));
+  };
+  const goCard = (i: number) => {
+    const child = scrollerRef.current?.children[i] as HTMLElement | undefined;
+    child?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  };
+
   return (
     <section
       id="pricing"
@@ -68,7 +82,7 @@ export function Pricing() {
     >
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[1.7rem] font-semibold leading-[1.02] tracking-tightest text-navy md:text-[clamp(2rem,5vw,3.6rem)]">
             One System
             <br />
             <span className="text-gold">Three Ways In</span>
@@ -87,7 +101,7 @@ export function Pricing() {
 
         {/* level toggle */}
         <Reveal delay={0.08}>
-          <div className="mt-8">
+          <div className="mt-6 md:mt-8">
             <div className="relative inline-flex rounded-full bg-navy-deep p-1.5 shadow-[0_18px_50px_-34px_rgba(8,16,33,0.7)]">
               {LEVELS.map((l, i) => {
                 const highlight = active === i;
@@ -96,7 +110,7 @@ export function Pricing() {
                     key={l}
                     onClick={() => setActive(i)}
                     aria-pressed={highlight}
-                    className="relative block rounded-full px-6 py-2.5 text-sm font-semibold tracking-tight focus-gold md:px-8"
+                    className="relative block rounded-full px-3.5 py-2.5 text-[12.5px] font-semibold tracking-tight focus-gold md:px-8 md:text-sm"
                   >
                     {highlight && (
                       <motion.span
@@ -134,14 +148,25 @@ export function Pricing() {
           </div>
         </Reveal>
 
-        <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+        {/* swipe hint (mobile only) */}
+        <p className="mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/45 md:hidden">
+          <span className="h-px w-5 bg-gold/60" />
+          Swipe to compare plans
+          <span aria-hidden="true">→</span>
+        </p>
+
+        <div
+          ref={scrollerRef}
+          onScroll={onCardScroll}
+          className="thin-scroll mt-3 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:mt-8 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:pb-0"
+        >
           {TIERS.map((t, i) => (
-            <Reveal key={t.name} delay={i * 0.08}>
+            <Reveal key={t.name} delay={i * 0.08} className="min-w-[87%] shrink-0 snap-center md:min-w-0 md:shrink">
               <motion.div
                 whileHover={{ y: -6 }}
                 transition={spring.snappy}
                 className={cn(
-                  "flex h-full flex-col rounded-[24px] p-5 md:p-6",
+                  "flex h-full flex-col rounded-[24px] p-4 md:p-6",
                   t.featured
                     ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(212, 178, 84,0.5)]"
                     : "border border-navy/12 bg-white text-navy"
@@ -165,14 +190,14 @@ export function Pricing() {
 
                 <p
                   className={cn(
-                    "mt-4 text-sm",
+                    "mt-3 text-[13px] md:mt-4 md:text-sm",
                     t.featured ? "text-white/60" : "text-navy/55"
                   )}
                 >
                   {t.tagline}
                 </p>
 
-                <div className="mt-3 flex items-baseline gap-1.5">
+                <div className="mt-2.5 flex items-baseline gap-1.5 md:mt-3">
                   <span
                     className={cn(
                       "font-mono text-xs",
@@ -181,7 +206,7 @@ export function Pricing() {
                   >
                     PKR
                   </span>
-                  <span className="relative inline-flex overflow-hidden text-[2.2rem] font-semibold leading-none tracking-tight tabular-nums text-gold">
+                  <span className="relative inline-flex overflow-hidden text-[1.85rem] font-semibold leading-none tracking-tight tabular-nums text-gold md:text-[2.2rem]">
                     <AnimatePresence mode="popLayout" initial={false}>
                       <motion.span
                         key={level}
@@ -204,7 +229,7 @@ export function Pricing() {
                   </span>
                 </div>
 
-                <ul className="mt-5 flex flex-1 flex-col gap-2.5">
+                <ul className="mt-4 flex flex-1 flex-col gap-2 md:mt-5 md:gap-2.5">
                   {t.features.map((f) => (
                     <li key={f} className="flex items-start gap-3">
                       <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-gold/15">
@@ -222,12 +247,12 @@ export function Pricing() {
                   ))}
                 </ul>
 
-                <div className="mt-6">
+                <div className="mt-5 md:mt-6">
                   <LiquidButton
                     href="/apply/"
                     variant={t.featured ? "secondary" : "primary"}
                     className={cn(
-                      "w-full px-6 py-3 text-[14px]",
+                      "w-full px-6 py-2.5 text-[14px] md:py-3",
                       !t.featured && "text-gold"
                     )}
                   >
@@ -236,6 +261,21 @@ export function Pricing() {
                 </div>
               </motion.div>
             </Reveal>
+          ))}
+        </div>
+
+        {/* mobile carousel dots */}
+        <div className="mt-5 flex items-center justify-center gap-2 md:hidden">
+          {TIERS.map((t, i) => (
+            <button
+              key={t.name}
+              onClick={() => goCard(i)}
+              aria-label={`Show ${t.name} plan`}
+              className={cn(
+                "h-2 rounded-full transition-all duration-300 focus-gold",
+                card === i ? "w-6 bg-gold" : "w-2 bg-navy/20"
+              )}
+            />
           ))}
         </div>
       </div>
