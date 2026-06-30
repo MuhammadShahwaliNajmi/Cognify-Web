@@ -64,6 +64,7 @@ type Bestie = {
   initials: string;
   name: string;
   tone: Tone;
+  image?: string;
   bio: string;
   logos: { src: string; alt: string; imgClass?: string }[];
   stats: { value: string; label: string }[];
@@ -74,6 +75,7 @@ const BESTIES: Bestie[] = [
     initials: "SN",
     name: "M. Shahwali Najmi",
     tone: "navy",
+    image: "/shahwali-profile.png",
     bio: "The teacher who won't move on until you've got it. He breaks hard topics into clear steps and shows you exactly what examiners want.",
     logos: [
       { src: "/cambridge-logo.png", alt: "Cambridge" },
@@ -81,13 +83,14 @@ const BESTIES: Bestie[] = [
     ],
     stats: [
       { value: "Coach", label: "Pakistan Team - Int'l Economics Olympiad" },
-      { value: "Instructor", label: "TNS Beaconhouse - IB Economics" },
+      { value: "Instructor", label: "TNS Beaconhouse\nIB Economics" },
     ],
   },
   {
     initials: "HH",
     name: "M. Hasaan Haroon",
     tone: "navy",
+    image: "/hasaan-profile.png",
     bio: "Makes the hard parts feel manageable. Patient with questions, fast with feedback, and sharp at catching the small mistakes that cost you marks.",
     logos: [
       { src: "/cambridge-logo.png", alt: "Cambridge" },
@@ -177,7 +180,15 @@ function BestieCard({ b, index }: { b: Bestie; index: number }) {
             : "bg-navy-deep/10 ring-1 ring-navy-deep/20"
         )}
       >
-        <AnimatedFace variant={index} />
+        {b.image ? (
+          <img
+            src={b.image}
+            alt={b.name}
+            className="h-full w-full object-cover object-top"
+          />
+        ) : (
+          <AnimatedFace variant={index} />
+        )}
       </div>
 
       <span
@@ -243,12 +254,16 @@ function BestieCard({ b, index }: { b: Bestie; index: number }) {
                 navy ? "text-white" : "text-navy-deep/60"
               )}
             >
-              {s.label.split("-").map((part, idx, arr) => (
-                <span key={idx}>
-                  {part.trim()}
-                  {idx < arr.length - 1 && (
-                    <span className="px-[0.35em] font-light text-gold/80">-</span>
-                  )}
+              {s.label.split("\n").map((line, li) => (
+                <span key={li} className="block">
+                  {line.split("-").map((part, idx, arr) => (
+                    <span key={idx}>
+                      {part.trim()}
+                      {idx < arr.length - 1 && (
+                        <span className="px-[0.35em] font-light text-gold/80">-</span>
+                      )}
+                    </span>
+                  ))}
                 </span>
               ))}
             </span>

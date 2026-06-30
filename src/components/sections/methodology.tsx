@@ -118,11 +118,12 @@ export function Methodology() {
   const [active, setActive] = useState(0);
 
   return (
-    <section id="method" className="relative w-full px-6 py-28 md:px-10 md:py-40">
+    <section id="method" className="relative w-full px-6 pb-28 pt-28 md:px-10 md:pb-40 lg:pt-[calc(10vh+32px)]">
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-20">
-        {/* Pinned left — navy panel that stretches to the visible viewport and
-            stays anchored while the pillars scroll past on the right */}
-        <div className="lg:sticky lg:top-[11vh] lg:h-[86vh] lg:self-start">
+        {/* Pinned left — navy panel centered in the viewport below the fixed
+            navbar (equal space above and below), anchored while the pillars
+            scroll past on the right */}
+        <div className="lg:sticky lg:top-[calc(10vh+32px)] lg:h-[80vh] lg:self-start">
           <div className="glass-navy flex h-full flex-col items-center justify-center rounded-[34px] p-8 text-center md:p-10">
             <Reveal delay={0.05}>
               <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.08] tracking-tightest text-white">
