@@ -22,9 +22,9 @@ const config: Config = {
           8: "rgba(26,39,68,0.08)",
         },
         gold: {
-          DEFAULT: "#C9A94B",
-          40: "rgba(201,169,75,0.40)",
-          20: "rgba(201,169,75,0.20)",
+          DEFAULT: "#D4B254",
+          40: "rgba(212, 178, 84,0.40)",
+          20: "rgba(212, 178, 84,0.20)",
         },
         background: "var(--background)",
         foreground: "var(--foreground)",

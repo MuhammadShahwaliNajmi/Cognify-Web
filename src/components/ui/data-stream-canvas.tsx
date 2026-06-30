@@ -36,13 +36,13 @@ export function DataStreamCanvas({ className }: { className?: string }) {
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const count = Math.min(64, Math.floor((w * h) / 17000));
+      const count = Math.min(80, Math.floor((w * h) / 14000));
       pts = Array.from({ length: count }, (_, i) => ({
         x: Math.random() * w,
         y: Math.random() * h,
         vx: (Math.random() - 0.5) * 0.22,
         vy: (Math.random() - 0.5) * 0.22,
-        gold: i % 9 === 0,
+        gold: i % 7 === 0,
       }));
     };
     resize();
@@ -75,9 +75,13 @@ export function DataStreamCanvas({ className }: { className?: string }) {
           const dx = a.x - b.x;
           const dy = a.y - b.y;
           const d = Math.hypot(dx, dy);
-          if (d < 124) {
-            ctx.strokeStyle = `rgba(26,39,68,${(1 - d / 124) * 0.13})`;
-            ctx.lineWidth = 1;
+          if (d < 150) {
+            const t = 1 - d / 150;
+            ctx.strokeStyle =
+              a.gold || b.gold
+                ? `rgba(212, 178, 84,${t * 0.55})`
+                : `rgba(26,39,68,${t * 0.35})`;
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
             ctx.lineTo(b.x, b.y);
@@ -87,8 +91,8 @@ export function DataStreamCanvas({ className }: { className?: string }) {
       }
       for (const p of pts) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.gold ? 2.4 : 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = p.gold ? "rgba(201,169,75,0.9)" : "rgba(26,39,68,0.42)";
+        ctx.arc(p.x, p.y, p.gold ? 3.2 : 2.3, 0, Math.PI * 2);
+        ctx.fillStyle = p.gold ? "rgba(212, 178, 84,1)" : "rgba(26,39,68,0.72)";
         ctx.fill();
       }
       raf = requestAnimationFrame(loop);

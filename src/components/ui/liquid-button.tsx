@@ -58,8 +58,8 @@ export function LiquidButton({
   const cls = cn(
     "gloss group relative inline-flex items-center justify-center gap-2.5 rounded-full px-8 py-4 text-[15px] font-semibold tracking-tight transition-shadow duration-300 focus-gold",
     variant === "primary"
-      ? "glass-navy text-white hover:shadow-[0_18px_42px_-16px_rgba(201,169,75,0.55)]"
-      : "glass-white text-navy hover:shadow-[0_18px_40px_-18px_rgba(201,169,75,0.5)]",
+      ? "glass-navy text-white hover:shadow-[0_18px_42px_-16px_rgba(212, 178, 84,0.55)]"
+      : "glass-white text-navy hover:shadow-[0_18px_40px_-18px_rgba(212, 178, 84,0.5)]",
     className
   );
 

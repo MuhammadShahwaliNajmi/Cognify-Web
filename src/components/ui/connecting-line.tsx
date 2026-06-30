@@ -43,7 +43,7 @@ export function ConnectingLine({ className }: { className?: string }) {
       {!reduce && (
         <motion.span
           style={{ top: nodeTop }}
-          className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold shadow-[0_0_0_4px_rgba(201,169,75,0.18)]"
+          className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold shadow-[0_0_0_4px_rgba(212, 178, 84,0.18)]"
         />
       )}
     </div>

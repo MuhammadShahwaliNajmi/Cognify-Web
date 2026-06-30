@@ -34,7 +34,7 @@ function AnimatedFace({ variant }: { variant: number }) {
         cx="40"
         cy="45"
         r="3.4"
-        fill="#C9A94B"
+        fill="#D4B254"
         style={{ transformOrigin: "40px 45px" }}
         animate={eye}
         transition={blinkT}
@@ -43,7 +43,7 @@ function AnimatedFace({ variant }: { variant: number }) {
         cx="60"
         cy="45"
         r="3.4"
-        fill="#C9A94B"
+        fill="#D4B254"
         style={{ transformOrigin: "60px 45px" }}
         animate={eye}
         transition={blinkT}
@@ -157,7 +157,7 @@ function BestieCard({ b, index }: { b: Bestie; index: number }) {
               key={k}
               d={d}
               fill="none"
-              stroke="#C9A94B"
+              stroke="#D4B254"
               strokeWidth={5}
               strokeLinecap="round"
               initial={false}

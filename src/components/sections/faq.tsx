@@ -22,7 +22,7 @@ function FaqGlyph() {
 
   return (
     <svg viewBox="0 0 160 96" className="w-full max-w-[300px]">
-      <circle cx="34" cy="48" r="6.5" fill="#C9A94B" />
+      <circle cx="34" cy="48" r="6.5" fill="#D4B254" />
       <motion.path d="M50 34 L132 34" {...line} transition={draw(0.1)} />
       <motion.path d="M50 48 L116 48" {...line} transition={draw(0.22)} />
       <motion.path d="M50 62 L96 62" {...line} transition={draw(0.34)} />

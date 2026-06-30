@@ -69,12 +69,15 @@ export function Ecosystem() {
                 <p className="mt-4 text-sm font-medium tracking-tight text-gold">
                   {e.result}
                 </p>
-                <div className="mt-6">
-                  <LiquidButton href="#apply" variant="primary" className="px-5 py-2.5 text-[13px] text-gold">
-                    {e.cta}
-                    <ArrowUpRight size={15} />
-                  </LiquidButton>
-                </div>
+                {/* CTAs hidden for now */}
+                {false && (
+                  <div className="mt-6">
+                    <LiquidButton href="#apply" variant="primary" className="px-5 py-2.5 text-[13px] text-gold">
+                      {e.cta}
+                      <ArrowUpRight size={15} />
+                    </LiquidButton>
+                  </div>
+                )}
               </motion.div>
             </Reveal>
           ))}

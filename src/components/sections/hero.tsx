@@ -10,7 +10,6 @@ import {
   useReducedMotion,
   type Variants,
 } from "framer-motion";
-import { DataStreamCanvas } from "@/components/ui/data-stream-canvas";
 import { spring } from "@/lib/utils";
 
 /* ---------- launch choreography ---------- */
@@ -102,15 +101,15 @@ function HeroChart() {
           <path d="M0 0 L7 3.5 L0 7 Z" fill="rgba(255,255,255,0.42)" />
         </marker>
         <marker id="shiftArrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
-          <path d="M0 0 L7 3.5 L0 7 Z" fill="#C9A94B" />
+          <path d="M0 0 L7 3.5 L0 7 Z" fill="#D4B254" />
         </marker>
         <radialGradient id="eqGlow">
-          <stop offset="0%" stopColor="#C9A94B" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#C9A94B" stopOpacity="0" />
+          <stop offset="0%" stopColor="#D4B254" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#D4B254" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="scanGrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#C9A94B" stopOpacity="0" />
-          <stop offset="100%" stopColor="#C9A94B" stopOpacity="0.5" />
+          <stop offset="0%" stopColor="#D4B254" stopOpacity="0" />
+          <stop offset="100%" stopColor="#D4B254" stopOpacity="0.5" />
         </linearGradient>
       </defs>
 
@@ -166,17 +165,17 @@ function HeroChart() {
       )}
 
       {/* ghost of the original demand position (so the shift is visible) */}
-      <path d={DEMAND} fill="none" stroke="#C9A94B" strokeOpacity={0.16} strokeWidth={2} strokeDasharray="5 6" />
+      <path d={DEMAND} fill="none" stroke="#D4B254" strokeOpacity={0.16} strokeWidth={2} strokeDasharray="5 6" />
 
       {/* live demand curve (gold) — shifts right & back to model the market */}
       <motion.g initial={{ x: 0 }} animate={reduce ? {} : { x: S_KEY }} transition={reduce ? {} : loop}>
-        <text x={370} y={210} fill="#C9A94B" fontSize={13} fontWeight={600} fontFamily={MONO}>
+        <text x={370} y={210} fill="#D4B254" fontSize={13} fontWeight={600} fontFamily={MONO}>
           D
         </text>
         <motion.path
           d={DEMAND}
           fill="none"
-          stroke="#C9A94B"
+          stroke="#D4B254"
           strokeWidth={3}
           strokeLinecap="round"
           initial={reduce ? false : { pathLength: 0 }}
@@ -187,7 +186,7 @@ function HeroChart() {
           <motion.path
             d={DEMAND}
             fill="none"
-            stroke="#C9A94B"
+            stroke="#D4B254"
             strokeOpacity={0.6}
             strokeWidth={3}
             strokeLinecap="round"
@@ -219,7 +218,7 @@ function HeroChart() {
           y1={168}
           x2={240}
           y2={168}
-          stroke="#C9A94B"
+          stroke="#D4B254"
           strokeWidth={1.6}
           markerEnd="url(#shiftArrow)"
           initial={{ opacity: 0 }}
@@ -259,7 +258,7 @@ function HeroChart() {
         cx={46}
         cy={EQY[0]}
         r={2.6}
-        fill="#C9A94B"
+        fill="#D4B254"
         initial={reduce ? false : { opacity: 0 }}
         animate={reduce ? {} : { opacity: 1, cy: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cy: loop }}
@@ -268,7 +267,7 @@ function HeroChart() {
         cx={EQX[0]}
         cy={214}
         r={2.6}
-        fill="#C9A94B"
+        fill="#D4B254"
         initial={reduce ? false : { opacity: 0 }}
         animate={reduce ? {} : { opacity: 1, cx: EQX }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cx: loop }}
@@ -295,7 +294,7 @@ function HeroChart() {
             cy={140}
             r={6}
             fill="none"
-            stroke="#C9A94B"
+            stroke="#D4B254"
             strokeWidth={1.6}
             initial={{ scale: 1, opacity: 0.7 }}
             animate={{ scale: 3, opacity: 0 }}
@@ -307,16 +306,16 @@ function HeroChart() {
           cx={219}
           cy={140}
           r={5.5}
-          fill="#C9A94B"
+          fill="#D4B254"
           initial={reduce ? false : { scale: 0 }}
           animate={reduce ? {} : { scale: 1 }}
           transition={{ type: "spring", stiffness: 320, damping: 13, delay: 1.7 }}
-          style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(201,169,75,0.9))" }}
+          style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
         />
         <motion.text
           x={230}
           y={131}
-          fill="#C9A94B"
+          fill="#D4B254"
           fontSize={12}
           fontWeight={600}
           fontFamily={MONO}
@@ -369,12 +368,6 @@ export function Hero() {
   return (
     <section id="top" ref={ref} className="relative min-h-[100svh] w-full overflow-hidden">
       <div className="aura" aria-hidden="true" />
-      <div
-        className="pointer-events-none absolute inset-0 z-0 opacity-25 [mask-image:radial-gradient(ellipse_at_28%_42%,black_0%,transparent_68%)]"
-        aria-hidden="true"
-      >
-        <DataStreamCanvas />
-      </div>
 
       <motion.div
         style={reduce ? undefined : { opacity: fade }}

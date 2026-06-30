@@ -143,7 +143,7 @@ export function Pricing() {
                 className={cn(
                   "flex h-full flex-col rounded-[24px] p-5 md:p-6",
                   t.featured
-                    ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(201,169,75,0.5)]"
+                    ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(212, 178, 84,0.5)]"
                     : "border border-navy/12 bg-white text-navy"
                 )}
               >

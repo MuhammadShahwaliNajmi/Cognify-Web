@@ -58,7 +58,7 @@ function MeritGlyph({ reduce }: { reduce: boolean | null }) {
       <motion.path d="M88 70 V26" {...s} transition={{ ...drawT, delay: 0.3 }} />
       <motion.path
         d="M88 8 V2 M99 13 L103 9 M77 13 L73 9"
-        stroke="#C9A94B"
+        stroke="#D4B254"
         strokeWidth={2.2}
         strokeLinecap="round"
         fill="none"
@@ -70,7 +70,7 @@ function MeritGlyph({ reduce }: { reduce: boolean | null }) {
         cx={88}
         cy={18}
         r={5}
-        fill="#C9A94B"
+        fill="#D4B254"
         style={{ transformOrigin: "88px 18px" }}
         initial={reduce ? false : { scale: 0, opacity: 0 }}
         animate={reduce ? {} : { scale: 1, opacity: 1 }}
@@ -102,7 +102,7 @@ function NeedGlyph({ reduce }: { reduce: boolean | null }) {
         cx={60}
         cy={22}
         r={5}
-        fill="#C9A94B"
+        fill="#D4B254"
         style={{ transformOrigin: "60px 22px" }}
         initial={reduce ? false : { scale: 0, opacity: 0 }}
         animate={reduce ? {} : { scale: 1, opacity: 1 }}

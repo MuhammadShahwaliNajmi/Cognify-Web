@@ -104,7 +104,7 @@ function ModelChart({ model, runKey }: { model: Model; runKey: number }) {
             key={i}
             d={toPath(ln.ys, ln.xs)}
             fill="none"
-            stroke={ln.gold ? "#C9A94B" : "rgba(255,255,255,0.8)"}
+            stroke={ln.gold ? "#D4B254" : "rgba(255,255,255,0.8)"}
             strokeWidth={2.4}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -133,7 +133,7 @@ function ModelChart({ model, runKey }: { model: Model; runKey: number }) {
           cx={model.node.x}
           cy={model.node.y}
           r={5}
-          fill="#C9A94B"
+          fill="#D4B254"
           initial={reduce ? false : { scale: 0 }}
           animate={reduce ? {} : { scale: 1 }}
           transition={{ type: "spring", stiffness: 380, damping: 13, delay: 0.7 }}
@@ -145,7 +145,7 @@ function ModelChart({ model, runKey }: { model: Model; runKey: number }) {
             cy={model.node.y}
             r={5}
             fill="none"
-            stroke="#C9A94B"
+            stroke="#D4B254"
             strokeWidth={1.5}
             initial={{ scale: 1, opacity: 0.7 }}
             animate={{ scale: 2.6, opacity: 0 }}
@@ -318,7 +318,7 @@ export function Terminal() {
                         className={cn(
                           "rounded-full border px-4 py-1.5 text-[13px] font-medium tracking-tight transition-all duration-300 focus-gold",
                           selected === i
-                            ? "border-gold bg-gold text-navy-deep shadow-[0_8px_20px_-8px_rgba(201,169,75,0.6)]"
+                            ? "border-gold bg-gold text-navy-deep shadow-[0_8px_20px_-8px_rgba(212, 178, 84,0.6)]"
                             : "border-white/15 text-white/70 hover:border-gold hover:bg-gold hover:text-navy-deep"
                         )}
                       >

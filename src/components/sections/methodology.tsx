@@ -40,7 +40,7 @@ function PillarGlyph({ index }: { index: number }) {
               <motion.path d="M136 24 L80 60" {...line} transition={{ ...draw, delay: 0.1 }} />
               <circle cx="24" cy="24" r="5" fill="#FFFFFF" />
               <circle cx="136" cy="24" r="5" fill="#FFFFFF" />
-              <circle cx="80" cy="60" r="6.5" fill="#C9A94B" />
+              <circle cx="80" cy="60" r="6.5" fill="#D4B254" />
             </>
           )}
           {index === 1 && (
@@ -49,7 +49,7 @@ function PillarGlyph({ index }: { index: number }) {
               <motion.path d="M80 18 L40 70" {...line} transition={draw} />
               <motion.path d="M80 18 L80 70" {...line} transition={{ ...draw, delay: 0.08 }} />
               <motion.path d="M80 18 L120 70" {...line} transition={{ ...draw, delay: 0.16 }} />
-              <circle cx="80" cy="18" r="6.5" fill="#C9A94B" />
+              <circle cx="80" cy="18" r="6.5" fill="#D4B254" />
               <circle cx="40" cy="70" r="4.5" fill="#FFFFFF" />
               <circle cx="80" cy="70" r="4.5" fill="#FFFFFF" />
               <circle cx="120" cy="70" r="4.5" fill="#FFFFFF" />
@@ -72,7 +72,7 @@ function PillarGlyph({ index }: { index: number }) {
                   style={{ transformOrigin: `${x}px ${y}px` }}
                 />
               ))}
-              <circle cx="138" cy="26" r="6.5" fill="#C9A94B" />
+              <circle cx="138" cy="26" r="6.5" fill="#D4B254" />
             </>
           )}
         </motion.g>

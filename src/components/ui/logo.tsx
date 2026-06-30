@@ -38,7 +38,7 @@ export function LogoMark({ className }: { className?: string }) {
       {/* Gold regression vector */}
       <motion.path
         d="M12 28 L29 11"
-        stroke="#C9A94B"
+        stroke="#D4B254"
         strokeWidth={2.6}
         strokeLinecap="round"
         initial={reduce ? false : { pathLength: 0 }}
@@ -52,7 +52,7 @@ export function LogoMark({ className }: { className?: string }) {
         cx={29}
         cy={11}
         r={3.4}
-        fill="#C9A94B"
+        fill="#D4B254"
         initial={reduce ? false : { scale: 0, opacity: 0 }}
         animate={reduce ? {} : { scale: 1, opacity: 1 }}
         transition={{ type: "spring", stiffness: 400, damping: 14, delay: 0.95 }}
