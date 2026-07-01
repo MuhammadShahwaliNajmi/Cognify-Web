@@ -34,14 +34,19 @@ body {
   max-width: 100%;
 }
 
-/* Fluid mobile scaling — the whole layout is rem-based, so scaling the root
-   font-size makes text AND spacing track the phone width (bigger phone →
-   proportionally bigger view). Reverts to the default 16px at md and up, so
-   tablet/laptop/desktop are unchanged. */
-@media (max-width: 767px) {
-  html {
-    font-size: clamp(14px, 4.15vw, 17.5px);
-  }
+/* Fluid scaling across every screen — the layout is rem-based, so scaling the
+   root font-size makes text AND spacing track the viewport width: bigger screen
+   → proportionally bigger, smaller → smaller, with no overflow.
+   Tiers: phones (steep), tablets/iPad = mobile view scaled up, desktop grows
+   with the monitor. The mobile/desktop layout switch itself is at 1024px. */
+@media (max-width: 639px) {
+  html { font-size: clamp(14px, 4.1vw, 17.5px); }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+  html { font-size: clamp(17px, 2.3vw, 23px); }
+}
+@media (min-width: 1024px) {
+  html { font-size: clamp(15px, 1.02vw, 20px); }
 }
 
 ::selection {

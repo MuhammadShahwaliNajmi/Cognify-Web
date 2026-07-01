@@ -18,7 +18,7 @@ const ITEMS = [
   {
     code: "INTELLIGENCE",
     title: "Cognify AI",
-    desc: "Two tools in one: a tutor trained on all three boards that answers your 2am Economics and Business questions, and a data model that tracks your performance to give an exact predicted grade and your weakest topics.",
+    desc: "Two tools in one: an AI tutor trained on all three exam boards, and a performance model that predicts your grade, pinpoints your weakest topics, and tells you exactly what to improve.",
     result: "Know your grade, and what to fix",
     cta: "See Cognify AI",
   },

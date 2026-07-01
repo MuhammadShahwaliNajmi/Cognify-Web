@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { LiquidButton } from "@/components/ui/liquid-button";
-import { cn, spring } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 const LEVELS = ["IB", "A-Level", "O-Level"] as const;
 type Level = (typeof LEVELS)[number];
@@ -163,10 +163,8 @@ export function Pricing() {
           {TIERS.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.08} className="w-full shrink-0 snap-center snap-always md:w-auto md:shrink">
               <motion.div
-                whileHover={{ y: -6 }}
-                transition={spring.snappy}
                 className={cn(
-                  "flex h-full flex-col rounded-[24px] p-3.5 md:p-6",
+                  "flex h-full flex-col rounded-[24px] p-3.5 transition-transform duration-300 md:p-6 md:hover:-translate-y-1.5",
                   t.featured
                     ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(212, 178, 84,0.5)]"
                     : "border border-navy/12 bg-white text-navy"
