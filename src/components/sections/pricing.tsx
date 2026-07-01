@@ -158,7 +158,7 @@ export function Pricing() {
         <div
           ref={scrollerRef}
           onScroll={onCardScroll}
-          className="thin-scroll mt-3 flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto pb-2 md:mt-8 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:pb-0"
+          className="no-scrollbar mt-3 flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto md:mt-8 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible"
         >
           {TIERS.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.08} className="w-full shrink-0 snap-center snap-always md:w-auto md:shrink">

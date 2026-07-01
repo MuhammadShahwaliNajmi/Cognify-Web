@@ -231,3 +231,12 @@ body {
   background: rgba(26, 39, 68, 0.25);
   border-radius: 999px;
 }
+
+/* hidden scrollbar (keeps scroll/swipe, removes the visible bar) */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
