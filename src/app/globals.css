@@ -39,12 +39,17 @@ body {
    → proportionally bigger, smaller → smaller, with no overflow.
    Tiers: phones (steep), tablets/iPad = mobile view scaled up, desktop grows
    with the monitor. The mobile/desktop layout switch itself is at 1024px. */
-@media (max-width: 639px) {
-  html { font-size: clamp(14px, 4.1vw, 17.5px); }
+/* Phones (<768) — mobile layout, fluid with the phone width. */
+@media (max-width: 767px) {
+  html { font-size: clamp(14px, 4vw, 18px); }
 }
-@media (min-width: 640px) and (max-width: 1023px) {
-  html { font-size: clamp(17px, 2.3vw, 23px); }
+/* Tablets (768–1023, incl. iPad portrait) show the DESKTOP layout — scale the
+   root font-size down so the whole rem-based layout shrinks to fit the narrower
+   width and never overflows. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  html { font-size: clamp(9.5px, 1.25vw, 14px); }
 }
+/* Desktop (>=1024) — scales with the monitor: bigger = bigger, smaller = smaller. */
 @media (min-width: 1024px) {
   html { font-size: clamp(15px, 1.02vw, 20px); }
 }

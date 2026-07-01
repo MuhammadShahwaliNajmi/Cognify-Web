@@ -72,7 +72,7 @@ export function Navbar() {
     >
       <nav
         className={cn(
-          "flex w-full items-center justify-between px-6 transition-all duration-500 md:px-10",
+          "flex w-full items-center justify-between px-6 transition-all duration-500 lg:px-10",
           scrolled
             ? "border-b border-navy/12 bg-white/85 py-3 backdrop-blur-xl"
             : "border-b border-transparent bg-transparent py-5"
@@ -93,7 +93,7 @@ export function Navbar() {
                 href={l.href}
                 onMouseEnter={() => setHovered(i)}
                 onFocus={() => setHovered(i)}
-                className="relative block rounded-full px-4 py-1.5 text-sm font-medium tracking-tight"
+                className="relative block rounded-full px-3.5 py-1.5 text-sm font-medium tracking-tight lg:px-4"
               >
                 {hovered === i && (
                   <motion.span
@@ -116,7 +116,7 @@ export function Navbar() {
         </ul>
 
         <div className="hidden md:block">
-          <LiquidButton href="/apply/" className="px-6 py-2.5 text-[13px]">
+          <LiquidButton href="/apply/" className="px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
         </div>

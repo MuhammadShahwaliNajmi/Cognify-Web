@@ -7,11 +7,6 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Tablets (incl. iPad portrait) get the mobile layout — the desktop
-      // layout only begins at 1024px. Laptops (>=1024) are unchanged.
-      screens: {
-        md: "1024px",
-      },
       colors: {
         // Cognify — strict three-color system. Nothing else.
         white: "#FFFFFF",

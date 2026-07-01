@@ -652,7 +652,7 @@ export function Hero() {
 
       <motion.div
         style={fx ? { opacity: fade } : undefined}
-        className="relative z-10 mx-auto grid min-h-[100svh] max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-28 md:gap-16 md:px-10 md:pt-32 lg:grid-cols-[1.25fr_1fr] lg:items-stretch lg:content-start lg:gap-14"
+        className="relative z-10 mx-auto grid min-h-[100svh] max-w-6xl grid-cols-1 items-center gap-12 px-6 pt-28 md:grid-cols-[1.25fr_1fr] md:items-stretch md:content-start md:gap-10 md:px-10 md:pt-32 lg:gap-14"
       >
         {/* Left — copy + CTAs */}
         <motion.div style={fx ? { y: textY } : undefined}>
@@ -706,7 +706,7 @@ export function Hero() {
                 <img
                   src="/cambridge-logo.png"
                   alt="Cambridge Assessment International Education"
-                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[58px]"
+                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[3.6rem]"
                 />
                 <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
@@ -718,7 +718,7 @@ export function Hero() {
                 <img
                   src="/ib-logo.png"
                   alt="International Baccalaureate"
-                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[60px]"
+                  className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[3.75rem]"
                 />
               </div>
             </motion.div>
