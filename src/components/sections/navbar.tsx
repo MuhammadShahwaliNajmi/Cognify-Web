@@ -20,7 +20,7 @@ const LINKS = [
 /* small brand graph glyph for the mobile menu — white axes, gold regression vector */
 function MenuGlyph() {
   return (
-    <svg viewBox="0 0 56 56" className="h-24 w-24" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 56 56" className="h-32 w-32" fill="none" aria-hidden="true">
       <motion.path
         d="M16 8 V44 H52"
         stroke="#FFFFFF"
@@ -137,43 +137,49 @@ export function Navbar() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={spring.snappy}
-            className="relative overflow-hidden border-b border-white/10 bg-navy-deep md:hidden"
+            className="overflow-hidden border-b border-white/10 bg-navy-deep md:hidden"
           >
-            <div className="pointer-events-none absolute right-6 top-1/2 -translate-y-1/2" aria-hidden="true">
-              <MenuGlyph />
-            </div>
-            <ul className="relative flex w-fit flex-col gap-2.5 px-6 py-5">
-              {LINKS.map((l, i) => (
+            <div className="flex items-stretch gap-5 px-6 py-7">
+              {/* left — navigation pills */}
+              <ul className="flex w-fit flex-col gap-2.5">
+                {LINKS.map((l, i) => (
+                  <motion.li
+                    key={l.href}
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.04 * i, ...spring.snappy }}
+                  >
+                    <a
+                      href={l.href}
+                      onClick={() => setOpen(false)}
+                      className="block w-full rounded-full bg-gold px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-navy-deep transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.97]"
+                    >
+                      {l.label}
+                    </a>
+                  </motion.li>
+                ))}
                 <motion.li
-                  key={l.href}
                   initial={{ opacity: 0, x: -12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.04 * i, ...spring.snappy }}
+                  transition={{ delay: 0.04 * LINKS.length, ...spring.snappy }}
+                  className="pt-1"
                 >
                   <a
-                    href={l.href}
+                    href="/apply/"
                     onClick={() => setOpen(false)}
-                    className="block w-full rounded-full bg-gold px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-navy-deep transition-transform duration-200 hover:-translate-y-0.5 active:scale-[0.97]"
+                    className="flex w-full items-center gap-2 rounded-full border border-gold bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-gold transition-colors duration-200 hover:bg-gold hover:text-navy-deep"
                   >
-                    {l.label}
+                    Apply for Cohort →
                   </a>
                 </motion.li>
-              ))}
-              <motion.li
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.04 * LINKS.length, ...spring.snappy }}
-                className="pt-1"
-              >
-                <a
-                  href="/apply/"
-                  onClick={() => setOpen(false)}
-                  className="flex w-full items-center gap-2 rounded-full border border-gold bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-gold transition-colors duration-200 hover:bg-gold hover:text-navy-deep"
-                >
-                  Apply for Cohort →
-                </a>
-              </motion.li>
-            </ul>
+              </ul>
+
+              {/* right — brand glyph, centered in its own space */}
+              <div className="relative flex flex-1 items-center justify-center" aria-hidden="true">
+                <span className="absolute left-0 top-2 bottom-2 w-px bg-white/10" />
+                <MenuGlyph />
+              </div>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

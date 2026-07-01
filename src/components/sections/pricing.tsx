@@ -80,16 +80,16 @@ export function Pricing() {
       id="pricing"
       className="relative flex min-h-[100svh] w-full flex-col justify-center px-6 pb-0 pt-[64px] md:px-10"
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto w-full min-w-0 max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[1.7rem] font-semibold leading-[1.02] tracking-tightest text-navy md:text-[clamp(2rem,5vw,3.6rem)]">
+          <h2 className="max-w-2xl text-[1.45rem] font-semibold leading-[1.02] tracking-tightest text-navy md:text-[clamp(2rem,5vw,3.6rem)]">
             One System
             <br />
             <span className="text-gold">Three Ways In</span>
           </h2>
         </Reveal>
         <Reveal delay={0.05}>
-          <div className="mt-5 space-y-1.5 text-sm text-navy/60">
+          <div className="mt-3 space-y-1 text-[11px] leading-snug text-navy/60 md:mt-5 md:space-y-1.5 md:text-sm">
             <p>
               <span className="text-gold">*</span> Cognify Vault resources and Cognify Copilot AI are free for every student
             </p>
@@ -101,7 +101,7 @@ export function Pricing() {
 
         {/* level toggle */}
         <Reveal delay={0.08}>
-          <div className="mt-6 md:mt-8">
+          <div className="mt-4 md:mt-8">
             <div className="relative inline-flex rounded-full bg-navy-deep p-1.5 shadow-[0_18px_50px_-34px_rgba(8,16,33,0.7)]">
               {LEVELS.map((l, i) => {
                 const highlight = active === i;
@@ -149,7 +149,7 @@ export function Pricing() {
         </Reveal>
 
         {/* swipe hint (mobile only) */}
-        <p className="mt-6 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/45 md:hidden">
+        <p className="mt-4 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-navy/45 md:hidden">
           <span className="h-px w-5 bg-gold/60" />
           Swipe to compare plans
           <span aria-hidden="true">→</span>
@@ -158,15 +158,15 @@ export function Pricing() {
         <div
           ref={scrollerRef}
           onScroll={onCardScroll}
-          className="thin-scroll mt-3 flex w-full snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:mt-8 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:pb-0"
+          className="thin-scroll mt-3 flex w-full min-w-0 max-w-full snap-x snap-mandatory overflow-x-auto pb-2 md:mt-8 md:grid md:grid-cols-3 md:gap-5 md:overflow-visible md:pb-0"
         >
           {TIERS.map((t, i) => (
-            <Reveal key={t.name} delay={i * 0.08} className="min-w-[87%] shrink-0 snap-center md:min-w-0 md:shrink">
+            <Reveal key={t.name} delay={i * 0.08} className="w-full shrink-0 snap-center snap-always md:w-auto md:shrink">
               <motion.div
                 whileHover={{ y: -6 }}
                 transition={spring.snappy}
                 className={cn(
-                  "flex h-full flex-col rounded-[24px] p-4 md:p-6",
+                  "flex h-full flex-col rounded-[24px] p-3.5 md:p-6",
                   t.featured
                     ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(212, 178, 84,0.5)]"
                     : "border border-navy/12 bg-white text-navy"
@@ -190,14 +190,14 @@ export function Pricing() {
 
                 <p
                   className={cn(
-                    "mt-3 text-[13px] md:mt-4 md:text-sm",
+                    "mt-2 hidden text-[12px] md:mt-4 md:block md:text-sm",
                     t.featured ? "text-white/60" : "text-navy/55"
                   )}
                 >
                   {t.tagline}
                 </p>
 
-                <div className="mt-2.5 flex items-baseline gap-1.5 md:mt-3">
+                <div className="mt-2 flex items-baseline gap-1.5 md:mt-3">
                   <span
                     className={cn(
                       "font-mono text-xs",
@@ -206,7 +206,7 @@ export function Pricing() {
                   >
                     PKR
                   </span>
-                  <span className="relative inline-flex overflow-hidden text-[1.85rem] font-semibold leading-none tracking-tight tabular-nums text-gold md:text-[2.2rem]">
+                  <span className="relative inline-flex overflow-hidden text-[1.6rem] font-semibold leading-none tracking-tight tabular-nums text-gold md:text-[2.2rem]">
                     <AnimatePresence mode="popLayout" initial={false}>
                       <motion.span
                         key={level}
@@ -229,15 +229,15 @@ export function Pricing() {
                   </span>
                 </div>
 
-                <ul className="mt-4 flex flex-1 flex-col gap-2 md:mt-5 md:gap-2.5">
+                <ul className="mt-3 flex flex-1 flex-col gap-1.5 md:mt-5 md:gap-2.5">
                   {t.features.map((f) => (
-                    <li key={f} className="flex items-start gap-3">
+                    <li key={f} className="flex items-start gap-2.5 md:gap-3">
                       <span className="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-gold/15">
                         <Check size={11} className="text-gold" strokeWidth={3} />
                       </span>
                       <span
                         className={cn(
-                          "text-[13px] leading-snug",
+                          "text-[12px] leading-tight md:text-[13px] md:leading-snug",
                           t.featured ? "text-white/80" : "text-navy/70"
                         )}
                       >
@@ -247,12 +247,12 @@ export function Pricing() {
                   ))}
                 </ul>
 
-                <div className="mt-5 md:mt-6">
+                <div className="mt-4 md:mt-6">
                   <LiquidButton
                     href="/apply/"
                     variant={t.featured ? "secondary" : "primary"}
                     className={cn(
-                      "w-full px-6 py-2.5 text-[14px] md:py-3",
+                      "w-full px-6 py-2 text-[13.5px] md:py-3 md:text-[14px]",
                       !t.featured && "text-gold"
                     )}
                   >
@@ -265,7 +265,7 @@ export function Pricing() {
         </div>
 
         {/* mobile carousel dots */}
-        <div className="mt-5 flex items-center justify-center gap-2 md:hidden">
+        <div className="mt-3 flex items-center justify-center gap-2 md:hidden">
           {TIERS.map((t, i) => (
             <button
               key={t.name}

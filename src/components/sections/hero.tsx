@@ -602,20 +602,25 @@ export function Hero() {
             className="fixed inset-0 z-[60] flex items-center justify-center bg-white px-8 md:hidden"
             initial={{ opacity: 1 }}
             exit={{
-              y: reduce ? 0 : ["0vh", "3vh", "-118vh"],
-              scale: reduce ? 1 : [1, 1.015, 0.95],
-              opacity: reduce ? 0 : [1, 1, 0.45],
+              opacity: 0,
+              y: reduce ? 0 : "-8vh",
               transition: {
-                duration: reduce ? 0 : 0.8,
-                ease: reduce ? undefined : ["easeOut", "easeIn"],
-                times: [0, 0.3, 1],
+                duration: reduce ? 0 : 0.95,
+                ease: [0.83, 0, 0.17, 1],
+                opacity: { duration: reduce ? 0 : 0.8, delay: reduce ? 0 : 0.15, ease: "easeInOut" },
               },
             }}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.88, y: 40 }}
+              initial={{ opacity: 0, scale: 0.9, y: 36 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 130, damping: 18, mass: 0.8 }}
+              transition={{ type: "spring", stiffness: 108, damping: 20, mass: 0.9 }}
+              exit={{
+                opacity: 0,
+                scale: reduce ? 1 : 0.92,
+                y: reduce ? 0 : "-62vh",
+                transition: { duration: reduce ? 0 : 0.8, ease: [0.6, 0, 0.16, 1] },
+              }}
               className="glass-navy flex w-full max-w-sm flex-col rounded-[28px] p-6"
             >
               <div className="mb-4 flex items-center justify-between">
