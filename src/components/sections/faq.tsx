@@ -78,7 +78,7 @@ export function FAQ() {
         <div className="lg:sticky lg:top-28 lg:self-start">
           <div className="glass-navy flex flex-col rounded-[34px] p-8 md:p-10">
             <Reveal>
-              <h2 className="text-[1.6rem] font-semibold leading-[1.02] tracking-tightest text-white md:text-[clamp(2rem,5vw,3.6rem)]">
+              <h2 className="text-[clamp(1.6rem,7vw,2.2rem)] font-semibold leading-[1.02] tracking-tightest text-white md:text-[clamp(2rem,5vw,3.6rem)]">
                 Questions
                 <br />
                 <span className="text-gold">Answered</span>
@@ -105,13 +105,13 @@ export function FAQ() {
                   <button
                     onClick={() => setOpen(isOpen ? null : i)}
                     aria-expanded={isOpen}
-                    className="group flex w-full items-center justify-between gap-6 py-7 text-left focus-gold"
+                    className="group flex w-full items-center justify-between gap-3 py-4 text-left focus-gold md:gap-6 md:py-7"
                   >
                     <motion.span
                       animate={{ x: isOpen ? 12 : 0 }}
                       transition={spring.snappy}
                       className={cn(
-                        "text-xl font-medium tracking-tight transition-colors duration-300 md:text-2xl",
+                        "text-[15px] font-medium tracking-tight transition-colors duration-300 md:text-2xl",
                         isOpen ? "text-gold" : "text-navy group-hover:text-gold"
                       )}
                     >

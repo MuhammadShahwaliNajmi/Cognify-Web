@@ -271,7 +271,7 @@ export function Terminal() {
       <section id="lab" className="relative flex w-full flex-col justify-center px-6 py-14 md:min-h-screen md:px-10 md:py-16">
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <Reveal>
-            <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+            <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
               The Empirical Edge
               <br />
               <span className="text-gold">Visual Learning</span>

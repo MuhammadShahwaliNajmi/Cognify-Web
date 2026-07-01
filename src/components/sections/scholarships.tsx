@@ -133,7 +133,7 @@ export function Scholarships() {
     >
       <div className="mx-auto w-full max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Merit &amp; Need Based
             <br />
             <span className="text-gold">Scholarship</span>

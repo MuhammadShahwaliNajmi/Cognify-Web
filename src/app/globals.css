@@ -34,6 +34,16 @@ body {
   max-width: 100%;
 }
 
+/* Fluid mobile scaling — the whole layout is rem-based, so scaling the root
+   font-size makes text AND spacing track the phone width (bigger phone →
+   proportionally bigger view). Reverts to the default 16px at md and up, so
+   tablet/laptop/desktop are unchanged. */
+@media (max-width: 767px) {
+  html {
+    font-size: clamp(14px, 4.15vw, 17.5px);
+  }
+}
+
 ::selection {
   background: var(--gold);
   color: var(--white);

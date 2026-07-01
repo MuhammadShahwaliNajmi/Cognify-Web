@@ -82,7 +82,7 @@ export function Pricing() {
     >
       <div className="mx-auto w-full min-w-0 max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[1.45rem] font-semibold leading-[1.02] tracking-tightest text-navy md:text-[clamp(2rem,5vw,3.6rem)]">
+          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] font-semibold leading-[1.02] tracking-tightest text-navy md:text-[clamp(2rem,5vw,3.6rem)]">
             One System
             <br />
             <span className="text-gold">Three Ways In</span>

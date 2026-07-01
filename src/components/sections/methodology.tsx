@@ -126,7 +126,7 @@ export function Methodology() {
         <div className="lg:sticky lg:top-[calc(10vh+32px)] lg:h-[80vh] lg:self-start">
           <div className="glass-navy flex h-full flex-col items-center justify-center rounded-[34px] p-8 text-center md:p-10">
             <Reveal delay={0.05}>
-              <h2 className="text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.08] tracking-tightest text-white">
+              <h2 className="text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.08] tracking-tightest text-white">
                 <span className="block">The Cognify</span>
                 <span className="block text-gold">Methodology</span>
               </h2>

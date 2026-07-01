@@ -19,7 +19,7 @@ export function Footer() {
         <TextReveal
           as="h2"
           text="Claim Your Seat In The *Cohort*"
-          className="mt-6 max-w-3xl text-[clamp(2.2rem,6vw,4.5rem)] font-semibold leading-[1.04] tracking-tightest text-navy"
+          className="mt-6 max-w-3xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2.2rem,6vw,4.5rem)] font-semibold leading-[1.04] tracking-tightest text-navy"
         />
 
         <Reveal delay={0.1}>

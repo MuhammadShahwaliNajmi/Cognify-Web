@@ -31,7 +31,7 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-20 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             The Cognify Ecosystem
             <br />
             <span className="text-gold">Beyond The Classroom</span>

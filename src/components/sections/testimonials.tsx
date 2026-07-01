@@ -142,7 +142,7 @@ export function Testimonials() {
     <section id="testimonials" className="relative w-full px-6 py-20 md:px-10 md:py-24">
       <div className="mx-auto mb-10 max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
             Grades Climbed
             <br />
             <span className="text-gold">So Did Confidence</span>
