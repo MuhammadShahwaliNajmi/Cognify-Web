@@ -138,7 +138,7 @@ export function FAQ() {
                         transition={spring.soft}
                         className="overflow-hidden"
                       >
-                        <p className="max-w-2xl pb-8 pr-10 text-lg leading-relaxed text-navy/70">
+                        <p className="max-w-2xl pb-8 pr-10 text-[15px] leading-relaxed text-navy/70 md:text-lg">
                           {item.a}
                         </p>
                       </motion.div>
