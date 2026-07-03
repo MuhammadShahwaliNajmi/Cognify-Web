@@ -336,7 +336,7 @@ function HeroChart() {
    drawn — no live loops; this is a one-time reveal.                            */
 function IntroChart() {
   const ease = [0.22, 1, 0.36, 1] as const;
-  const SCALE = 0.6; // tighten the whole sequence
+  const SCALE = 0.34; // tighten the whole sequence (trimmed ~2s off the mobile intro)
   const drawIn = (delay: number, duration = 1.2) => ({
     pathLength: { duration: duration * SCALE, ease, delay: delay * SCALE },
     opacity: { duration: 0.3, delay: delay * SCALE },
@@ -515,7 +515,7 @@ function IntroChart() {
         style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 13, delay: 4.5 }}
+        transition={{ type: "spring", stiffness: 300, damping: 13, delay: 2.6 }}
       />
       <motion.text
         x={230}
@@ -589,7 +589,7 @@ export function Hero() {
       setIntro(false);
       return;
     }
-    const t = window.setTimeout(() => setIntro(false), 5200);
+    const t = window.setTimeout(() => setIntro(false), 3200);
     return () => clearTimeout(t);
   }, [reduce]);
 
