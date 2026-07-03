@@ -336,7 +336,7 @@ function HeroChart() {
    drawn — no live loops; this is a one-time reveal.                            */
 function IntroChart() {
   const ease = [0.22, 1, 0.36, 1] as const;
-  const SCALE = 0.27; // tighten the whole sequence (trimmed ~2.5s off the mobile intro)
+  const SCALE = 0.34; // tighten the whole sequence (trimmed ~2s off the mobile intro)
   const drawIn = (delay: number, duration = 1.2) => ({
     pathLength: { duration: duration * SCALE, ease, delay: delay * SCALE },
     opacity: { duration: 0.3, delay: delay * SCALE },
@@ -515,7 +515,7 @@ function IntroChart() {
         style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 300, damping: 13, delay: 2.2 }}
+        transition={{ type: "spring", stiffness: 300, damping: 13, delay: 2.6 }}
       />
       <motion.text
         x={230}
@@ -589,7 +589,7 @@ export function Hero() {
       setIntro(false);
       return;
     }
-    const t = window.setTimeout(() => setIntro(false), 2700);
+    const t = window.setTimeout(() => setIntro(false), 3200);
     return () => clearTimeout(t);
   }, [reduce]);
 
@@ -599,27 +599,29 @@ export function Hero() {
         {intro && (
           <motion.div
             key="hero-intro"
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-white px-8 md:hidden"
-            initial={{ opacity: 1 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-white px-8 md:hidden"
+            initial={{ opacity: 1, y: 0 }}
             exit={{
-              opacity: 0,
-              y: reduce ? 0 : "-8vh",
-              transition: {
-                duration: reduce ? 0 : 0.95,
-                ease: [0.83, 0, 0.17, 1],
-                opacity: { duration: reduce ? 0 : 0.8, delay: reduce ? 0 : 0.15, ease: "easeInOut" },
-              },
+              opacity: reduce ? 0 : 1,
+              y: reduce ? 0 : "-100%",
+              transition: reduce
+                ? { duration: 0.35, ease: "easeInOut" }
+                : { duration: 0.95, ease: [0.76, 0, 0.24, 1] },
             }}
           >
+            {/* gold reveal edge that sweeps up with the curtain */}
+            {!reduce && (
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
+            )}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 36 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 108, damping: 20, mass: 0.9 }}
               exit={{
                 opacity: 0,
-                scale: reduce ? 1 : 0.92,
-                y: reduce ? 0 : "-62vh",
-                transition: { duration: reduce ? 0 : 0.8, ease: [0.6, 0, 0.16, 1] },
+                scale: reduce ? 1 : 0.97,
+                y: reduce ? 0 : "-6vh",
+                transition: { duration: reduce ? 0.3 : 0.6, ease: [0.33, 0, 0.2, 1] },
               }}
               className="glass-navy flex w-full max-w-sm flex-col rounded-[28px] p-6"
             >
