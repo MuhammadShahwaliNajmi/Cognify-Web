@@ -599,29 +599,21 @@ export function Hero() {
         {intro && (
           <motion.div
             key="hero-intro"
-            className="fixed inset-0 z-[60] flex items-center justify-center overflow-hidden bg-white px-8 md:hidden"
-            initial={{ opacity: 1, y: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-white px-8 md:hidden"
+            initial={{ opacity: 1 }}
             exit={{
-              opacity: reduce ? 0 : 1,
-              y: reduce ? 0 : "-100%",
-              transition: reduce
-                ? { duration: 0.35, ease: "easeInOut" }
-                : { duration: 0.95, ease: [0.76, 0, 0.24, 1] },
+              opacity: 0,
+              transition: { duration: reduce ? 0.3 : 0.85, ease: [0.4, 0, 0.2, 1] },
             }}
           >
-            {/* gold reveal edge that sweeps up with the curtain */}
-            {!reduce && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
-            )}
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 36 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ type: "spring", stiffness: 108, damping: 20, mass: 0.9 }}
               exit={{
                 opacity: 0,
-                scale: reduce ? 1 : 0.97,
-                y: reduce ? 0 : "-6vh",
-                transition: { duration: reduce ? 0.3 : 0.6, ease: [0.33, 0, 0.2, 1] },
+                scale: reduce ? 1 : 1.04,
+                transition: { duration: reduce ? 0.3 : 0.7, ease: [0.32, 0, 0.24, 1] },
               }}
               className="glass-navy flex w-full max-w-sm flex-col rounded-[28px] p-6"
             >
