@@ -199,6 +199,22 @@ body {
   backdrop-filter: blur(18px);
 }
 
+/* Phones: backdrop blur is the single biggest scroll-jank source on mobile GPUs
+   (the backdrop is re-sampled and blurred every frame). Our glass surfaces are
+   near-opaque already, so dropping the blur is visually near-identical while
+   keeping scrolling at a smooth 60fps. glass-white leans a touch more opaque to
+   compensate for the lost frost. */
+@media (max-width: 767px) {
+  .glass-navy,
+  .glass-white {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-white {
+    background: rgba(255, 255, 255, 0.94);
+  }
+}
+
 .glass-navy-solid {
   background: #0e1a33;
   border: 1px solid rgba(255, 255, 255, 0.08);

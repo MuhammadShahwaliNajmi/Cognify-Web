@@ -55,14 +55,14 @@ function Line({ words, gold = false }: { words: string[]; gold?: boolean }) {
 }
 
 /* ---------- live ticking value ---------- */
-function useLive(base: number, spread: number, ms = 1500) {
+function useLive(base: number, spread: number, ms = 1500, active = true) {
   const reduce = useReducedMotion();
   const [v, setV] = useState(base);
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || !active) return;
     const id = setInterval(() => setV(base + (Math.random() - 0.5) * spread), ms);
     return () => clearInterval(id);
-  }, [base, spread, ms, reduce]);
+  }, [base, spread, ms, reduce, active]);
   return v;
 }
 
@@ -538,6 +538,29 @@ export function Hero() {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
 
+  // Scroll parallax + fade only on desktop — on mobile the panel sits below the
+  // text, so fading the hero on scroll would blur it before it's fully seen.
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  // Mobile-only intro: the equilibrium diagram draws itself, then swooshes away
+  // to reveal the page (which loads underneath). Desktop/reduced-motion skip it.
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    if (reduce || !window.matchMedia("(max-width: 767px)").matches) {
+      setIntro(false);
+      return;
+    }
+    const t = window.setTimeout(() => setIntro(false), 3200);
+    return () => clearTimeout(t);
+  }, [reduce]);
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -555,8 +578,11 @@ export function Hero() {
   const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-11, 11]), { stiffness: 140, damping: 16 });
   const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [9, -9]), { stiffness: 140, damping: 16 });
 
-  const qty = useLive(1240, 9, 1500);
-  const price = useLive(48.2, 0.6, 1300);
+  // Only tick the live values while something actually shows them — the desktop
+  // panel, or the mobile intro (Q*). Otherwise these setState calls re-render the
+  // hero mid-scroll on mobile for nothing.
+  const qty = useLive(1240, 9, 1500, isDesktop || intro);
+  const price = useLive(48.2, 0.6, 1300, isDesktop);
 
   const onMove = (e: React.MouseEvent) => {
     if (reduce) return;
@@ -569,29 +595,7 @@ export function Hero() {
     my.set(0);
   };
 
-  // Scroll parallax + fade only on desktop — on mobile the panel sits below the
-  // text, so fading the hero on scroll would blur it before it's fully seen.
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
   const fx = isDesktop && !reduce;
-
-  // Mobile-only intro: the equilibrium diagram draws itself, then swooshes away
-  // to reveal the page (which loads underneath). Desktop/reduced-motion skip it.
-  const [intro, setIntro] = useState(true);
-  useEffect(() => {
-    if (reduce || !window.matchMedia("(max-width: 767px)").matches) {
-      setIntro(false);
-      return;
-    }
-    const t = window.setTimeout(() => setIntro(false), 3200);
-    return () => clearTimeout(t);
-  }, [reduce]);
 
   return (
     <section id="top" ref={ref} className="relative min-h-[100svh] w-full overflow-hidden">
@@ -749,7 +753,10 @@ export function Hero() {
             </div>
             <div className="flex flex-1 items-center justify-center">
               <div className="aspect-[460/270] w-full scale-x-[1.25] scale-y-[1.6]">
-                <HeroChart />
+                {/* Mount the animated chart only on desktop — on mobile the panel
+                    is display:none, but its infinite SVG loops would still churn
+                    the main thread every frame and stutter scrolling. */}
+                {isDesktop && <HeroChart />}
               </div>
             </div>
             <div
