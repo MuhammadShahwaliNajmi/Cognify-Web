@@ -18,12 +18,12 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Concept Lab: Master the Subject. Ace the Exam.",
   description:
-    "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Concept Lab AI.",
+    "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Lab AI.",
   metadataBase: new URL("https://cognifypk.com"),
   openGraph: {
     title: "Concept Lab: Master the Subject. Ace the Exam.",
     description:
-      "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Concept Lab AI.",
+      "Live Economics & Business classes for ambitious O-Level, IGCSE, A-Level and IB students. Two specialist teachers, examiner-marked practice, predicted grades and Lab AI.",
     url: "https://cognifypk.com",
     siteName: "Concept Lab",
     type: "website",

@@ -21,7 +21,7 @@ const TRACKS: Track[] = [
     glyph: "merit",
     criteria: [
       "Consistent top-band grades",
-      "Strong score on the Concept Lab entry task",
+      "Strong score on our entry task",
       "A clear record of academic drive",
     ],
   },

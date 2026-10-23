@@ -180,7 +180,7 @@ export function Besties() {
         <Reveal>
           <div className="flex justify-center">
             <h2 className="inline-flex items-center rounded-full bg-gold px-7 py-3 text-[clamp(1.05rem,2.4vw,1.5rem)] font-semibold tracking-tight text-navy-deep">
-              Meet The Concept Lab Tutors
+              Meet Your Tutors
             </h2>
           </div>
         </Reveal>

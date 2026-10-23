@@ -14,7 +14,7 @@ const ITEMS = [
   },
   {
     code: "INTELLIGENCE",
-    title: "Concept Lab AI",
+    title: "Lab AI",
     desc: "Two tools in one: an AI tutor trained on all three exam boards, and a performance model that predicts your grade, pinpoints your weakest topics, and tells you exactly what to improve.",
     result: "Know your grade, and what to fix",
   },
@@ -27,8 +27,8 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-20 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <h2 className="max-w-4xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            The Concept Lab Ecosystem
+          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+            The Lab Ecosystem
             <br />
             <span className="text-gold">Beyond The Classroom</span>
           </h2>

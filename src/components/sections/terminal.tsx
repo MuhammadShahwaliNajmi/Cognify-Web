@@ -274,7 +274,7 @@ export function Terminal() {
               <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <span className="font-mono text-[12px] text-white/55">
-                    The Concept Lab Terminal
+                    The Lab Terminal
                   </span>
                   <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gold">
                     <span className={cn("h-1.5 w-1.5 rounded-full bg-gold", running && "animate-pulse-node")} />

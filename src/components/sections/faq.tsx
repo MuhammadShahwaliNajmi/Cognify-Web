@@ -53,11 +53,11 @@ const FAQS = [
   },
   {
     q: "How quickly will I see results?",
-    a: "Confidence usually shifts in the first couple of weeks. From there, Concept Lab AI turns your work into a live Predicted Grade, so progress is visible, not guessed.",
+    a: "Confidence usually shifts in the first couple of weeks. From there, Lab AI turns your work into a live Predicted Grade, so progress is visible, not guessed.",
   },
   {
     q: "Is there enough practice and feedback?",
-    a: "Yes. Submit unlimited exam-style questions and trained examiners return detailed feedback within 24 hours, backed by a 24/7 Concept Lab AI tutor.",
+    a: "Yes. Submit unlimited exam-style questions and trained examiners return detailed feedback within 24 hours, backed by the 24/7 Lab AI Tutor.",
   },
   {
     q: "Free trial or financial support?",

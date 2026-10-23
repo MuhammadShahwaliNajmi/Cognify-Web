@@ -25,9 +25,9 @@ const TIERS: Tier[] = [
     prices: { "O-Level": "5,000", "A-Level": "6,000", IB: "6,000" },
     features: [
       "Recorded Lecture Library",
-      "Concept Lab Vault: Every Study Resource",
+      "The Vault: Every Study Resource",
       "AI Marking (Capped)",
-      "Concept Lab Copilot AI",
+      "Lab AI Tutor",
     ],
   },
   {
@@ -91,7 +91,7 @@ export function Pricing() {
         <Reveal delay={0.05}>
           <div className="mt-3 space-y-1 text-[11px] leading-snug text-navy/60 md:mt-5 md:space-y-1.5 md:text-sm">
             <p>
-              <span className="text-gold">*</span> Concept Lab Vault resources and Concept Lab Copilot AI are free for every student
+              <span className="text-gold">*</span> The Vault and Lab AI Tutor are free for every student
             </p>
             <p>
               <span className="text-gold">*</span> Need-Based and Merit Scholarships available
