@@ -141,7 +141,7 @@ export default function ApplyPage() {
             <ArrowLeft size={16} />
             Back to home
           </Link>
-          <Link href="/" aria-label="Cognify home">
+          <Link href="/" aria-label="Concept Lab home">
             <LogoMark className="h-8 w-8" />
           </Link>
         </div>
@@ -203,7 +203,7 @@ export default function ApplyPage() {
                 transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.62 }}
                 className="mx-auto mt-4 max-w-md text-white/75"
               >
-                Thanks for applying to Cognify. We&apos;ll review your details and
+                Thanks for applying to Concept Lab. We&apos;ll review your details and
                 email you personally about the next steps.
               </motion.p>
               <motion.div
@@ -434,7 +434,7 @@ export default function ApplyPage() {
                 </motion.button>
 
                 {status === "error" && (
-                  <p className="text-center text-sm text-red-600">
+                  <p role="alert" className="text-center text-sm font-medium text-navy">
                     Something went wrong. Please try again, or email us directly
                     at najmi@cognifypk.com.
                   </p>

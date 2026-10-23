@@ -22,7 +22,11 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* `clip`, not `hidden`: hidden on html + body turns body into a scroll
+     container, which silently breaks every position: sticky panel.
+     Older browsers ignore `clip` and fall back to `hidden`. */
   overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -30,6 +34,7 @@ body {
   color: var(--foreground);
   font-feature-settings: "ss01", "cv01", "cv11";
   overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
   max-width: 100%;
 }
@@ -37,8 +42,8 @@ body {
 /* Fluid scaling across every screen — the layout is rem-based, so scaling the
    root font-size makes text AND spacing track the viewport width: bigger screen
    → proportionally bigger, smaller → smaller, with no overflow.
-   Tiers: phones (steep), tablets/iPad = mobile view scaled up, desktop grows
-   with the monitor. The mobile/desktop layout switch itself is at 1024px. */
+   Tiers: phones (steep), tablets/iPad = desktop layout scaled down, desktop grows
+   with the monitor. The mobile/desktop layout switch itself is at md (768px). */
 /* Phones (<768) — mobile layout, fluid with the phone width. */
 @media (max-width: 767px) {
   html { font-size: clamp(14px, 4vw, 18px); }
@@ -79,55 +84,6 @@ body {
 }
 
 /* ---------------------------------------------------------------
-   GOLD-UNDERLINE TEXT LINK
-   Navy text, a gold rule that wipes in from the left on hover.
------------------------------------------------------------------ */
-.link-gold {
-  position: relative;
-  color: var(--navy);
-  transition: color 0.35s ease;
-}
-.link-gold::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -0.12em;
-  height: 2px;
-  width: 100%;
-  background: var(--gold);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.link-gold:hover {
-  color: var(--gold);
-}
-.link-gold:hover::after {
-  transform: scaleX(1);
-}
-
-/* Persistent gold underline that simply EXTENDS thicker / fuller on hover */
-.cta-underline {
-  position: relative;
-  color: var(--navy);
-  padding-bottom: 0.18em;
-  transition: color 0.4s ease;
-}
-.cta-underline::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  width: 2.5rem;
-  background: var(--gold);
-  transition: width 0.55s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.cta-underline:hover::after {
-  width: 100%;
-}
-
-/* ---------------------------------------------------------------
    FAINT NAVY COORDINATE GRID + CURSOR-FOLLOW GOLD GLOW
 ----------------------------------------------------------------- */
 .bg-grid {
@@ -153,15 +109,9 @@ body {
   transition: opacity 0.45s ease;
   background: radial-gradient(
     440px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(212, 178, 84, 0.1) 0%,
+    rgba(212,178,84, 0.1) 0%,
     transparent 62%
   );
-}
-
-/* Thin-line terminal frame (no shaded card — delineated by hairlines only) */
-.terminal-frame {
-  border: 1px solid rgba(26, 39, 68, 0.16);
-  background: #ffffff;
 }
 
 .blink {
@@ -182,8 +132,8 @@ body {
   pointer-events: none;
   background:
     radial-gradient(55rem 40rem at 8% -5%, rgba(26, 39, 68, 0.1), transparent 58%),
-    radial-gradient(48rem 38rem at 102% 95%, rgba(212, 178, 84, 0.14), transparent 58%),
-    radial-gradient(40rem 34rem at 80% 8%, rgba(212, 178, 84, 0.07), transparent 60%);
+    radial-gradient(48rem 38rem at 102% 95%, rgba(212,178,84, 0.14), transparent 58%),
+    radial-gradient(40rem 34rem at 80% 8%, rgba(212,178,84, 0.07), transparent 60%);
 }
 
 /* ---------------------------------------------------------------
@@ -251,13 +201,6 @@ body {
 .gloss:hover::after {
   left: 125%;
 }
-
-@keyframes float-y {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-9px); }
-}
-.float-y { animation: float-y 5.5s ease-in-out infinite; }
-.float-y-slow { animation: float-y 7.5s ease-in-out infinite; }
 
 .thin-scroll::-webkit-scrollbar {
   width: 6px;

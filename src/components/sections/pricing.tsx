@@ -25,9 +25,9 @@ const TIERS: Tier[] = [
     prices: { "O-Level": "5,000", "A-Level": "6,000", IB: "6,000" },
     features: [
       "Recorded Lecture Library",
-      "Cognify Vault: Every Study Resource",
+      "Concept Lab Vault: Every Study Resource",
       "AI Marking (Capped)",
-      "Cognify Copilot AI",
+      "Concept Lab Copilot AI",
     ],
   },
   {
@@ -91,7 +91,7 @@ export function Pricing() {
         <Reveal delay={0.05}>
           <div className="mt-3 space-y-1 text-[11px] leading-snug text-navy/60 md:mt-5 md:space-y-1.5 md:text-sm">
             <p>
-              <span className="text-gold">*</span> Cognify Vault resources and Cognify Copilot AI are free for every student
+              <span className="text-gold">*</span> Concept Lab Vault resources and Concept Lab Copilot AI are free for every student
             </p>
             <p>
               <span className="text-gold">*</span> Need-Based and Merit Scholarships available
@@ -162,11 +162,11 @@ export function Pricing() {
         >
           {TIERS.map((t, i) => (
             <Reveal key={t.name} delay={i * 0.08} className="w-full shrink-0 snap-center snap-always md:w-auto md:shrink">
-              <motion.div
+              <div
                 className={cn(
                   "flex h-full flex-col rounded-[24px] p-3.5 transition-transform duration-300 md:p-6 md:hover:-translate-y-1.5",
                   t.featured
-                    ? "glass-navy text-white shadow-[0_30px_70px_-32px_rgba(212, 178, 84,0.5)]"
+                    ? "glass-navy text-white !shadow-[0_30px_70px_-32px_rgba(212,178,84,0.5),inset_0_1px_0_rgba(255,255,255,0.14)]"
                     : "border border-navy/12 bg-white text-navy"
                 )}
               >
@@ -257,7 +257,7 @@ export function Pricing() {
                     Start 7-day trial
                   </LiquidButton>
                 </div>
-              </motion.div>
+              </div>
             </Reveal>
           ))}
         </div>

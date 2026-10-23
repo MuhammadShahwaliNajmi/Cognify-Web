@@ -54,17 +54,32 @@ function Line({ words, gold = false }: { words: string[]; gold?: boolean }) {
   );
 }
 
-/* ---------- live ticking value ---------- */
-function useLive(base: number, spread: number, ms = 1500, active = true) {
+/* ---------- live ticking value ----------
+   Its own tiny component, so each tick re-renders only the number — not the
+   whole hero and its animated chart.                                        */
+function Live({
+  base,
+  spread,
+  ms,
+  format,
+}: {
+  base: number;
+  spread: number;
+  ms: number;
+  format: (v: number) => string;
+}) {
   const reduce = useReducedMotion();
   const [v, setV] = useState(base);
   useEffect(() => {
-    if (reduce || !active) return;
+    if (reduce) return;
     const id = setInterval(() => setV(base + (Math.random() - 0.5) * spread), ms);
     return () => clearInterval(id);
-  }, [base, spread, ms, reduce, active]);
-  return v;
+  }, [base, spread, ms, reduce]);
+  return <>{format(v)}</>;
 }
+
+const fmtQty = (v: number) => `Q* ${Math.round(v).toLocaleString()} units`;
+const fmtPrice = (v: number) => `P* ${v.toFixed(1)}`;
 
 /* ---------- supply & demand equilibrium diagram ----------
    The demand curve sweeps right & back; the equilibrium point is derived
@@ -237,7 +252,7 @@ function HeroChart() {
         stroke="rgba(255,255,255,0.45)"
         strokeWidth={1.2}
         strokeDasharray="4 5"
-        initial={reduce ? false : { opacity: 0 }}
+        initial={reduce ? false : { opacity: 0, x2: EQX[0], y1: EQY[0], y2: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, x2: EQX, y1: EQY, y2: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.5, delay: 1.6 }, x2: loop, y1: loop, y2: loop }}
       />
@@ -249,7 +264,7 @@ function HeroChart() {
         stroke="rgba(255,255,255,0.45)"
         strokeWidth={1.2}
         strokeDasharray="4 5"
-        initial={reduce ? false : { opacity: 0 }}
+        initial={reduce ? false : { opacity: 0, x1: EQX[0], x2: EQX[0], y1: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, x1: EQX, x2: EQX, y1: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.5, delay: 1.6 }, x1: loop, x2: loop, y1: loop }}
       />
@@ -260,7 +275,7 @@ function HeroChart() {
         cy={EQY[0]}
         r={2.6}
         fill="#D4B254"
-        initial={reduce ? false : { opacity: 0 }}
+        initial={reduce ? false : { opacity: 0, cy: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, cy: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cy: loop }}
       />
@@ -269,7 +284,7 @@ function HeroChart() {
         cy={214}
         r={2.6}
         fill="#D4B254"
-        initial={reduce ? false : { opacity: 0 }}
+        initial={reduce ? false : { opacity: 0, cx: EQX[0] }}
         animate={reduce ? {} : { opacity: 1, cx: EQX }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cx: loop }}
       />
@@ -311,7 +326,7 @@ function HeroChart() {
           initial={reduce ? false : { scale: 0 }}
           animate={reduce ? {} : { scale: 1 }}
           transition={{ type: "spring", stiffness: 320, damping: 13, delay: 1.7 }}
-          style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
+          style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212,178,84,0.9))" }}
         />
         <motion.text
           x={230}
@@ -512,7 +527,7 @@ function IntroChart() {
         cy={140}
         r={5.5}
         fill="#D4B254"
-        style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212, 178, 84,0.9))" }}
+        style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212,178,84,0.9))" }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 13, delay: 2.6 }}
@@ -578,12 +593,6 @@ export function Hero() {
   const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-11, 11]), { stiffness: 140, damping: 16 });
   const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [9, -9]), { stiffness: 140, damping: 16 });
 
-  // Only tick the live values while something actually shows them — the desktop
-  // panel, or the mobile intro (Q*). Otherwise these setState calls re-render the
-  // hero mid-scroll on mobile for nothing.
-  const qty = useLive(1240, 9, 1500, isDesktop || intro);
-  const price = useLive(48.2, 0.6, 1300, isDesktop);
-
   const onMove = (e: React.MouseEvent) => {
     if (reduce) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -638,7 +647,7 @@ export function Hero() {
               <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4">
                 <span className="text-sm text-white/60">Equilibrium quantity</span>
                 <span className="text-lg font-semibold tabular-nums text-gold">
-                  Q* {Math.round(qty).toLocaleString()} units
+                  <Live base={1240} spread={9} ms={1500} format={fmtQty} />
                 </span>
               </div>
             </motion.div>
@@ -703,18 +712,24 @@ export function Hero() {
               <div className="flex flex-nowrap items-center gap-x-3 md:flex-wrap md:gap-x-8 md:gap-y-4">
                 <img
                   src="/cambridge-logo.png"
+                  width={191}
+                  height={240}
                   alt="Cambridge Assessment International Education"
                   className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[3.6rem]"
                 />
                 <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
                   src="/pearson-logo.png"
+                  width={529}
+                  height={160}
                   alt="Pearson Edexcel"
                   className="h-5 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-8"
                 />
                 <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
                   src="/ib-logo.png"
+                  width={240}
+                  height={240}
                   alt="International Baccalaureate"
                   className="h-9 w-auto object-contain opacity-80 grayscale-[0.65] transition duration-300 hover:opacity-100 hover:grayscale-0 md:h-[3.75rem]"
                 />
@@ -743,7 +758,7 @@ export function Hero() {
                   Market Equilibrium
                 </span>
                 <span className="font-mono text-[13px] font-semibold tabular-nums text-white">
-                  P* {price.toFixed(1)}
+                  {isDesktop ? <Live base={48.2} spread={0.6} ms={1300} format={fmtPrice} /> : fmtPrice(48.2)}
                 </span>
               </div>
               <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-gold">
@@ -765,7 +780,7 @@ export function Hero() {
             >
               <span className="text-sm text-white/60">Equilibrium quantity</span>
               <span className="text-lg font-semibold tabular-nums text-gold">
-                Q* {Math.round(qty).toLocaleString()} units
+                {isDesktop ? <Live base={1240} spread={9} ms={1500} format={fmtQty} /> : fmtQty(1240)}
               </span>
             </div>
           </motion.div>

@@ -50,6 +50,7 @@ export function Curriculum() {
                   onMouseEnter={() => setHovered(i)}
                   onFocus={() => setHovered(i)}
                   onClick={() => setHovered(isOn ? null : i)}
+                  aria-expanded={isOn}
                   animate={{ x: isOn ? 10 : 0 }}
                   transition={spring.snappy}
                   className="flex w-full items-baseline gap-4 py-6 text-left focus-gold"

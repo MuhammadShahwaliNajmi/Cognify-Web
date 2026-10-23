@@ -4,12 +4,13 @@ import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { LiquidButton } from "@/components/ui/liquid-button";
+import { Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
 
 const LINKS = [
   { label: "Home", href: "#top" },
   { label: "Methodology", href: "#method" },
-  { label: "Cognify Tutors", href: "#tutors" },
+  { label: "Concept Lab Tutors", href: "#tutors" },
   { label: "Curriculums", href: "#curriculum" },
   { label: "Ecosystem", href: "#ecosystem" },
   { label: "Pricing", href: "#pricing" },
@@ -78,8 +79,8 @@ export function Navbar() {
             : "border-b border-transparent bg-transparent py-5"
         )}
       >
-        <a href="#top" aria-label="Cognify home" className="flex items-center">
-          <img src="/cognify-logo-mark.png" alt="Cognify" className="h-9 w-auto md:h-10" />
+        <a href="#top" aria-label="Concept Lab home" className="flex items-center">
+          <Wordmark />
         </a>
 
         {/* deep-navy nav pill · gold hover highlight (motion.dev-style glide) */}
@@ -123,6 +124,7 @@ export function Navbar() {
 
         <button
           aria-label="Toggle menu"
+          aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
           className="grid h-9 w-9 place-items-center rounded-full text-navy md:hidden focus-gold"
         >

@@ -1,5 +1,3 @@
-"use client";
-
 import { ArrowUpRight, Facebook, Instagram, Mail } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
@@ -77,7 +75,7 @@ export function Footer() {
                   href="https://instagram.com/cognifyeducation"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Cognify on Instagram"
+                  aria-label="Concept Lab on Instagram"
                   className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
                 >
                   <Instagram size={18} />
@@ -86,7 +84,7 @@ export function Footer() {
                   href="https://facebook.com/cognifyeducation"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Cognify on Facebook"
+                  aria-label="Concept Lab on Facebook"
                   className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
                 >
                   <Facebook size={18} />
@@ -96,7 +94,7 @@ export function Footer() {
           </div>
 
           <p className="mt-10 text-center text-xs text-navy/40">
-            © {new Date().getFullYear()} Cognify. All rights reserved.
+            © {new Date().getFullYear()} Concept Lab. All rights reserved.
           </p>
         </div>
       </div>

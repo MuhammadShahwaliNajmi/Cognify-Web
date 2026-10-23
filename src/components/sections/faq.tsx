@@ -36,8 +36,8 @@ const FAQS = [
     a: "Yes. Classes are live and small, so confusion gets caught and fixed in the room. Most students stop feeling lost within the first few sessions.",
   },
   {
-    q: "Why Cognify over a private tutor?",
-    a: "A private tutor runs PKR 25,000 to 30,000 a month, and you still buy topicals, papers, notes and marking separately. With Cognify it's all included: two specialist teachers, every resource, examiner-marked papers, predicted grades and Cognify AI, for a fraction of the cost.",
+    q: "Why Concept Lab over a private tutor?",
+    a: "A private tutor runs PKR 25,000 to 30,000 a month, and you still buy topicals, papers, notes and marking separately. With Concept Lab it's all included: two specialist teachers, every resource, examiner-marked papers, predicted grades and Concept Lab AI, for a fraction of the cost.",
   },
   {
     q: "Why do we have two teachers?",
@@ -53,11 +53,11 @@ const FAQS = [
   },
   {
     q: "How quickly will I see results?",
-    a: "Confidence usually shifts in the first couple of weeks. From there, Cognify AI turns your work into a live Predicted Grade, so progress is visible, not guessed.",
+    a: "Confidence usually shifts in the first couple of weeks. From there, Concept Lab AI turns your work into a live Predicted Grade, so progress is visible, not guessed.",
   },
   {
     q: "Is there enough practice and feedback?",
-    a: "Yes. Submit unlimited exam-style questions and trained examiners return detailed feedback within 24 hours, backed by a 24/7 Cognify AI tutor.",
+    a: "Yes. Submit unlimited exam-style questions and trained examiners return detailed feedback within 24 hours, backed by a 24/7 Concept Lab AI tutor.",
   },
   {
     q: "Free trial or financial support?",

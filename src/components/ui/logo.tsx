@@ -4,7 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 /**
- * Cognify mark — faithful to the brand logo: navy coordinate axes with an
+ * Concept Lab mark — faithful to the brand logo: navy coordinate axes with an
  * upward gold regression vector ending in a node. Renders crisply on pure
  * white. Draws on mount; the node + vector re-energise on hover.
  */
@@ -63,30 +63,22 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-export function Logo({
-  className,
-  withWordmark = true,
-}: {
-  className?: string;
-  withWordmark?: boolean;
-}) {
+/**
+ * Concept Lab wordmark — the graph mark beside "CONCEPT LAB" (navy + gold),
+ * with the "Education" strapline under a hairline, mirroring the brand logo.
+ */
+export function Wordmark({ className }: { className?: string }) {
   return (
-    <a
-      href="#top"
-      className={cn("group flex items-center gap-2.5", className)}
-      aria-label="Cognify home"
-    >
-      <LogoMark className="h-8 w-8" />
-      {withWordmark && (
-        <span className="flex flex-col leading-none">
-          <span className="text-[17px] font-bold tracking-tight text-navy">
-            COGNI<span className="text-gold">FY</span>
-          </span>
-          <span className="mt-0.5 text-[7px] font-medium uppercase tracking-[0.42em] text-navy/55">
-            Education
-          </span>
+    <span className={cn("flex items-center gap-2", className)}>
+      <LogoMark className="h-8 w-8 md:h-9 md:w-9" />
+      <span className="flex flex-col leading-none">
+        <span className="text-[1.1rem] font-extrabold tracking-tight text-navy md:text-[1.25rem]">
+          CONCEPT <span className="text-gold">LAB</span>
         </span>
-      )}
-    </a>
+        <span className="mt-1 border-t border-navy/60 pt-[3px] text-[0.5rem] font-semibold uppercase tracking-[0.42em] text-navy">
+          Education
+        </span>
+      </span>
+    </span>
   );
 }

@@ -31,7 +31,7 @@ const MODELS: Model[] = [
     domain: "Microeconomics",
     label: "Micro · demand & elasticity",
     code: [
-      "import cognify.econ as ec",
+      "import conceptlab.econ as ec",
       'mkt = ec.market("good_x")',
       "d = ec.demand(mkt).estimate()",
       "print(d.ped, d.type)",
@@ -49,9 +49,9 @@ const MODELS: Model[] = [
     domain: "Macroeconomics",
     label: "Macro · CPI & inflation",
     code: [
-      "import cognify.macro as cg",
-      'cpi = cg.load("cpi_series")',
-      "m = cg.Inflation(cpi, target=2.0)",
+      "import conceptlab.macro as cl",
+      'cpi = cl.load("cpi_series")',
+      "m = cl.Inflation(cpi, target=2.0)",
       "fit = m.solve()",
     ],
     lines: [
@@ -66,7 +66,7 @@ const MODELS: Model[] = [
     domain: "Business",
     label: "Business · break-even",
     code: [
-      "import cognify.biz as bz",
+      "import conceptlab.biz as bz",
       "rev  = bz.Revenue(price=18.0)",
       "cost = bz.Cost(fixed=9000, var=6.5)",
       "be = bz.break_even(rev, cost)",
@@ -171,7 +171,7 @@ export function Terminal() {
   const [running, setRunning] = useState(false);
   const [selected, setSelected] = useState(0);
 
-  const cancelled = useRef(false);
+  // every pending step is a tracked timeout, so clearing them cancels a run
   const timers = useRef<number[]>([]);
   const viewerRef = useRef<HTMLDivElement>(null);
   const schedule = (fn: () => void, ms: number) => {
@@ -184,9 +184,7 @@ export function Terminal() {
   };
 
   const run = (idx: number) => {
-    cancelled.current = true;
     clearTimers();
-    cancelled.current = false;
 
     const m = MODELS[idx];
     setSelected(idx);
@@ -205,7 +203,6 @@ export function Terminal() {
     ];
 
     const runItems = (i: number) => {
-      if (cancelled.current) return;
       if (i >= items.length) {
         setRunning(false);
         return;
@@ -226,7 +223,6 @@ export function Terminal() {
       if (it.kind === "code" && !reduce) {
         let j = 0;
         const tick = () => {
-          if (cancelled.current) return;
           j += 1;
           setCur({ text: it.text.slice(0, j), kind: it.kind });
           if (j >= it.text.length) {
@@ -249,12 +245,7 @@ export function Terminal() {
   };
 
   // cleanup timers on unmount (no auto-run — viewer stays empty until Run)
-  useEffect(() => {
-    return () => {
-      cancelled.current = true;
-      clearTimers();
-    };
-  }, []);
+  useEffect(() => clearTimers, []);
 
   const viewer = viewerIdx === null ? null : MODELS[viewerIdx];
   const kindClass: Record<Kind, string> = {
@@ -283,7 +274,7 @@ export function Terminal() {
               <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
                   <span className="font-mono text-[12px] text-white/55">
-                    The Cognify Terminal
+                    The Concept Lab Terminal
                   </span>
                   <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gold">
                     <span className={cn("h-1.5 w-1.5 rounded-full bg-gold", running && "animate-pulse-node")} />
@@ -323,7 +314,7 @@ export function Terminal() {
                         className={cn(
                           "rounded-full border px-4 py-1.5 text-[13px] font-medium tracking-tight transition-all duration-300 focus-gold",
                           selected === i
-                            ? "border-gold bg-gold text-navy-deep shadow-[0_8px_20px_-8px_rgba(212, 178, 84,0.6)]"
+                            ? "border-gold bg-gold text-navy-deep shadow-[0_8px_20px_-8px_rgba(212,178,84,0.6)]"
                             : "border-white/15 text-white/70 hover:border-gold hover:bg-gold hover:text-navy-deep"
                         )}
                       >

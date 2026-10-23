@@ -36,7 +36,7 @@ const TESTIMONIALS: Testimonial[] = [
   },
   {
     quote:
-      "Cognify AI showed me exactly which topics were dragging my grade down.",
+      "Concept Lab AI showed me exactly which topics were dragging my grade down.",
     name: "Hamza K.",
     meta: "A* Economics · Cambridge A Level",
     initials: "HK",

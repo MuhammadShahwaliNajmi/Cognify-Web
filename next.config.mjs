@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: "export", // produces a static site in ./out for upload to Hostinger
+  output: "export", // static site in ./out, deployed to GitHub Pages by .github/workflows/deploy.yml
   images: { unoptimized: true },
   trailingSlash: true, // emit /page/index.html so Apache serves clean URLs
 };

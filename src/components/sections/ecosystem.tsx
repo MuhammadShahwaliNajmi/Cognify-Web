@@ -2,25 +2,21 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
-import { LiquidButton } from "@/components/ui/liquid-button";
 import { cn, spring } from "@/lib/utils";
 
 const ITEMS = [
   {
     code: "THE LAB",
-    title: "Cognify Lab",
+    title: "The Lab",
     desc: "Lecture slides, notes, summary sheets, topical past papers and sample essay structures by topic, plus essays and papers marked by a trained examiner within 24 hours.",
     result: "One complete learning system",
-    cta: "Explore the Lab",
   },
   {
     code: "INTELLIGENCE",
-    title: "Cognify AI",
+    title: "Concept Lab AI",
     desc: "Two tools in one: an AI tutor trained on all three exam boards, and a performance model that predicts your grade, pinpoints your weakest topics, and tells you exactly what to improve.",
     result: "Know your grade, and what to fix",
-    cta: "See Cognify AI",
   },
 ];
 
@@ -31,8 +27,8 @@ export function Ecosystem() {
     <section id="ecosystem" className="relative w-full px-6 py-20 md:px-10 md:py-40">
       <div className="mx-auto max-w-6xl">
         <Reveal>
-          <h2 className="max-w-2xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
-            The Cognify Ecosystem
+          <h2 className="max-w-4xl text-[clamp(1.6rem,7vw,2.2rem)] md:text-[clamp(2rem,5vw,3.6rem)] font-semibold leading-[1.02] tracking-tightest text-navy">
+            The Concept Lab Ecosystem
             <br />
             <span className="text-gold">Beyond The Classroom</span>
           </h2>
@@ -69,15 +65,6 @@ export function Ecosystem() {
                 <p className="mt-4 text-sm font-medium tracking-tight text-gold">
                   {e.result}
                 </p>
-                {/* CTAs hidden for now */}
-                {false && (
-                  <div className="mt-6">
-                    <LiquidButton href="#apply" variant="primary" className="px-5 py-2.5 text-[13px] text-gold">
-                      {e.cta}
-                      <ArrowUpRight size={15} />
-                    </LiquidButton>
-                  </div>
-                )}
               </motion.div>
             </Reveal>
           ))}

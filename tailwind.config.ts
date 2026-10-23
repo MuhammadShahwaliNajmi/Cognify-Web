@@ -9,25 +9,13 @@ const config: Config = {
     extend: {
       colors: {
         // Cognify — strict three-color system. Nothing else.
+        // Tints use Tailwind's opacity modifier (e.g. text-navy/70, bg-gold/15).
         white: "#FFFFFF",
         navy: {
           DEFAULT: "#1a2744",
           deep: "#0E1A33",
-          // tints derived from navy, for de-emphasised text / hairlines ONLY
-          70: "rgba(26,39,68,0.70)",
-          55: "rgba(26,39,68,0.55)",
-          40: "rgba(26,39,68,0.40)",
-          20: "rgba(26,39,68,0.20)",
-          12: "rgba(26,39,68,0.12)",
-          8: "rgba(26,39,68,0.08)",
         },
-        gold: {
-          DEFAULT: "#D4B254",
-          40: "rgba(212, 178, 84,0.40)",
-          20: "rgba(212, 178, 84,0.20)",
-        },
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+        gold: "#D4B254",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
