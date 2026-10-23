@@ -1,4 +1,4 @@
-import { ArrowUpRight, Facebook, Instagram, Mail } from "lucide-react";
+import { ArrowUpRight, Facebook, Instagram } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { TextReveal } from "@/components/ui/text-reveal";
 import { LiquidButton } from "@/components/ui/liquid-button";
@@ -43,53 +43,29 @@ export function Footer() {
         </Reveal>
 
         <div className="mt-14 border-t border-gold pt-8">
-          <div className="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-navy/45">
-                Stay Connected
-              </p>
-              <div className="mt-5 space-y-2.5">
-                <a
-                  href="mailto:najmi@cognifypk.com"
-                  className="flex items-center gap-2.5 text-base font-medium tracking-tight text-navy transition-colors hover:text-gold"
-                >
-                  <Mail size={16} className="text-navy" />
-                  najmi@cognifypk.com
-                </a>
-                <a
-                  href="mailto:hasaan@cognifypk.com"
-                  className="flex items-center gap-2.5 text-base font-medium tracking-tight text-navy transition-colors hover:text-gold"
-                >
-                  <Mail size={16} className="text-navy" />
-                  hasaan@cognifypk.com
-                </a>
-              </div>
-            </div>
-
-            <div className="md:text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-navy/45">
-                Social Media
-              </p>
-              <div className="mt-5 flex gap-3 md:justify-end">
-                <a
-                  href="https://instagram.com/cognifyeducation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Concept Lab on Instagram"
-                  className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
-                >
-                  <Instagram size={18} />
-                </a>
-                <a
-                  href="https://facebook.com/cognifyeducation"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Concept Lab on Facebook"
-                  className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
-                >
-                  <Facebook size={18} />
-                </a>
-              </div>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-navy/45">
+              Stay Connected
+            </p>
+            <div className="mt-5 flex gap-3">
+              <a
+                href="https://instagram.com/cognifyeducation"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Concept Lab on Instagram"
+                className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
+              >
+                <Instagram size={18} />
+              </a>
+              <a
+                href="https://facebook.com/cognifyeducation"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Concept Lab on Facebook"
+                className="grid h-11 w-11 place-items-center rounded-full border border-navy/15 text-navy transition-colors hover:border-gold hover:text-gold"
+              >
+                <Facebook size={18} />
+              </a>
             </div>
           </div>
 

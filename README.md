@@ -41,7 +41,7 @@ src/
 │   ├── layout.tsx, page.tsx, globals.css
 │   └── apply/page.tsx          # application form → Google Form
 ├── components/
-│   ├── sections/               # navbar, hero, methodology, besties (tutors),
+│   ├── sections/               # navbar, hero, methodology,
 │   │                           # curriculum, ecosystem, terminal, pricing,
 │   │                           # scholarships, testimonials, faq, footer
 │   └── ui/                     # reveal, text-reveal, liquid-button, logo,

@@ -435,8 +435,8 @@ export default function ApplyPage() {
 
                 {status === "error" && (
                   <p role="alert" className="text-center text-sm font-medium text-navy">
-                    Something went wrong. Please try again, or email us directly
-                    at najmi@cognifypk.com.
+                    Something went wrong. Please check your connection and try
+                    again in a moment.
                   </p>
                 )}
 

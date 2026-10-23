@@ -10,7 +10,6 @@ import { cn, spring } from "@/lib/utils";
 const LINKS = [
   { label: "Home", href: "#top" },
   { label: "Methodology", href: "#method" },
-  { label: "Tutors", href: "#tutors" },
   { label: "Curriculums", href: "#curriculum" },
   { label: "Ecosystem", href: "#ecosystem" },
   { label: "Pricing", href: "#pricing" },
