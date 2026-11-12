@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { CheckCircle2, FileText, PenLine, Send } from "lucide-react";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FileText, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { cohortOf, useTeacher } from "@/lib/portal/store";
 import { fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Submission } from "@/lib/portal/types";
-import { Avatar, Btn, Card, Chip, Empty, Field, Label, Modal, PageHeader, Rise, Segmented, fieldCls } from "@/components/portal/ui";
+import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 const HOUR = 3_600_000;
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
@@ -123,32 +124,49 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
   );
 }
 
-export default function TeacherMarking() {
-  const { db, now } = useTeacher();
-  const [tab, setTab] = useState<"queue" | "returned">("queue");
-  const [openId, setOpenId] = useState<string | null>(null);
+type Tab = "queue" | "returned" | "all";
 
-  const queue = db.submissions
+function Submissions() {
+  const { db, now } = useTeacher();
+  const router = useRouter();
+  const params = useSearchParams();
+  const [tab, setTab] = useState<Tab>("queue");
+  const [who, setWho] = useState("all");
+  const [openId, setOpenId] = useState<string | null>(params.get("open"));
+
+  const subs = db.submissions.filter((x) => who === "all" || x.studentId === who);
+  const queue = subs
     .filter((x) => x.status === "submitted")
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
-  const returned = db.submissions
+  const returned = subs
     .filter((x) => x.status === "marked")
-    .sort((a, b) => new Date(b.markedAt!).getTime() - new Date(a.markedAt!).getTime())
-    .slice(0, 20);
+    .sort((a, b) => new Date(b.markedAt!).getTime() - new Date(a.markedAt!).getTime());
+  const all = [...subs].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+  const list = tab === "queue" ? queue : tab === "returned" ? returned : all;
+
   const open = db.submissions.find((x) => x.id === openId) ?? null;
   const openA = open && db.assignments.find((a) => a.id === open.assignmentId);
   const urgent = queue.filter((x) => new Date(x.submittedAt).getTime() + 24 * HOUR - now < 6 * HOUR).length;
+  const close = () => {
+    setOpenId(null);
+    if (params.get("open")) router.replace("/portal/teacher/submissions/", { scroll: false });
+  };
 
   return (
     <>
       <PageHeader
-        title="Marking"
-        sub={
-          queue.length
-            ? `Oldest first. Feedback is due within 24 hours of hand-in.${urgent ? ` ${urgent} due in the next 6 hours.` : ""}`
-            : "Nothing waiting. Everything has been returned."
-        }
+        title="Submissions"
+        sub={`Oldest first. Feedback is due within 24 hours of hand-in.${urgent ? ` ${urgent} due in the next 6 hours.` : ""}`}
       />
+
+      <div className="mb-5">
+        <Picker
+          label="Student"
+          value={who}
+          onChange={setWho}
+          options={[{ value: "all", label: "All students" }, ...db.students.map((s) => ({ value: s.id, label: s.name }))]}
+        />
+      </div>
 
       <Segmented
         value={tab}
@@ -156,61 +174,69 @@ export default function TeacherMarking() {
         options={[
           { value: "queue", label: "To mark", count: queue.length },
           { value: "returned", label: "Returned", count: returned.length },
+          { value: "all", label: "All", count: all.length },
         ]}
       />
 
-      <Rise key={tab} className="mt-2">
-        {(tab === "queue" ? queue : returned).length === 0 ? (
-          <div className="mt-6">
-            <Empty
-              icon={<CheckCircle2 size={20} />}
-              title={tab === "queue" ? "Nothing to mark" : "Nothing returned yet"}
-              text={tab === "queue" ? "New work appears here the moment a student hands it in." : "Marked work collects here."}
-            />
-          </div>
-        ) : (
-          <ul className="divide-y divide-navy/10">
-            {(tab === "queue" ? queue : returned).map((x) => {
+      <div className="mt-4">
+        <Table
+          head={[{ label: "Student" }, { label: "Assignment" }, { label: "Submitted" }, { label: "Status" }, { label: "Score", align: "right" }]}
+        >
+          {list.length === 0 ? (
+            <EmptyRow cols={5}>
+              {tab === "queue" ? "Nothing to mark. New work appears here the moment a student hands it in." : "Nothing here yet."}
+            </EmptyRow>
+          ) : (
+            list.map((x) => {
               const st = db.students.find((s) => s.id === x.studentId);
               const a = db.assignments.find((y) => y.id === x.assignmentId);
               if (!st || !a) return null;
               const left = new Date(x.submittedAt).getTime() + 24 * HOUR - now;
               return (
-                <li key={x.id}>
-                  <button type="button" onClick={() => setOpenId(x.id)} className="group flex w-full items-center gap-4 py-4 text-left focus-gold">
-                    <Avatar name={st.name} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">
-                        {st.name}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
-                        {a.title} · handed in {fmtRelative(x.submittedAt, now)}
-                      </span>
-                    </span>
-                    {tab === "queue" ? (
-                      <span className={left < 6 * HOUR ? "text-sm font-semibold text-navy" : "text-sm text-navy/55"}>
-                        {left < 0 ? `Late by ${fmtDuration(-left)}` : `${fmtDuration(left)} left`}
+                <RowLink key={x.id} onClick={() => setOpenId(x.id)}>
+                  <Td className="whitespace-nowrap font-medium text-navy">{st.name}</Td>
+                  <Td>{a.title}</Td>
+                  <Td className="whitespace-nowrap" >
+                    <span title={`${fmtDate(x.submittedAt)}, ${fmtTime(x.submittedAt)}`}>{fmtRelative(x.submittedAt, now)}</span>
+                  </Td>
+                  <Td>
+                    {x.status === "marked" ? (
+                      <Status tone="done">Returned</Status>
+                    ) : left < 0 ? (
+                      <Status tone="attention">Late by {fmtDuration(-left)}</Status>
+                    ) : left < 6 * HOUR ? (
+                      <Status tone="attention">{fmtDuration(left)} left</Status>
+                    ) : (
+                      <Status>{fmtDuration(left)} left</Status>
+                    )}
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap tabular-nums">
+                    {x.status === "marked" ? (
+                      <span className="font-semibold text-navy">
+                        {x.marks} <span className="font-normal text-navy/45">/ {a.maxMarks}</span>
                       </span>
                     ) : (
-                      <span className="text-[15px] font-semibold tabular-nums text-navy">
-                        {x.marks}
-                        <span className="text-navy/40">/{a.maxMarks}</span>
-                      </span>
+                      <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">Mark</span>
                     )}
-                    <span className="hidden text-sm font-medium text-navy/45 group-hover:text-gold sm:inline">
-                      {tab === "queue" ? "Mark" : "Edit"}
-                    </span>
-                  </button>
-                </li>
+                  </Td>
+                </RowLink>
               );
-            })}
-          </ul>
-        )}
-      </Rise>
+            })
+          )}
+        </Table>
+      </div>
 
-      <Modal open={!!open} onClose={() => setOpenId(null)} wide eyebrow={openA ? `${openA.kind} · ${openA.unit}` : undefined} title={openA?.title ?? ""}>
-        {open && <MarkForm key={open.id} sub={open} onDone={() => setOpenId(null)} />}
+      <Modal open={!!open} onClose={close} wide eyebrow={openA ? `${openA.kind}${openA.unit ? ` · ${openA.unit}` : ""}` : undefined} title={openA?.title ?? ""}>
+        {open && <MarkForm key={open.id} sub={open} onDone={close} />}
       </Modal>
     </>
+  );
+}
+
+export default function TeacherSubmissions() {
+  return (
+    <Suspense>
+      <Submissions />
+    </Suspense>
   );
 }

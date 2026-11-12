@@ -5,22 +5,16 @@ import { motion } from "framer-motion";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { cn, spring } from "@/lib/utils";
 import { courseOf, useStudent } from "@/lib/portal/store";
-import { Chip, Label, PageHeader } from "@/components/portal/ui";
+import { Label, PageHeader, Status } from "@/components/portal/ui";
 
 type Msg = { from: "me" | "tutor"; text: string };
 
-const SUGGESTIONS = [
-  "What should I revise first?",
-  "Explain price elasticity of demand",
-  "How do I structure a 20-mark essay?",
-  "Demand-pull vs cost-push inflation",
-];
-
-/* Preview answers. In the live portal these come from the Lab AI service. */
-const ANSWERS: { match: RegExp; text: string }[] = [
+/** The preview answers only these sample questions. Anything else gets the "coming soon" reply. */
+const SAMPLES: { q: string; a?: string }[] = [
+  { q: "What should I revise first?" },
   {
-    match: /elastic|ped\b/i,
-    text: `Price elasticity of demand (PED) measures how strongly quantity demanded responds to a change in price.
+    q: "Explain price elasticity of demand",
+    a: `Price elasticity of demand (PED) measures how strongly quantity demanded responds to a change in price.
 
 PED = % change in quantity demanded ÷ % change in price
 
@@ -31,8 +25,8 @@ PED = % change in quantity demanded ÷ % change in price
 Exam tip: never stop at the number. Say what it means for the firm's revenue or for the government's tax decision. That interpretation is where the marks are.`,
   },
   {
-    match: /essay|structure|20.?mark/i,
-    text: `For a 20-mark "evaluate" or "discuss" essay, examiners reward a judgement, not a list. Use this plan:
+    q: "How do I structure a 20-mark essay?",
+    a: `For a 20-mark "evaluate" or "discuss" essay, examiners reward a judgement, not a list. Use this plan:
 
 • Introduction: define the key terms and say what the answer depends on.
 • Paragraph 1: your strongest argument for, with a labelled diagram and a full chain of reasoning.
@@ -43,8 +37,8 @@ Exam tip: never stop at the number. Say what it means for the firm's revenue or 
 The most common way to lose marks is leaving all the evaluation to the last paragraph. Evaluate at the end of every point.`,
   },
   {
-    match: /inflation|demand.?pull|cost.?push/i,
-    text: `Both raise the price level, but they start on opposite sides of the AD/AS diagram.
+    q: "Demand-pull vs cost-push inflation",
+    a: `Both raise the price level, but they start on opposite sides of the AD/AS diagram.
 
 • Demand-pull: aggregate demand shifts right (lower interest rates, tax cuts, a boom in exports). Prices rise and real output rises, at least in the short run.
 • Cost-push: short-run aggregate supply shifts left (dearer oil, higher wages, a weaker exchange rate raising import costs). Prices rise but real output falls.
@@ -52,6 +46,11 @@ The most common way to lose marks is leaving all the evaluation to the last para
 Why it matters: the right policy depends on the cause. Higher interest rates deal with demand-pull well, but against cost-push they cut output even further. Making that distinction is exactly the evaluation that earns top-band marks.`,
   },
 ];
+
+const COMING_SOON =
+  "The full Lab AI Tutor is coming soon. It will answer any question from your syllabus using your board's mark schemes. For now, pick one of the sample questions below to see how it works, and bring other questions to your next class.";
+
+const norm = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
 function Bubble({ m }: { m: Msg }) {
   const mine = m.from === "me";
@@ -94,7 +93,10 @@ export default function StudentTutor() {
   const { db, me, cohort } = useStudent();
   const first = me.name.split(" ")[0];
   const [msgs, setMsgs] = useState<Msg[]>([
-    { from: "tutor", text: `Hi ${first}. I'm your Lab AI Tutor for ${courseOf(cohort)}. Ask me to explain a concept, plan an essay, or tell you what to revise next.` },
+    {
+      from: "tutor",
+      text: `Hi ${first}. I'm the Lab AI Tutor for ${courseOf(cohort)}. The full tutor is coming soon. For now, try one of the sample questions below.`,
+    },
   ]);
   const [draft, setDraft] = useState("");
   const [thinking, setThinking] = useState(false);
@@ -107,18 +109,16 @@ export default function StudentTutor() {
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const reply = (q: string) => {
-    if (/revise|weak|improve|focus|first/i.test(q)) {
-      const weak = [...(db.progress.find((p) => p.studentId === me.id)?.mastery ?? [])].sort((a, b) => a.score - b.score).slice(0, 2);
-      if (weak.length)
-        return `Going by your marked work, start with these two:\n\n${weak
-          .map((w) => `• ${w.unit} (${w.score}%): ${w.fix}`)
-          .join("\n")}\n\nBoth are in The Vault with notes and topical past papers. Do one timed question on each, submit it, and your examiner will tell you if the gap has closed.`;
-    }
-    const hit = ANSWERS.find((a) => a.match.test(q));
-    return (
-      hit?.text ??
-      "This preview has a few sample answers ready. Try one of the suggested questions below. In the live portal I'll answer any question from your syllabus, using your board's mark schemes."
-    );
+    const sample = SAMPLES.find((x) => norm(x.q) === norm(q));
+    if (!sample) return COMING_SOON;
+    if (sample.a) return sample.a;
+    // "What should I revise first?" uses the student's own topic scores
+    const weak = [...(db.progress.find((p) => p.studentId === me.id)?.mastery ?? [])].sort((a, b) => a.score - b.score).slice(0, 2);
+    return weak.length
+      ? `Going by your marked work, start with these two:\n\n${weak
+          .map((w) => `• ${w.unit} (${w.score}%)${w.fix ? `: ${w.fix}` : ""}`)
+          .join("\n")}\n\nCheck Resources for notes and past papers on each, do one timed question on each, submit it under Assignments, and your examiner will tell you if the gap has closed.`
+      : "Once your first pieces of work are marked, I'll point you to your two weakest topics here. Until then, start with the topic you covered most recently in class: reread the notes in Resources, then try one past-paper question on it under timed conditions.";
   };
 
   const ask = (q: string) => {
@@ -135,9 +135,13 @@ export default function StudentTutor() {
 
   return (
     <>
-      <PageHeader title="Tutor" sub="Ask about any topic in your syllabus. This is a preview with a few sample answers for now." />
+      <PageHeader
+        title="AI Tutor"
+        sub="A preview of the Lab AI Tutor. It answers the sample questions below; the full tutor is coming soon."
+        actions={<Status tone="attention">Coming soon</Status>}
+      />
 
-      <div className="flex h-[calc(100dvh-17rem)] min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white">
+      <div className="flex h-[calc(100dvh-17rem)] min-h-[22rem] flex-col overflow-hidden rounded-xl border border-navy/12 bg-white">
         <div ref={scroller} className="thin-scroll flex-1 space-y-4 overflow-y-auto p-5 md:p-7">
           {msgs.map((m, i) => (
             <Bubble key={i} m={m} />
@@ -157,9 +161,9 @@ export default function StudentTutor() {
         </div>
 
         <div className="border-t border-navy/10 p-4 md:p-5">
-          <Label>Try asking</Label>
+          <Label>Sample questions</Label>
           <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-1">
-            {SUGGESTIONS.map((s) => (
+            {SAMPLES.map(({ q: s }) => (
               <button
                 key={s}
                 type="button"
@@ -180,7 +184,7 @@ export default function StudentTutor() {
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask anything from your syllabus…"
+              placeholder="Type a question, or pick a sample above"
               aria-label="Your question"
               className="w-full rounded-full border border-navy/15 bg-white px-5 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/40 focus:border-gold focus:ring-4 focus:ring-gold/15"
             />

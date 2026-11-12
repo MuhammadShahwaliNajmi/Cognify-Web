@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { AssignmentKind, Strand } from "@/lib/portal/types";
-import { Btn, Field, Modal, PageHeader, Picker, Rise, Segmented, fieldCls } from "@/components/portal/ui";
+import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -111,22 +112,26 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
 
 export default function TeacherAssignments() {
   const { db, now } = useTeacher();
+  const router = useRouter();
   const [cohortId, setCohortId] = useState(db.cohorts[0]?.id ?? "");
-  const [tab, setTab] = useState<"open" | "closed">("open");
+  const [tab, setTab] = useState<"open" | "closed" | "all">("open");
   const [creating, setCreating] = useState(false);
 
   const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
-  const all = db.assignments.filter((a) => a.cohortId === cohort?.id);
-  const open = all.filter((a) => new Date(a.dueAt).getTime() > now).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
-  const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now).sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
-  const list = tab === "open" ? open : closed;
+  const all = db.assignments
+    .filter((a) => a.cohortId === cohort?.id)
+    .sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
+  const open = all.filter((a) => new Date(a.dueAt).getTime() > now).reverse();
+  const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now);
+  const list = tab === "open" ? open : tab === "closed" ? closed : all;
 
-  if (!cohort) return <PageHeader title="Work" sub="No students yet." />;
+  if (!cohort) return <PageHeader title="Assignments" sub="No students yet." />;
 
   return (
     <>
       <PageHeader
-        title="Work"
+        title="Assignments"
+        sub="Set work for each student. Click a handed-in assignment to mark it."
         actions={
           <Btn variant="navy" onClick={() => setCreating(true)}>
             <Plus size={15} />
@@ -145,46 +150,58 @@ export default function TeacherAssignments() {
         options={[
           { value: "open", label: "Open", count: open.length },
           { value: "closed", label: "Past due", count: closed.length },
+          { value: "all", label: "All", count: all.length },
         ]}
       />
 
-      <Rise key={`${cohort.id}-${tab}`} className="mt-2">
-        {list.length === 0 ? (
-          <p className="py-10 text-center text-sm text-navy/50">
-            {tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing past due yet."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-navy/10">
-            {list.map((a) => {
+      <div className="mt-4">
+        <Table head={[{ label: "Assignment" }, { label: "Type" }, { label: "Due" }, { label: "Submission" }, { label: "Score", align: "right" }]}>
+          {list.length === 0 ? (
+            <EmptyRow cols={5}>{tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing here yet."}</EmptyRow>
+          ) : (
+            list.map((a) => {
               const sub = db.submissions.find((x) => x.assignmentId === a.id);
-              return (
-                <li key={a.id} className="flex items-center gap-4 py-4">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-medium tracking-tight text-navy">{a.title}</p>
-                    <p className="mt-0.5 truncate text-[13px] text-navy/50">
-                      {a.kind} · {a.maxMarks} marks · due {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-sm text-navy/55">
+              const due = new Date(a.dueAt).getTime() - now;
+              const cells = (
+                <>
+                  <Td className="font-medium text-navy">{a.title}</Td>
+                  <Td className="whitespace-nowrap">{a.kind}</Td>
+                  <Td className="whitespace-nowrap">
+                    {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
+                  </Td>
+                  <Td>
                     {sub?.status === "marked" ? (
-                      <span className="font-semibold tabular-nums text-navy">
-                        {sub.marks}
-                        <span className="text-navy/40">/{a.maxMarks}</span>
-                      </span>
+                      <Status tone="done">Returned</Status>
                     ) : sub ? (
-                      "Handed in · to mark"
-                    ) : tab === "open" ? (
-                      `Due ${fmtRelative(a.dueAt, now)}`
+                      <Status tone="attention">To mark</Status>
+                    ) : due < 0 ? (
+                      <Status>Not handed in</Status>
                     ) : (
-                      "Not handed in"
+                      <span className="text-navy/55">Due {fmtRelative(a.dueAt, now)}</span>
                     )}
-                  </span>
-                </li>
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap tabular-nums">
+                    {sub?.status === "marked" ? (
+                      <span className="font-semibold text-navy">
+                        {sub.marks} <span className="font-normal text-navy/45">/ {a.maxMarks}</span>
+                      </span>
+                    ) : (
+                      <span className="text-navy/40">– / {a.maxMarks}</span>
+                    )}
+                  </Td>
+                </>
               );
-            })}
-          </ul>
-        )}
-      </Rise>
+              return sub ? (
+                <RowLink key={a.id} onClick={() => router.push(`/portal/teacher/submissions/?open=${sub.id}`)}>
+                  {cells}
+                </RowLink>
+              ) : (
+                <tr key={a.id}>{cells}</tr>
+              );
+            })
+          )}
+        </Table>
+      </div>
 
       <Modal open={creating} onClose={() => setCreating(false)} eyebrow={cohort.name} title="New assignment">
         <NewAssignment cohortId={cohort.id} onDone={() => setCreating(false)} />

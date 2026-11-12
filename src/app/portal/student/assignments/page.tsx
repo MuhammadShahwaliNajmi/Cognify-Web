@@ -2,16 +2,16 @@
 
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, ArrowUpRight, CheckCircle2, ClipboardCheck, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtBytes, submissionFor, useStudent } from "@/lib/portal/store";
 import { fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Assignment, Submission } from "@/lib/portal/types";
-import { Btn, Card, Chip, Empty, Field, Label, Modal, PageHeader, Rise, Segmented, fieldCls } from "@/components/portal/ui";
+import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { Ring } from "@/components/portal/charts";
 
 const HOUR = 3_600_000;
-type Tab = "todo" | "submitted" | "marked";
+type Tab = "todo" | "submitted" | "marked" | "all";
 
 /* ---------- upload form ---------- */
 function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boolean; onDone?: () => void }) {
@@ -306,15 +306,16 @@ function Assignments() {
 
   const rows = db.assignments
     .filter((a) => a.cohortId === me.cohortId)
-    .map((a) => ({ a, sub: submissionFor(db, a.id, me.id) }));
+    .map((a) => ({ a, sub: submissionFor(db, a.id, me.id) }))
+    .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const groups: Record<Tab, typeof rows> = {
-    todo: rows.filter((r) => !r.sub).sort((x, y) => new Date(x.a.dueAt).getTime() - new Date(y.a.dueAt).getTime()),
+    todo: rows.filter((r) => !r.sub).reverse(),
     submitted: rows.filter((r) => r.sub?.status === "submitted"),
-    marked: rows
-      .filter((r) => r.sub?.status === "marked")
-      .sort((x, y) => new Date(y.sub!.markedAt!).getTime() - new Date(x.sub!.markedAt!).getTime()),
+    marked: rows.filter((r) => r.sub?.status === "marked"),
+    all: rows,
   };
   const open = rows.find((r) => r.a.id === openId);
+  const list = groups[tab];
 
   const close = () => {
     setOpenId(null);
@@ -323,75 +324,74 @@ function Assignments() {
 
   return (
     <>
-      <PageHeader title="Work" sub="Hand in each piece here. An examiner marks it and returns feedback within 24 hours." />
+      <PageHeader title="Assignments" sub="Open an assignment to read the task and hand in your work. Feedback comes back within 24 hours." />
 
       <Segmented
         value={tab}
         onChange={setTab}
         options={[
           { value: "todo", label: "To do", count: groups.todo.length },
-          { value: "submitted", label: "With examiner", count: groups.submitted.length },
-          { value: "marked", label: "Marked", count: groups.marked.length },
+          { value: "submitted", label: "Submitted", count: groups.submitted.length },
+          { value: "marked", label: "Graded", count: groups.marked.length },
+          { value: "all", label: "All", count: groups.all.length },
         ]}
       />
 
-      <Rise key={tab} className="mt-2">
-        {groups[tab].length === 0 ? (
-          <div className="mt-6">
-            <Empty
-              icon={<ClipboardCheck size={20} />}
-              title={tab === "todo" ? "Nothing to hand in" : tab === "submitted" ? "Nothing waiting on an examiner" : "No marked work yet"}
-              text={
-                tab === "todo"
-                  ? "You're up to date. New assignments appear here."
-                  : tab === "submitted"
-                    ? "Work you hand in shows here until your feedback comes back."
-                    : "Your marks and feedback will collect here."
-              }
-            />
-          </div>
-        ) : (
-          <ul className="divide-y divide-navy/10">
-            {groups[tab].map(({ a, sub }) => {
+      <div className="mt-4">
+        <Table
+          head={[{ label: "Assignment" }, { label: "Type" }, { label: "Due" }, { label: "Status" }, { label: "Score", align: "right" }]}
+        >
+          {list.length === 0 ? (
+            <EmptyRow cols={5}>
+              {tab === "todo"
+                ? "Nothing to hand in. You're up to date."
+                : tab === "submitted"
+                  ? "Nothing waiting to be marked."
+                  : tab === "marked"
+                    ? "No graded work yet."
+                    : "No assignments yet."}
+            </EmptyRow>
+          ) : (
+            list.map(({ a, sub }) => {
               const ms = new Date(a.dueAt).getTime() - now;
               return (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(a.id)}
-                    className="group flex w-full items-center gap-4 py-4 text-left focus-gold"
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">
-                        {a.title}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
-                        {a.kind} · {a.maxMarks} marks
-                        {sub ? ` · handed in ${fmtRelative(sub.submittedAt, now)}` : ""}
-                      </span>
-                    </span>
+                <RowLink key={a.id} onClick={() => setOpenId(a.id)}>
+                  <Td className="font-medium text-navy">{a.title}</Td>
+                  <Td className="whitespace-nowrap">{a.kind}</Td>
+                  <Td className="whitespace-nowrap">
+                    {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
+                  </Td>
+                  <Td>
                     {sub?.status === "marked" ? (
-                      <span className="text-[15px] font-semibold tabular-nums text-navy">
-                        {sub.marks}
-                        <span className="text-navy/40">/{a.maxMarks}</span>
-                      </span>
+                      <Status tone="done">Graded</Status>
                     ) : sub ? (
-                      <span className="text-sm text-navy/55">Being marked</span>
+                      <Status>Submitted {fmtRelative(sub.submittedAt, now)}</Status>
+                    ) : ms < 0 ? (
+                      <Status tone="attention">Overdue</Status>
+                    ) : ms < 48 * HOUR ? (
+                      <Status tone="attention">Due {fmtRelative(a.dueAt, now)}</Status>
                     ) : (
-                      <span className={ms < 48 * HOUR ? "text-sm font-semibold text-navy" : "text-sm text-navy/55"}>
-                        {ms < 0 ? "Overdue" : `Due ${fmtRelative(a.dueAt, now)}`}
-                      </span>
+                      <Status>Not submitted</Status>
                     )}
-                    <ArrowRight size={16} className="shrink-0 text-navy/25 transition-colors group-hover:text-gold" />
-                  </button>
-                </li>
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap font-semibold tabular-nums text-navy">
+                    {sub?.status === "marked" ? (
+                      <>
+                        {sub.marks}
+                        <span className="font-normal text-navy/45"> / {a.maxMarks}</span>
+                      </>
+                    ) : (
+                      <span className="font-normal text-navy/40">– / {a.maxMarks}</span>
+                    )}
+                  </Td>
+                </RowLink>
               );
-            })}
-          </ul>
-        )}
-      </Rise>
+            })
+          )}
+        </Table>
+      </div>
 
-      <Modal open={!!open} onClose={close} wide eyebrow={open ? `${open.a.kind} · ${open.a.unit}` : undefined} title={open?.a.title ?? ""}>
+      <Modal open={!!open} onClose={close} wide eyebrow={open ? `${open.a.kind}${open.a.unit ? ` · ${open.a.unit}` : ""}` : undefined} title={open?.a.title ?? ""}>
         {open && <Detail key={open.a.id} a={open.a} sub={open.sub} />}
       </Modal>
     </>

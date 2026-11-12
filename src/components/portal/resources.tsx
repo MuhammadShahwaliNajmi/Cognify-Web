@@ -1,11 +1,10 @@
 "use client";
 
 import { ExternalLink, FileText, ListChecks, type LucideIcon, Play, Presentation, ScrollText, StickyNote } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { usePortal } from "@/lib/portal/store";
-import { fmtRelative } from "@/lib/portal/format";
+import { fmtDate } from "@/lib/portal/format";
 import type { Resource, ResourceType } from "@/lib/portal/types";
-import { Btn, Chip, Label, Modal } from "./ui";
+import { Btn, EmptyRow, Label, Modal, RowLink, Status, Table, Td } from "./ui";
 
 export const RESOURCE_TYPES: ResourceType[] = ["Slides", "Notes", "Summary sheet", "Past paper", "Essay structure", "Recording"];
 
@@ -24,28 +23,50 @@ export function drivePreview(url: string) {
   return m ? `https://drive.google.com/file/d/${m[1]}/preview` : null;
 }
 
-export function ResourceRow({ r, onOpen, action }: { r: Resource; onOpen: () => void; action?: React.ReactNode }) {
+export const TYPE_LABEL: Record<ResourceType, string> = {
+  Slides: "Slides",
+  Notes: "Notes",
+  "Summary sheet": "Summaries",
+  "Past paper": "Past papers",
+  "Essay structure": "Essays",
+  Recording: "Recordings",
+};
+
+/** Files as a table: Name / Type / Topic / Added. Click a row to open it. */
+export function ResourceTable({ items, onOpen, empty }: { items: Resource[]; onOpen: (r: Resource) => void; empty: string }) {
   const { now } = usePortal();
-  const Icon = TYPE_ICON[r.type];
-  const isNew = now - new Date(r.addedAt).getTime() < 2 * 86_400_000;
   return (
-    <div className="group flex items-center gap-3.5 py-3.5">
-      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-gold">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy/[0.04] text-navy/70 transition-colors group-hover:bg-gold/15 group-hover:text-navy">
-          <Icon size={16} />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[15px] font-medium tracking-tight text-navy transition-colors group-hover:text-gold">
-            {r.title}
-          </span>
-          <span className="mt-0.5 block truncate text-[13px] text-navy/50">
-            {[r.type, r.meta].filter(Boolean).join(" · ")} · {fmtRelative(r.addedAt, now)}
-          </span>
-        </span>
-      </button>
-      {isNew && <Chip tone="gold">New</Chip>}
-      {action}
-    </div>
+    <Table head={[{ label: "Name" }, { label: "Type" }, { label: "Topic" }, { label: "Added", align: "right" }]}>
+      {items.length === 0 ? (
+        <EmptyRow cols={4}>{empty}</EmptyRow>
+      ) : (
+        items.map((r) => {
+          const Icon = TYPE_ICON[r.type];
+          const isNew = now - new Date(r.addedAt).getTime() < 2 * 86_400_000;
+          return (
+            <RowLink key={r.id} onClick={() => onOpen(r)}>
+              <Td>
+                <span className="flex items-center gap-3">
+                  <Icon size={16} className="shrink-0 text-navy/45" />
+                  <span className="min-w-0">
+                    <span className="block font-medium text-navy">{r.title}</span>
+                    {(r.meta && r.meta !== r.type) || !r.driveUrl ? (
+                      <span className="block text-[12px] text-navy/45">{r.driveUrl ? r.meta : "No Drive link yet"}</span>
+                    ) : null}
+                  </span>
+                  {isNew && <Status tone="attention">New</Status>}
+                </span>
+              </Td>
+              <Td className="whitespace-nowrap">{r.type}</Td>
+              <Td className="text-navy/60">{r.unit}</Td>
+              <Td align="right" className="whitespace-nowrap text-navy/60">
+                {fmtDate(r.addedAt)}
+              </Td>
+            </RowLink>
+          );
+        })
+      )}
+    </Table>
   );
 }
 

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarPlus, Check, Copy, ExternalLink, Link2, Pencil, Play, RefreshCw, Users } from "lucide-react";
+import { CalendarPlus, Check, Copy, ExternalLink, Link2, Pencil, Play, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { topicOf, useTeacher } from "@/lib/portal/store";
-import { fmtDay, fmtTime, sessionState } from "@/lib/portal/format";
+import { fmtDate, fmtDay, fmtTime, sessionState } from "@/lib/portal/format";
 import type { Session, Strand } from "@/lib/portal/types";
-import { Avatar, Btn, Field, Modal, PageHeader, Picker, Rise, Segmented, fieldCls } from "@/components/portal/ui";
-import { DateTile, JoinButton, MeetLinkForm, SessionStatus } from "@/components/portal/classroom";
+import { Avatar, Btn, EmptyRow, Field, Modal, PageHeader, Picker, Rise, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { JoinButton, MeetLinkForm, SessionStatus } from "@/components/portal/classroom";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -90,7 +90,7 @@ function RecordingForm({ session, onDone }: { session: Session; onDone: () => vo
       <ol className="mb-5 space-y-2 text-sm leading-relaxed text-navy/65">
         <li><span className="font-semibold text-navy">1.</span> Google Meet saves the recording to your Google Drive after class.</li>
         <li><span className="font-semibold text-navy">2.</span> In Drive, open the file&apos;s Share menu and copy the link.</li>
-        <li><span className="font-semibold text-navy">3.</span> Paste it here. It appears in The Vault for this cohort straight away.</li>
+        <li><span className="font-semibold text-navy">3.</span> Paste it here. It appears in that student&apos;s Classes and Resources straight away.</li>
       </ol>
       <Field label="Google Drive link to the recording">
         <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://drive.google.com/file/d/…" inputMode="url" className={fieldCls} />
@@ -102,7 +102,7 @@ function RecordingForm({ session, onDone }: { session: Session; onDone: () => vo
           disabled={!valid}
           onClick={async () => {
             if (!(await setRecording(session.id, url))) return;
-            toast("Recording added to The Vault");
+            toast("Recording added");
             onDone();
           }}
         >
@@ -130,7 +130,6 @@ export default function TeacherClasses() {
   const upcoming = sessions.filter((s) => sessionState(s.start, s.durationMin, now) !== "ended");
   const past = sessions.filter((s) => sessionState(s.start, s.durationMin, now) === "ended").reverse();
   const register = sessions.find((s) => s.id === registerId) ?? null;
-  const list = tab === "upcoming" ? upcoming : past;
 
   if (!cohort) {
     return (
@@ -175,51 +174,69 @@ export default function TeacherClasses() {
         ]}
       />
 
-      <Rise key={`${cohort.id}-${tab}`} className="mt-2">
-        {tab !== "setup" ? (
-          list.length === 0 ? (
-            <p className="py-10 text-center text-sm text-navy/50">
-              {tab === "upcoming" ? "No classes scheduled." : "No past classes yet."}
-            </p>
-          ) : (
-            <ul className="divide-y divide-navy/10">
-              {list.map((s, i) => {
+      <Rise key={`${cohort.id}-${tab}`} className="mt-4">
+        {tab === "upcoming" ? (
+          <Table head={[{ label: "Date" }, { label: "Time" }, { label: "Class" }, { label: "Topic" }, { label: "", align: "right" }]}>
+            {upcoming.length === 0 ? (
+              <EmptyRow cols={5}>No classes scheduled.</EmptyRow>
+            ) : (
+              upcoming.map((s, i) => (
+                <tr key={s.id}>
+                  <Td className="whitespace-nowrap font-medium text-navy">{fmtDay(s.start, now)}</Td>
+                  <Td className="whitespace-nowrap">
+                    {fmtTime(s.start)} · {s.durationMin} min
+                  </Td>
+                  <Td>{s.title}</Td>
+                  <Td className="text-navy/55">{topicOf(s) || "—"}</Td>
+                  <Td align="right">
+                    <div className="flex justify-end">
+                      {i === 0 ? (
+                        <JoinButton session={s} size="sm" surface="white" />
+                      ) : new Date(s.start).getTime() - now < 12 * 3_600_000 ? (
+                        <SessionStatus session={s} />
+                      ) : null}
+                    </div>
+                  </Td>
+                </tr>
+              ))
+            )}
+          </Table>
+        ) : tab === "past" ? (
+          <Table head={[{ label: "Date" }, { label: "Class" }, { label: "Topic" }, { label: "Attendance" }, { label: "Recording", align: "right" }]}>
+            {past.length === 0 ? (
+              <EmptyRow cols={5}>No past classes yet.</EmptyRow>
+            ) : (
+              past.map((s) => {
                 const present = students.filter((st) => s.attendance[st.id]).length;
-                const topic = topicOf(s);
                 return (
-                  <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
-                    <DateTile iso={s.start} active={tab === "upcoming" && i === 0} />
-                    <div className="min-w-0 flex-1 basis-48">
-                      <p className="truncate text-[15px] font-medium tracking-tight text-navy">{s.title}</p>
-                      <p className="mt-0.5 text-[13px] text-navy/50">
-                        {fmtDay(s.start, now)} · {fmtTime(s.start)} · {s.durationMin} min
-                        {topic ? ` · ${topic}` : ""}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {tab === "upcoming" ? (
-                        i === 0 ? (
-                          <JoinButton session={s} size="sm" surface="white" />
-                        ) : new Date(s.start).getTime() - now < 12 * 3_600_000 ? (
-                          <SessionStatus session={s} />
-                        ) : null
-                      ) : (
-                        <>
-                          <Btn variant="ghost" size="sm" onClick={() => setRegisterId(s.id)}>
-                            <Users size={13} /> {present}/{students.length} present
-                          </Btn>
-                          <Btn variant="outline" size="sm" onClick={() => setRecordingFor(s)}>
-                            {s.recordingUrl ? <Check size={13} /> : <Link2 size={13} />}
-                            {s.recordingUrl ? "Recording" : "Add recording"}
-                          </Btn>
-                        </>
-                      )}
-                    </div>
-                  </li>
+                  <tr key={s.id}>
+                    <Td className="whitespace-nowrap font-medium text-navy">
+                      {fmtDate(s.start)}, {fmtTime(s.start)}
+                    </Td>
+                    <Td>{s.title}</Td>
+                    <Td className="text-navy/55">{topicOf(s) || "—"}</Td>
+                    <Td>
+                      <button type="button" onClick={() => setRegisterId(s.id)} className="rounded-md focus-gold" title="Open the attendance register">
+                        {students.length === 0 ? (
+                          <Status>No student</Status>
+                        ) : present === students.length ? (
+                          <Status tone="done">Present</Status>
+                        ) : (
+                          <Status>Absent · edit</Status>
+                        )}
+                      </button>
+                    </Td>
+                    <Td align="right">
+                      <Btn variant="outline" size="sm" onClick={() => setRecordingFor(s)}>
+                        {s.recordingUrl ? <Check size={13} /> : <Link2 size={13} />}
+                        {s.recordingUrl ? "Added" : "Add link"}
+                      </Btn>
+                    </Td>
+                  </tr>
                 );
-              })}
-            </ul>
-          )
+              })
+            )}
+          </Table>
         ) : (
           <div className="divide-y divide-navy/10">
             {/* student */}

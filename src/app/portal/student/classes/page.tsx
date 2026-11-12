@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Check, Presentation } from "lucide-react";
-import { topicOf, useStudent } from "@/lib/portal/store";
-import { fmtDay, fmtTime, sessionState } from "@/lib/portal/format";
+import { attendancePct, topicOf, useStudent } from "@/lib/portal/store";
+import { fmtDate, fmtTime, sessionState } from "@/lib/portal/format";
 import type { Resource } from "@/lib/portal/types";
-import { Btn, Empty, PageHeader, Rise, Segmented } from "@/components/portal/ui";
-import { DateTile, JoinButton, SessionStatus, WatchButton } from "@/components/portal/classroom";
+import { Btn, PageHeader, Segmented, Status, Table, Td } from "@/components/portal/ui";
+import { NextClassCard } from "@/components/portal/classroom";
 import { ResourceViewer } from "@/components/portal/resources";
 
 export default function StudentClasses() {
@@ -19,11 +18,20 @@ export default function StudentClasses() {
   const past = sessions.filter((s) => sessionState(s.start, s.durationMin, now) === "ended").reverse();
   const res = (sessionId: string, type: Resource["type"]) =>
     db.resources.find((r) => r.sessionId === sessionId && r.type === type) ?? null;
-  const list = tab === "upcoming" ? upcoming : past;
+  const attended = past.filter((s) => s.attendance[me.id]).length;
 
   return (
     <>
-      <PageHeader title="Classes" sub="Live on Google Meet. The room opens 10 minutes before each class, and joining from here marks you present." />
+      <PageHeader
+        title="Classes"
+        sub="Live classes on Google Meet. The room opens 10 minutes before the start, and joining from here marks you present."
+      />
+
+      {upcoming[0] && (
+        <div className="mb-8">
+          <NextClassCard session={upcoming[0]} />
+        </div>
+      )}
 
       <Segmented
         value={tab}
@@ -34,62 +42,76 @@ export default function StudentClasses() {
         ]}
       />
 
-      <Rise key={tab} className="mt-2">
-        {list.length === 0 ? (
-          <div className="mt-6">
-            <Empty
-              icon={<CalendarDays size={20} />}
-              title={tab === "upcoming" ? "Nothing scheduled yet" : "No past classes yet"}
-              text={
-                tab === "upcoming"
-                  ? "Your classes appear here as soon as they're on the timetable."
-                  : "Once a class has run, its slides and recording appear here."
-              }
-            />
-          </div>
+      <div className="mt-4">
+        {tab === "upcoming" ? (
+          <Table head={[{ label: "Date" }, { label: "Time" }, { label: "Class" }, { label: "Topic" }]}>
+            {upcoming.length === 0 ? (
+              <tr>
+                <Td colSpan={4} className="py-6 text-center text-navy/50">
+                  No classes scheduled yet.
+                </Td>
+              </tr>
+            ) : (
+              upcoming.map((s) => (
+                <tr key={s.id}>
+                  <Td className="whitespace-nowrap font-medium text-navy">{fmtDate(s.start)}</Td>
+                  <Td className="whitespace-nowrap">
+                    {fmtTime(s.start)} · {s.durationMin} min
+                  </Td>
+                  <Td>{s.title}</Td>
+                  <Td className="text-navy/55">{topicOf(s) || "—"}</Td>
+                </tr>
+              ))
+            )}
+          </Table>
         ) : (
-          <ul className="divide-y divide-navy/10">
-            {list.map((s, i) => {
-              const rec = res(s.id, "Recording");
-              const slides = res(s.id, "Slides");
-              const topic = topicOf(s);
-              return (
-                <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
-                  <DateTile iso={s.start} active={tab === "upcoming" && i === 0} />
-                  <div className="min-w-0 flex-1 basis-48">
-                    <p className="truncate text-[15px] font-medium tracking-tight text-navy">{s.title}</p>
-                    <p className="mt-0.5 text-[13px] text-navy/50">
-                      {fmtDay(s.start, now)} · {fmtTime(s.start)}
-                      {topic ? ` · ${topic}` : ""}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    {tab === "past" ? (
-                      <>
-                        {s.attendance[me.id] && (
-                          <span className="flex items-center gap-1 text-[13px] text-navy/50">
-                            <Check size={14} className="text-gold" /> Attended
-                          </span>
-                        )}
-                        {slides && (
-                          <Btn variant="outline" size="sm" onClick={() => setViewing(slides)}>
-                            <Presentation size={13} /> Slides
-                          </Btn>
-                        )}
-                        {rec && <WatchButton onClick={() => setViewing(rec)} />}
-                      </>
-                    ) : i === 0 ? (
-                      <JoinButton session={s} size="sm" surface="white" />
-                    ) : (
-                      new Date(s.start).getTime() - now < 12 * 3_600_000 && <SessionStatus session={s} />
-                    )}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
+          <>
+            <p className="mb-3 text-sm text-navy/60">
+              Attendance: <span className="font-semibold text-navy">{attendancePct(db, me.id, me.cohortId, now)}%</span> ({attended} of{" "}
+              {past.length} classes)
+            </p>
+            <Table head={[{ label: "Date" }, { label: "Class" }, { label: "Topic" }, { label: "Attendance" }, { label: "Materials", align: "right" }]}>
+              {past.length === 0 ? (
+                <tr>
+                  <Td colSpan={5} className="py-6 text-center text-navy/50">
+                    No past classes yet.
+                  </Td>
+                </tr>
+              ) : (
+                past.map((s) => {
+                  const rec = res(s.id, "Recording");
+                  const slides = res(s.id, "Slides");
+                  return (
+                    <tr key={s.id}>
+                      <Td className="whitespace-nowrap font-medium text-navy">
+                        {fmtDate(s.start)}, {fmtTime(s.start)}
+                      </Td>
+                      <Td>{s.title}</Td>
+                      <Td className="text-navy/55">{topicOf(s) || "—"}</Td>
+                      <Td>{s.attendance[me.id] ? <Status tone="done">Present</Status> : <Status>Absent</Status>}</Td>
+                      <Td align="right">
+                        <div className="flex justify-end gap-2">
+                          {slides && (
+                            <Btn variant="outline" size="sm" onClick={() => setViewing(slides)}>
+                              Slides
+                            </Btn>
+                          )}
+                          {rec && (
+                            <Btn variant="outline" size="sm" onClick={() => setViewing(rec)}>
+                              Recording
+                            </Btn>
+                          )}
+                          {!slides && !rec && <span className="text-navy/35">—</span>}
+                        </div>
+                      </Td>
+                    </tr>
+                  );
+                })
+              )}
+            </Table>
+          </>
         )}
-      </Rise>
+      </div>
 
       <ResourceViewer resource={viewing} onClose={() => setViewing(null)} />
     </>

@@ -237,7 +237,7 @@ export function Picker<T extends string>({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="rounded-full border border-navy/15 bg-white py-2 pl-4 pr-9 text-sm font-medium text-navy outline-none transition-colors hover:border-navy/30 focus:border-gold focus:ring-4 focus:ring-gold/15"
+        className="rounded-lg border border-navy/15 bg-white py-2 pl-3 pr-9 text-sm font-medium text-navy outline-none transition-colors hover:border-navy/30 focus:border-gold focus:ring-4 focus:ring-gold/15"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -373,5 +373,115 @@ export function Rise({ i = 0, className, children }: { i?: number; className?: s
     >
       {children}
     </motion.div>
+  );
+}
+
+/* ---------- LMS building blocks ---------- */
+
+/** Section heading inside a page. */
+export function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="text-[15px] font-semibold tracking-tight text-navy">{children}</h2>
+      {action}
+    </div>
+  );
+}
+
+/** Data table with clear column headings; scrolls sideways on small screens. */
+export function Table({
+  head,
+  children,
+  className,
+  minWidth = 640,
+}: {
+  head: { label: string; align?: "left" | "right"; className?: string }[];
+  children: React.ReactNode;
+  className?: string;
+  minWidth?: number;
+}) {
+  return (
+    <div className={cn("overflow-x-auto rounded-xl border border-navy/12", className)}>
+      <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
+        <thead>
+          <tr className="border-b border-navy/12 bg-navy/[0.03]">
+            {head.map((h) => (
+              <th
+                key={h.label}
+                scope="col"
+                className={cn(
+                  "whitespace-nowrap px-4 py-2.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-navy/55",
+                  h.align === "right" && "text-right",
+                  h.className
+                )}
+              >
+                {h.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-navy/10">{children}</tbody>
+      </table>
+    </div>
+  );
+}
+
+export function Td({
+  children,
+  className,
+  align,
+  colSpan,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  align?: "left" | "right";
+  colSpan?: number;
+}) {
+  return (
+    <td colSpan={colSpan} className={cn("px-4 py-3 align-middle text-navy/80", align === "right" && "text-right", className)}>
+      {children}
+    </td>
+  );
+}
+
+/** Small status label used in tables: navy = done, gold = needs attention, plain = neutral. */
+export function Status({ tone = "plain", children }: { tone?: "done" | "attention" | "plain"; children: React.ReactNode }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold",
+        tone === "done" && "bg-navy text-white",
+        tone === "attention" && "bg-gold text-navy-deep",
+        tone === "plain" && "bg-navy/[0.06] text-navy/65"
+      )}
+    >
+      {children}
+    </span>
+  );
+}
+
+/** Single full-width row for an empty table. */
+export function EmptyRow({ cols, children }: { cols: number; children: React.ReactNode }) {
+  return (
+    <tr>
+      <td colSpan={cols} className="py-8 text-sm text-navy/50">
+        {/* stays in view when the table scrolls sideways on phones */}
+        <div className="sticky left-0 w-[min(100%,calc(100vw-2.5rem))] px-4 text-center">{children}</div>
+      </td>
+    </tr>
+  );
+}
+
+/** Clickable table row (opens a detail view). */
+export function RowLink({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <tr
+      onClick={onClick}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onClick())}
+      tabIndex={0}
+      className="cursor-pointer transition-colors hover:bg-navy/[0.025] focus:bg-navy/[0.04] focus:outline-none"
+    >
+      {children}
+    </tr>
   );
 }

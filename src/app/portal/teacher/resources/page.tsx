@@ -4,8 +4,8 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useTeacher } from "@/lib/portal/store";
 import type { Resource, ResourceType, Strand } from "@/lib/portal/types";
-import { Btn, Field, Modal, PageHeader, Picker, Rise, Segmented, fieldCls } from "@/components/portal/ui";
-import { RESOURCE_TYPES, ResourceRow, ResourceViewer } from "@/components/portal/resources";
+import { Btn, Field, Modal, PageHeader, Picker, Segmented, fieldCls } from "@/components/portal/ui";
+import { RESOURCE_TYPES, ResourceTable, ResourceViewer, TYPE_LABEL } from "@/components/portal/resources";
 
 function AddResource({ cohortId, onDone }: { cohortId: string; onDone: () => void }) {
   const { addResource, toast } = useTeacher();
@@ -65,16 +65,7 @@ function AddResource({ cohortId, onDone }: { cohortId: string; onDone: () => voi
   );
 }
 
-const TAB_LABEL: Record<ResourceType, string> = {
-  Slides: "Slides",
-  Notes: "Notes",
-  "Summary sheet": "Summaries",
-  "Past paper": "Past papers",
-  "Essay structure": "Essays",
-  Recording: "Recordings",
-};
-
-export default function TeacherVault() {
+export default function TeacherResources() {
   const { db } = useTeacher();
   const [cohortId, setCohortId] = useState(db.cohorts[0]?.id ?? "");
   const [type, setType] = useState<ResourceType | "All">("All");
@@ -88,12 +79,12 @@ export default function TeacherVault() {
     .filter((r) => type === "All" || r.type === type)
     .sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
 
-  if (!cohort) return <PageHeader title="Vault" sub="No students yet." />;
+  if (!cohort) return <PageHeader title="Resources" sub="No students yet." />;
 
   return (
     <>
       <PageHeader
-        title="Vault"
+        title="Resources"
         sub="Files stay in your Google Drive. Add a Drive link here and that student can open it in their portal."
         actions={
           <Btn variant="navy" onClick={() => setAdding(true)}>
@@ -120,26 +111,13 @@ export default function TeacherVault() {
         onChange={setType}
         options={[
           { value: "All" as const, label: "All", count: all.length },
-          ...types.map((t) => ({ value: t, label: TAB_LABEL[t], count: all.filter((r) => r.type === t).length })),
+          ...types.map((t) => ({ value: t, label: TYPE_LABEL[t], count: all.filter((r) => r.type === t).length })),
         ]}
       />
 
-      <Rise key={`${cohort.id}-${type}`} className="mt-2">
-        {shown.length === 0 ? (
-          <p className="py-10 text-center text-sm text-navy/50">Nothing here yet. Use Add a file to share something with {cohort.name}.</p>
-        ) : (
-          <div className="divide-y divide-navy/10">
-            {shown.map((r) => (
-              <ResourceRow
-                key={r.id}
-                r={r}
-                onOpen={() => setViewing(r)}
-                action={!r.driveUrl ? <span className="text-[13px] text-navy/45">No link</span> : undefined}
-              />
-            ))}
-          </div>
-        )}
-      </Rise>
+      <div className="mt-4">
+        <ResourceTable items={shown} onOpen={setViewing} empty={`Nothing here yet. Use Add a file to share something with ${cohort.name}.`} />
+      </div>
 
       <Modal open={adding} onClose={() => setAdding(false)} eyebrow={cohort.name} title="Add a file">
         <AddResource cohortId={cohort.id} onDone={() => setAdding(false)} />

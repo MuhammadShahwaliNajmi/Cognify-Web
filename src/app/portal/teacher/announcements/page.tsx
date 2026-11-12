@@ -7,8 +7,8 @@ import { cohortOf, useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
 import { Btn, Empty, Field, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
 
-/** Notices: post an announcement to everyone or one student, and see what's been sent. */
-export default function TeacherNotices() {
+/** Announcements: post an announcement to everyone or one student, and see what's been sent. */
+export default function TeacherAnnouncements() {
   const { db, now, addAnnouncement, toast } = useTeacher();
   const [to, setTo] = useState("all");
   const [title, setTitle] = useState("");
@@ -20,14 +20,14 @@ export default function TeacherNotices() {
     const ok = await addAnnouncement({ cohortId: to === "all" ? null : to, title: title.trim(), body: body.trim() });
     setBusy(false);
     if (!ok) return;
-    toast("Notice posted");
+    toast("Announcement posted");
     setTitle("");
     setBody("");
   };
 
   return (
     <>
-      <PageHeader title="Notices" sub="Students see these under the bell at the top of their portal." />
+      <PageHeader title="Announcements" sub="Students see these on their Announcements tab and dashboard." />
 
       <Rise i={0}>
         <div className="rounded-2xl border border-navy/10 p-5 md:p-6">
@@ -54,7 +54,7 @@ export default function TeacherNotices() {
           <div className="mt-5">
             <Btn variant="gold" disabled={!title.trim() || !body.trim() || busy} onClick={post}>
               <Megaphone size={15} />
-              {busy ? "Posting…" : "Post notice"}
+              {busy ? "Posting…" : "Post announcement"}
             </Btn>
           </div>
         </div>
@@ -63,7 +63,7 @@ export default function TeacherNotices() {
       <Rise i={1} className="mt-10">
         <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">Sent</h2>
         {db.announcements.length === 0 ? (
-          <Empty icon={<Megaphone size={20} />} title="No notices yet" text="Anything you post appears here and on your students' portals." />
+          <Empty icon={<Megaphone size={20} />} title="No announcements yet" text="Anything you post appears here and on your students' portals." />
         ) : (
           <ul className="divide-y divide-navy/10">
             {db.announcements.map((n) => (

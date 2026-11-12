@@ -4,13 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, LogOut, type LucideIcon } from "lucide-react";
+import { LogOut, type LucideIcon } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
 import { usePortal } from "@/lib/portal/store";
-import { fmtRelative } from "@/lib/portal/format";
 import type { Role } from "@/lib/portal/types";
-import { Avatar, Chip, Modal } from "./ui";
+import { Avatar } from "./ui";
 
 export type NavItem = { href: string; label: string; short?: string; icon?: LucideIcon; badge?: number };
 
@@ -18,10 +17,9 @@ const norm = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 
 /** Portal frame: slim white header, a row of tabs, one clean page underneath. */
 export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; children: React.ReactNode }) {
-  const { ready, auth, me, db, now, signOut, toasts } = usePortal();
+  const { ready, auth, me, signOut, toasts } = usePortal();
   const router = useRouter();
   const pathname = norm(usePathname() ?? "");
-  const [news, setNews] = useState(false);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -51,9 +49,6 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
     );
   }
 
-  const cohortId = "cohortId" in me ? me.cohortId : null;
-  const announcements = db.announcements.filter((a) => role === "teacher" || !a.cohortId || a.cohortId === cohortId);
-  const fresh = announcements.filter((a) => now - new Date(a.at).getTime() < 36 * 3_600_000).length;
   const root = norm(nav[0].href);
   const isActive = (href: string) => {
     const h = norm(href);
@@ -71,21 +66,12 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
     <div data-portal className="min-h-[100dvh] bg-white text-navy">
       {/* ---------- header + tabs ---------- */}
       <header className="sticky top-0 z-40 border-b border-navy/10 bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 pt-4 md:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pt-4 md:px-8">
           <Link href={nav[0].href} aria-label="Portal home">
             <Wordmark />
           </Link>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setNews(true)}
-              aria-label={`Announcements${fresh ? `, ${fresh} new` : ""}`}
-              className="relative grid h-10 w-10 place-items-center rounded-full text-navy/60 transition-colors hover:bg-navy/[0.04] hover:text-navy focus-gold"
-            >
-              <Bell size={18} />
-              {fresh > 0 && <span className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-gold ring-2 ring-white" />}
-            </button>
 
             <div ref={menuRef} className="relative">
               <button
@@ -126,7 +112,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
           </div>
         </div>
 
-        <nav aria-label="Portal" className="no-scrollbar mx-auto max-w-5xl overflow-x-auto px-3 md:px-6">
+        <nav aria-label="Portal" className="no-scrollbar mx-auto max-w-6xl overflow-x-auto px-3 md:px-6">
           <div className="flex gap-1">
             {nav.map((item) => {
               const on = isActive(item.href);
@@ -161,27 +147,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
       </header>
 
       {/* ---------- page ---------- */}
-      <main className="mx-auto w-full max-w-5xl px-5 pb-20 pt-8 md:px-8 md:pt-10">{children}</main>
-
-      {/* ---------- announcements ---------- */}
-      <Modal open={news} onClose={() => setNews(false)} title="Announcements">
-        {announcements.length === 0 ? (
-          <p className="text-sm text-navy/55">Nothing new right now.</p>
-        ) : (
-          <ul className="flex flex-col">
-            {announcements.map((a) => (
-              <li key={a.id} className="border-t border-navy/10 py-4 first:border-t-0 first:pt-0">
-                <div className="flex items-center gap-2">
-                  <p className="flex-1 text-[15px] font-semibold tracking-tight text-navy">{a.title}</p>
-                  {now - new Date(a.at).getTime() < 36 * 3_600_000 && <Chip tone="gold">New</Chip>}
-                </div>
-                <p className="mt-1.5 text-sm leading-relaxed text-navy/65">{a.body}</p>
-                <p className="mt-2 text-xs text-navy/40">{fmtRelative(a.at, now)}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Modal>
+      <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 md:px-8 md:pt-10">{children}</main>
 
       {/* ---------- toasts ---------- */}
       <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex flex-col items-center gap-2 px-4">

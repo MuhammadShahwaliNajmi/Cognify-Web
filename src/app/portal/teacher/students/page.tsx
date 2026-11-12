@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
 import { attendancePct, averagePct, cohortOf, useTeacher } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, Empty, Label, Modal, PageHeader, Rise, Stat, fieldCls } from "@/components/portal/ui";
+import { Avatar, Btn, Chip, EmptyRow, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
 
 /** Predicted and target grade — set by the teacher, shown to the student. */
@@ -121,56 +120,60 @@ export default function TeacherStudents() {
 
   return (
     <>
-      <PageHeader title="Students" sub="Open a student for their grades, attendance and work." />
+      <PageHeader title="Students" sub="Click a student for their grades, attendance and predicted grade." />
 
-      <Rise i={0}>
-        {students.length === 0 ? (
-          <Empty
-            icon={<ChevronRight size={20} />}
-            title="No students have joined yet"
-            text="Students appear here once they sign in with Google and enter their join code. Each code is under Classes → Setup."
-            action={
-              <Btn variant="navy" href="/portal/teacher/classes/">
-                Go to Classes
-              </Btn>
-            }
-          />
+      <Table
+        minWidth={720}
+        head={[
+          { label: "Student" },
+          { label: "Course" },
+          { label: "Attendance", align: "right" },
+          { label: "Average", align: "right" },
+          { label: "Predicted", align: "right" },
+          { label: "Target", align: "right" },
+        ]}
+      >
+        {students.length === 0 && waiting.length === 0 ? (
+          <EmptyRow cols={6}>No students yet.</EmptyRow>
         ) : (
-          <ul className="divide-y divide-navy/10 border-y border-navy/10">
+          <>
             {students.map((s) => {
-              const att = attendancePct(db, s.id, s.cohortId, now);
               const avg = averagePct(db, s.id);
               const c = cohortOf(db, s.cohortId);
               return (
-                <li key={s.id}>
-                  <button type="button" onClick={() => setOpenId(s.id)} className="group flex w-full items-center gap-4 py-4 text-left focus-gold">
-                    <Avatar name={s.name} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">{s.name}</span>
-                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
-                        {[c.board, c.subject].filter(Boolean).join(" · ")}
-                      </span>
-                    </span>
-                    <span className="hidden w-24 text-right text-sm text-navy/55 sm:block">{att}% attended</span>
-                    <span className="hidden w-20 text-right text-sm text-navy/55 sm:block">{avg !== null ? `${avg}% avg` : "–"}</span>
-                    <span className="w-16 text-right text-[15px] font-semibold text-navy">
-                      {s.predicted || "–"}
-                      {s.target && <span className="font-normal text-navy/40"> → {s.target}</span>}
-                    </span>
-                    <ChevronRight size={16} className="shrink-0 text-navy/25 group-hover:text-gold" />
-                  </button>
-                </li>
+                <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
+                  <Td>
+                    <span className="block font-medium text-navy">{s.name}</span>
+                    <span className="block text-[12px] text-navy/45">{s.email}</span>
+                  </Td>
+                  <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
+                  <Td align="right" className="tabular-nums">{attendancePct(db, s.id, s.cohortId, now)}%</Td>
+                  <Td align="right" className="tabular-nums">{avg !== null ? `${avg}%` : "–"}</Td>
+                  <Td align="right" className="font-semibold text-navy">{s.predicted || "–"}</Td>
+                  <Td align="right">{s.target || "–"}</Td>
+                </RowLink>
               );
             })}
-          </ul>
+            {waiting.map((c) => (
+              <tr key={c.id}>
+                <Td>
+                  <span className="block font-medium text-navy/70">{c.name}</span>
+                  <span className="block text-[12px] text-navy/45">Join code {c.joinCode}</span>
+                </Td>
+                <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
+                <Td colSpan={4} align="right">
+                  <Status>Not joined yet</Status>
+                </Td>
+              </tr>
+            ))}
+          </>
         )}
-
-        {students.length > 0 && waiting.length > 0 && (
-          <p className="mt-5 text-sm text-navy/50">
-            Not joined yet: {waiting.map((c) => c.name).join(", ")}. Their join codes are under Classes → Setup.
-          </p>
-        )}
-      </Rise>
+      </Table>
+      {waiting.length > 0 && (
+        <p className="mt-3 text-[13px] text-navy/50">
+          Students who haven&apos;t joined sign in at cognifypk.com/portal with Google and enter their join code once. Codes can be renewed under Classes → Setup.
+        </p>
+      )}
 
       <Modal open={!!open} onClose={() => setOpenId(null)} title={open?.name ?? ""}>
         {open && <Profile key={open.id} s={open} />}

@@ -1,105 +1,170 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, CalendarDays, CheckCircle2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cohortOf, topicOf, useTeacher } from "@/lib/portal/store";
-import { fmtDateLong, fmtDay, fmtDuration, fmtTime, sessionState } from "@/lib/portal/format";
-import { Avatar, Empty, PageHeader, Rise } from "@/components/portal/ui";
+import { fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
+import { EmptyRow, PageHeader, RowLink, SectionTitle, Status, Table, Td } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 
 const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
 const dayKey = (iso: string) => new Date(iso).toDateString();
 
-/** Today: the classes you're teaching and the work waiting for you. Nothing else. */
-export default function TeacherToday() {
+function SideCard({ title, link, children }: { title: string; link?: { href: string; label: string }; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-navy/12 p-5">
+      <div className="flex items-center justify-between">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-navy/50">{title}</p>
+        {link && (
+          <Link href={link.href} className="text-[13px] font-medium text-navy/55 hover:text-gold">
+            {link.label}
+          </Link>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/** Dashboard: today's classes, the marking queue, and this week at a glance. */
+export default function TeacherDashboard() {
   const { db, me, now } = useTeacher();
+  const router = useRouter();
 
   const upcoming = db.sessions.filter((s) => sessionState(s.start, s.durationMin, now) !== "ended");
-  const today = upcoming.filter((s) => dayKey(s.start) === new Date(now).toDateString());
+  const todayKey = new Date(now).toDateString();
+  const today = upcoming.filter((s) => dayKey(s.start) === todayKey);
   // nothing left today → show the next teaching day instead
-  const nextDay = upcoming.find((s) => dayKey(s.start) !== new Date(now).toDateString());
+  const nextDay = upcoming.find((s) => dayKey(s.start) !== todayKey);
   const showing = today.length ? today : nextDay ? upcoming.filter((s) => dayKey(s.start) === dayKey(nextDay.start)) : [];
 
   const queue = db.submissions
     .filter((x) => x.status === "submitted")
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
+  const weekClasses = upcoming.filter((s) => new Date(s.start).getTime() - now < 7 * DAY).length;
+  const dueSoon = db.assignments.filter((a) => {
+    const ms = new Date(a.dueAt).getTime() - now;
+    return ms > 0 && ms < 7 * DAY;
+  }).length;
+  const notice = db.announcements[0];
 
   return (
     <>
       <PageHeader title={`Hello, ${me.name.split(" ").find((w) => !w.endsWith(".")) ?? me.name}`} sub={fmtDateLong(new Date(now).toISOString())} />
 
-      <Rise i={0}>
-        <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">
-          {today.length ? "Today's classes" : showing.length ? `Next classes · ${fmtDay(showing[0].start, now)}` : "Classes"}
-        </h2>
-        {showing.length === 0 ? (
-          <Empty icon={<CalendarDays size={20} />} title="No classes scheduled" text="Classes appear here from each student's timetable." />
-        ) : (
-          <ul className="divide-y divide-navy/10 rounded-2xl border border-navy/10">
-            {showing.map((s) => {
-              const state = sessionState(s.start, s.durationMin, now);
-              const topic = topicOf(s);
-              return (
-                <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-4">
-                  <span className="w-[4.5rem] shrink-0 text-sm font-semibold tabular-nums text-navy">{fmtTime(s.start)}</span>
-                  <div className="min-w-0 flex-1 basis-40">
-                    <p className="truncate text-[15px] font-medium tracking-tight text-navy">{cohortOf(db, s.cohortId).name}</p>
-                    <p className="mt-0.5 truncate text-[13px] text-navy/50">
-                      {s.title}
-                      {topic ? ` · ${topic}` : ""}
-                    </p>
-                  </div>
-                  {state === "upcoming" && new Date(s.start).getTime() - now > HOUR ? (
-                    <SessionStatus session={s} />
-                  ) : (
-                    <JoinButton session={s} size="sm" surface="white" />
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Rise>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="space-y-8 lg:col-span-2">
+          <section>
+            <SectionTitle
+              action={
+                <Link href="/portal/teacher/calendar/" className="text-sm font-medium text-navy/60 hover:text-gold">
+                  Calendar
+                </Link>
+              }
+            >
+              {today.length ? "Today's classes" : showing.length ? `Next classes · ${fmtDay(showing[0].start, now)}` : "Classes"}
+            </SectionTitle>
+            <Table minWidth={560} head={[{ label: "Time" }, { label: "Student" }, { label: "Topic" }, { label: "", align: "right" }]}>
+              {showing.length === 0 ? (
+                <EmptyRow cols={4}>No classes scheduled. Classes appear from each student&apos;s timetable.</EmptyRow>
+              ) : (
+                showing.map((s) => {
+                  const soon = sessionState(s.start, s.durationMin, now) !== "upcoming" || new Date(s.start).getTime() - now <= HOUR;
+                  return (
+                    <tr key={s.id}>
+                      <Td className="whitespace-nowrap font-semibold tabular-nums text-navy">{fmtTime(s.start)}</Td>
+                      <Td className="font-medium text-navy">{cohortOf(db, s.cohortId).name}</Td>
+                      <Td className="text-navy/60">{topicOf(s) || s.title}</Td>
+                      <Td align="right">
+                        <div className="flex justify-end">{soon ? <JoinButton session={s} size="sm" surface="white" /> : <SessionStatus session={s} />}</div>
+                      </Td>
+                    </tr>
+                  );
+                })
+              )}
+            </Table>
+          </section>
 
-      <Rise i={1} className="mt-10">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">To mark</h2>
-          {queue.length > 0 && (
-            <Link href="/portal/teacher/marking/" className="flex items-center gap-1 text-sm font-medium text-navy/55 hover:text-gold">
-              Open marking <ArrowRight size={14} />
-            </Link>
-          )}
+          <section>
+            <SectionTitle
+              action={
+                <Link href="/portal/teacher/submissions/" className="text-sm font-medium text-navy/60 hover:text-gold">
+                  All submissions
+                </Link>
+              }
+            >
+              To mark
+            </SectionTitle>
+            <Table minWidth={560} head={[{ label: "Student" }, { label: "Assignment" }, { label: "Submitted" }, { label: "Feedback due", align: "right" }]}>
+              {queue.length === 0 ? (
+                <EmptyRow cols={4}>Nothing waiting. Everything has been returned.</EmptyRow>
+              ) : (
+                queue.slice(0, 6).map((x) => {
+                  const st = db.students.find((s) => s.id === x.studentId);
+                  const a = db.assignments.find((y) => y.id === x.assignmentId);
+                  if (!st || !a) return null;
+                  const left = new Date(x.submittedAt).getTime() + DAY - now;
+                  return (
+                    <RowLink key={x.id} onClick={() => router.push(`/portal/teacher/submissions/?open=${x.id}`)}>
+                      <Td className="font-medium text-navy">{st.name}</Td>
+                      <Td>{a.title}</Td>
+                      <Td className="whitespace-nowrap">{fmtRelative(x.submittedAt, now)}</Td>
+                      <Td align="right">
+                        {left < 0 ? (
+                          <Status tone="attention">Late by {fmtDuration(-left)}</Status>
+                        ) : left < 6 * HOUR ? (
+                          <Status tone="attention">{fmtDuration(left)} left</Status>
+                        ) : (
+                          <Status>{fmtDuration(left)} left</Status>
+                        )}
+                      </Td>
+                    </RowLink>
+                  );
+                })
+              )}
+            </Table>
+          </section>
         </div>
-        {queue.length === 0 ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-navy/10 px-5 py-4 text-sm text-navy/60">
-            <CheckCircle2 size={18} className="text-gold" />
-            Nothing waiting. Everything has been returned.
-          </div>
-        ) : (
-          <ul className="divide-y divide-navy/10 rounded-2xl border border-navy/10">
-            {queue.slice(0, 5).map((x) => {
-              const st = db.students.find((s) => s.id === x.studentId);
-              const a = db.assignments.find((y) => y.id === x.assignmentId);
-              if (!st || !a) return null;
-              const left = new Date(x.submittedAt).getTime() + 24 * HOUR - now;
-              return (
-                <li key={x.id}>
-                  <Link href="/portal/teacher/marking/" className="group flex items-center gap-3.5 px-5 py-3.5 hover:bg-navy/[0.02] focus-gold">
-                    <Avatar name={st.name} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-medium text-navy group-hover:text-gold">{st.name}</span>
-                      <span className="block truncate text-[13px] text-navy/50">{a.title}</span>
-                    </span>
-                    <span className={left < 6 * HOUR ? "text-sm font-semibold text-navy" : "text-sm text-navy/55"}>
-                      {left < 0 ? `Late by ${fmtDuration(-left)}` : `${fmtDuration(left)} left`}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Rise>
+
+        <aside className="space-y-6">
+          <SideCard title="Next 7 days">
+            <dl className="mt-3 grid grid-cols-3 gap-3">
+              {[
+                { k: "Classes", v: weekClasses },
+                { k: "To mark", v: queue.length },
+                { k: "Deadlines", v: dueSoon },
+              ].map((x) => (
+                <div key={x.k}>
+                  <dd className="text-2xl font-semibold tabular-nums text-navy">{x.v}</dd>
+                  <dt className="text-[13px] text-navy/50">{x.k}</dt>
+                </div>
+              ))}
+            </dl>
+          </SideCard>
+
+          <SideCard title="Students" link={{ href: "/portal/teacher/students/", label: "View all" }}>
+            <p className="mt-2 text-[15px] font-semibold text-navy">{db.students.length} enrolled</p>
+            <p className="mt-1 text-sm text-navy/55">
+              {db.cohorts.length} class{db.cohorts.length === 1 ? "" : "es"} · {db.cohorts.filter((c) => !c.meetUrl).length} without a Meet link
+            </p>
+          </SideCard>
+
+          <SideCard title="Last announcement" link={{ href: "/portal/teacher/announcements/", label: "Post" }}>
+            {notice ? (
+              <>
+                <p className="mt-2 text-[15px] font-semibold text-navy">{notice.title}</p>
+                <p className="mt-1 line-clamp-2 text-sm text-navy/60">{notice.body}</p>
+                <p className="mt-2 text-[12px] text-navy/40">
+                  {fmtDate(notice.at)} · {notice.cohortId ? cohortOf(db, notice.cohortId).name : "All students"}
+                </p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-navy/50">Nothing posted yet.</p>
+            )}
+          </SideCard>
+        </aside>
+      </div>
     </>
   );
 }
