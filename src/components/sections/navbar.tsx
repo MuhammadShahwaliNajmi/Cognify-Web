@@ -12,7 +12,6 @@ const LINKS = [
   { label: "Methodology", href: "#method" },
   { label: "Curriculums", href: "#curriculum" },
   { label: "Ecosystem", href: "#ecosystem" },
-  { label: "Testimonials", href: "#testimonials" },
   { label: "Info Desk", href: "#info-desk" },
 ];
 
