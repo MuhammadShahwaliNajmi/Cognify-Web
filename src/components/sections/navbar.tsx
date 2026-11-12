@@ -118,7 +118,7 @@ export function Navbar() {
             href="/portal/"
             aria-label="Portal"
             title="Portal"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/25 bg-white/70 px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors hover:border-gold hover:bg-navy-deep hover:text-gold focus-gold xl:px-5"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-navy-deep px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-white transition-colors duration-300 hover:bg-gold hover:text-navy-deep focus-gold xl:px-5"
           >
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
