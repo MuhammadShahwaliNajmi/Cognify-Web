@@ -1,25 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { topicOf, useStudent } from "@/lib/portal/store";
+import { sessionState } from "@/lib/portal/format";
 import { PageHeader } from "@/components/portal/ui";
+import { NextClassCard } from "@/components/portal/classroom";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
+import { ClassDialog } from "@/components/portal/class-tools";
 
 export default function StudentCalendar() {
-  const { db, me } = useStudent();
+  const { db, me, now } = useStudent();
   const router = useRouter();
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  const sessions = db.sessions.filter((s) => s.cohortId === me.cohortId);
+  const next = sessions.find((s) => sessionState(s.start, s.durationMin, now) !== "ended");
 
   const events: CalEvent[] = [
-    ...db.sessions
-      .filter((s) => s.cohortId === me.cohortId)
-      .map((s) => ({
-        id: `s${s.id}`,
-        start: s.start,
-        title: s.title,
-        sub: topicOf(s) || `${s.durationMin} min`,
-        kind: "class" as const,
-        onClick: () => router.push("/portal/student/classes/"),
-      })),
+    ...sessions.map((s) => ({
+      id: `s${s.id}`,
+      start: s.start,
+      title: s.title,
+      sub: topicOf(s) || `${s.durationMin} min`,
+      kind: "class" as const,
+      onClick: () => setOpenId(s.id),
+    })),
     ...db.assignments
       .filter((a) => a.cohortId === me.cohortId)
       .map((a) => ({
@@ -34,8 +40,14 @@ export default function StudentCalendar() {
 
   return (
     <>
-      <PageHeader title="Calendar" sub="Your live classes and assignment deadlines, week by week." />
+      <PageHeader title="Calendar" />
+      {next && (
+        <div className="mb-8">
+          <NextClassCard session={next} />
+        </div>
+      )}
       <WeekCalendar events={events} />
+      <ClassDialog session={sessions.find((s) => s.id === openId) ?? null} onClose={() => setOpenId(null)} />
     </>
   );
 }

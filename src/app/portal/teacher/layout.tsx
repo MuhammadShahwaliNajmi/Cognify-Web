@@ -10,7 +10,6 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const nav: NavItem[] = [
     { href: "/portal/teacher/", label: "Dashboard" },
     { href: "/portal/teacher/calendar/", label: "Calendar" },
-    { href: "/portal/teacher/classes/", label: "Classes" },
     { href: "/portal/teacher/assignments/", label: "Assignments" },
     { href: "/portal/teacher/submissions/", label: "Submissions", badge: toMark },
     { href: "/portal/teacher/students/", label: "Students" },

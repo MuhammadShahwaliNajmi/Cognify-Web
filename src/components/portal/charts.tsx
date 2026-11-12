@@ -24,7 +24,7 @@ export function TrendChart({
   const id = useId();
   if (points.length < 2) {
     return (
-      <div className={`grid min-h-[10rem] place-items-center rounded-2xl border border-dashed px-6 text-center text-sm ${onNavy ? "border-white/15 text-white/55" : "border-navy/15 text-navy/50"}`}>
+      <div className={`grid min-h-[10rem] place-items-center rounded-2xl border border-dashed px-6 text-center text-sm ${onNavy ? "border-white/15 text-white/55" : "border-navy/15 text-navy"}`}>
         {points.length === 1
           ? `First result: ${points[0].pct}%. The trend line appears after your next marked piece of work.`
           : "Your trend appears here once your work has been marked."}
@@ -160,7 +160,7 @@ export function Ring({ value, max, size = 112 }: { value: number; max: number; s
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span className="text-[1.6rem] font-semibold tracking-tight tabular-nums text-navy">{value}</span>
-        <span className="mt-1 text-[11px] font-medium text-navy/45">out of {max}</span>
+        <span className="mt-1 text-[11px] font-medium text-navy">out of {max}</span>
       </div>
     </div>
   );

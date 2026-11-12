@@ -56,13 +56,13 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-navy">{file.name}</p>
-            <p className="text-xs text-navy/55">{fmtBytes(file.size)} · ready to submit</p>
+            <p className="text-xs text-navy">{fmtBytes(file.size)} · ready to submit</p>
           </div>
           <button
             type="button"
             onClick={() => setFile(null)}
             aria-label="Remove file"
-            className="grid h-8 w-8 place-items-center rounded-full text-navy/50 transition-colors hover:text-navy focus-gold"
+            className="grid h-8 w-8 place-items-center rounded-full text-navy transition-colors hover:text-navy focus-gold"
           >
             <X size={15} />
           </button>
@@ -92,7 +92,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
           <span className="mt-3.5 text-[15px] font-semibold tracking-tight text-navy">
             {replacing ? "Choose a replacement file" : "Choose your file, or drop it here"}
           </span>
-          <span className="mt-1 text-[13px] text-navy/50">PDF, Word, or clear photos of handwritten work</span>
+          <span className="mt-1 text-[13px] text-navy">PDF, Word, or clear photos of handwritten work</span>
         </button>
       )}
 
@@ -166,7 +166,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
 
       <div className="mt-5 rounded-2xl bg-navy/[0.04] p-5">
         <Label>The task</Label>
-        <p className="mt-2 text-[15px] leading-relaxed text-navy/80">{a.brief}</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-navy">{a.brief}</p>
         {a.attachmentUrl && (
           <a
             href={a.attachmentUrl}
@@ -186,22 +186,22 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
           <div className="flex items-center gap-5">
             <Ring value={sub.marks ?? 0} max={a.maxMarks} />
             <div>
-              <Label className="text-gold">Examiner feedback</Label>
+              <Label>Examiner feedback</Label>
               <p className="mt-1 text-2xl font-semibold tracking-tight text-navy">
                 {Math.round(((sub.marks ?? 0) / a.maxMarks) * 100)}%
               </p>
-              <p className="mt-1 text-[13px] text-navy/50">Returned {fmtRelative(sub.markedAt!, now)}</p>
+              <p className="mt-1 text-[13px] text-navy">Returned {fmtRelative(sub.markedAt!, now)}</p>
             </div>
           </div>
-          <p className="mt-5 text-[15px] leading-relaxed text-navy/80">{sub.feedback}</p>
+          <p className="mt-5 text-[15px] leading-relaxed text-navy">{sub.feedback}</p>
 
           <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             {!!sub.strengths?.length && (
               <div className="rounded-2xl border border-navy/10 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy/45">What you did well</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">What you did well</p>
                 <ul className="mt-3 flex flex-col gap-2.5">
                   {sub.strengths.map((s) => (
-                    <li key={s} className="flex gap-2.5 text-sm leading-relaxed text-navy/75">
+                    <li key={s} className="flex gap-2.5 text-sm leading-relaxed text-navy">
                       <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-gold" />
                       {s}
                     </li>
@@ -242,7 +242,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-navy transition-colors group-hover:text-gold">{sub.fileName}</span>
-                <span className="block text-xs text-navy/50">{sub.fileSize}{sub.filePath ? " · tap to open" : ""}</span>
+                <span className="block text-xs text-navy">{sub.fileSize}{sub.filePath ? " · tap to open" : ""}</span>
               </span>
             </button>
             {sub.status === "submitted" && !replacing && (
@@ -251,7 +251,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
               </Btn>
             )}
           </div>
-          {sub.note && <p className="mt-2.5 text-[13px] italic leading-relaxed text-navy/55">&ldquo;{sub.note}&rdquo;</p>}
+          {sub.note && <p className="mt-2.5 text-[13px] italic leading-relaxed text-navy">&ldquo;{sub.note}&rdquo;</p>}
 
           {replacing ? (
             <div className="mt-5">
@@ -273,8 +273,8 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
                     {s.done ? <CheckCircle2 size={14} /> : s.active ? <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" /> : null}
                   </span>
                   <div>
-                    <p className={cn("text-sm font-semibold tracking-tight", s.done || s.active ? "text-navy" : "text-navy/40")}>{s.t}</p>
-                    <p className="text-[13px] text-navy/50">{s.d}</p>
+                    <p className={cn("text-sm font-semibold tracking-tight", s.done || s.active ? "text-navy" : "text-navy")}>{s.t}</p>
+                    <p className="text-[13px] text-navy">{s.d}</p>
                   </div>
                 </li>
               ))}
@@ -324,7 +324,7 @@ function Assignments() {
 
   return (
     <>
-      <PageHeader title="Assignments" sub="Open an assignment to read the task and hand in your work. Feedback comes back within 24 hours." />
+      <PageHeader title="Assignments" />
 
       <Segmented
         value={tab}
@@ -378,10 +378,10 @@ function Assignments() {
                     {sub?.status === "marked" ? (
                       <>
                         {sub.marks}
-                        <span className="font-normal text-navy/45"> / {a.maxMarks}</span>
+                        <span className="font-normal text-navy"> / {a.maxMarks}</span>
                       </>
                     ) : (
-                      <span className="font-normal text-navy/40">– / {a.maxMarks}</span>
+                      <span className="font-normal text-navy">– / {a.maxMarks}</span>
                     )}
                   </Td>
                 </RowLink>

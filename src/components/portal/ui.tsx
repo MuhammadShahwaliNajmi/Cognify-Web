@@ -32,7 +32,7 @@ export function Card({
 
 export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <span className={cn("font-mono text-[11px] uppercase tracking-[0.2em] text-navy/45", className)}>
+    <span className={cn("font-mono text-[11px] uppercase tracking-[0.2em] text-navy", className)}>
       {children}
     </span>
   );
@@ -53,8 +53,8 @@ export function Chip({
   const tones: Record<ChipTone, string> = {
     gold: "bg-gold text-navy-deep",
     navy: "bg-navy-deep text-gold",
-    soft: "bg-navy/[0.06] text-navy/70",
-    outline: "border border-navy/15 text-navy/60",
+    soft: "bg-navy/[0.06] text-navy",
+    outline: "border border-navy/15 text-navy",
     onNavy: "bg-white/10 text-white/80",
   };
   return (
@@ -90,7 +90,7 @@ export function Btn({ variant = "navy", size = "md", href, external, className, 
     variant === "gold" && "bg-gold text-navy-deep hover:-translate-y-0.5",
     variant === "navy" && "bg-navy-deep text-white hover:bg-navy",
     variant === "outline" && "border border-navy/15 bg-white text-navy hover:border-gold hover:text-gold",
-    variant === "ghost" && "text-navy/65 hover:text-gold",
+    variant === "ghost" && "text-navy hover:text-gold",
     variant === "onNavy" && "border border-white/20 text-white hover:border-gold hover:text-gold",
     className
   );
@@ -116,23 +116,24 @@ export function Btn({ variant = "navy", size = "md", href, external, className, 
 export function PageHeader({
   title,
   gold,
-  sub,
   actions,
 }: {
-  /** kept for older call sites; no longer shown */
+  /** kept for older call sites; not shown */
   eyebrow?: string;
   title: string;
   gold?: string;
+  /** kept for older call sites; not shown */
   sub?: string;
   actions?: React.ReactNode;
 }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-8">
       <div>
-        <h1 className="text-[1.6rem] font-semibold leading-tight tracking-tight text-navy md:text-[1.85rem]">
-          {gold ? `${title} ${gold}` : title}
+        <h1 className="text-[1.6rem] font-bold leading-tight tracking-tight text-navy md:text-[1.9rem]">
+          {title}
+          {gold && <span className="text-gold"> {gold}</span>}
         </h1>
-        {sub && <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-navy/55">{sub}</p>}
+        <span className="mt-2.5 block h-[3px] w-10 rounded-full bg-gold" />
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2.5">{actions}</div>}
     </div>
@@ -197,12 +198,12 @@ export function Segmented<T extends string>({
               onClick={() => onChange(o.value)}
               className={cn(
                 "relative whitespace-nowrap px-3 pb-3 pt-1 text-[14px] font-medium tracking-tight transition-colors focus-gold",
-                on ? "text-navy" : "text-navy/45 hover:text-navy/75"
+                on ? "font-semibold text-navy" : "text-navy hover:text-navy"
               )}
             >
               {o.label}
               {o.count !== undefined && (
-                <span className={cn("ml-1.5 tabular-nums", on ? "text-gold" : "text-navy/35")}>{o.count}</span>
+                <span className={cn("ml-1.5 rounded-full px-1.5 text-[12px] tabular-nums", on ? "bg-gold text-navy-deep" : "bg-navy/[0.07] text-navy")}>{o.count}</span>
               )}
               {on && (
                 <motion.span
@@ -232,7 +233,7 @@ export function Picker<T extends string>({
   options: { value: T; label: string }[];
 }) {
   return (
-    <label className="inline-flex items-center gap-2.5 text-sm text-navy/55">
+    <label className="inline-flex items-center gap-2.5 text-sm font-medium text-navy">
       {label}
       <select
         value={value}
@@ -304,14 +305,14 @@ export function Modal({
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                {eyebrow && <Label className="text-gold">{eyebrow}</Label>}
+                {eyebrow && <Label className="font-semibold">{eyebrow}</Label>}
                 <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight text-navy md:text-2xl">{title}</h2>
               </div>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-navy/12 text-navy/60 transition-colors hover:border-gold hover:text-gold focus-gold"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold hover:text-gold focus-gold"
               >
                 <X size={16} />
               </button>
@@ -333,7 +334,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
     <label className="block">
       <span className={labelCls}>{label}</span>
       {children}
-      {hint && <span className="mt-1.5 block text-xs text-navy/50">{hint}</span>}
+      {hint && <span className="mt-1.5 block text-xs text-navy">{hint}</span>}
     </label>
   );
 }
@@ -341,9 +342,9 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 export function Empty({ icon, title, text, action }: { icon: React.ReactNode; title: string; text: string; action?: React.ReactNode }) {
   return (
     <div className="flex flex-col items-center rounded-[22px] border border-dashed border-navy/15 px-6 py-12 text-center">
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-navy/[0.05] text-navy/50">{icon}</span>
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-navy/[0.05] text-navy">{icon}</span>
       <p className="mt-4 text-base font-semibold tracking-tight text-navy">{title}</p>
-      <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-navy/55">{text}</p>
+      <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-navy">{text}</p>
       {action && <div className="mt-5">{action}</div>}
     </div>
   );
@@ -356,7 +357,7 @@ export function Stat({ label, value, sub, onNavy }: { label: string; value: Reac
       <p className={cn("mt-2 text-[1.9rem] font-semibold leading-none tracking-tight tabular-nums", onNavy ? "text-gold" : "text-navy")}>
         {value}
       </p>
-      {sub && <p className={cn("mt-2 text-[13px]", onNavy ? "text-white/55" : "text-navy/55")}>{sub}</p>}
+      {sub && <p className={cn("mt-2 text-[13px]", onNavy ? "text-white/55" : "text-navy")}>{sub}</p>}
     </div>
   );
 }
@@ -382,7 +383,10 @@ export function Rise({ i = 0, className, children }: { i?: number; className?: s
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: React.ReactNode }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-[15px] font-semibold tracking-tight text-navy">{children}</h2>
+      <h2 className="flex items-center gap-2.5 text-[16px] font-semibold tracking-tight text-navy">
+        <span className="h-4 w-[3px] rounded-full bg-gold" />
+        {children}
+      </h2>
       {action}
     </div>
   );
@@ -401,16 +405,16 @@ export function Table({
   minWidth?: number;
 }) {
   return (
-    <div className={cn("overflow-x-auto rounded-xl border border-navy/12", className)}>
+    <div className={cn("overflow-x-auto rounded-xl border border-navy/15", className)}>
       <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
         <thead>
-          <tr className="border-b border-navy/12 bg-navy/[0.03]">
+          <tr className="bg-navy-deep">
             {head.map((h) => (
               <th
                 key={h.label}
                 scope="col"
                 className={cn(
-                  "whitespace-nowrap px-4 py-2.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-navy/55",
+                  "whitespace-nowrap bg-navy-deep px-4 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-gold",
                   h.align === "right" && "text-right",
                   h.className
                 )}
@@ -438,7 +442,7 @@ export function Td({
   colSpan?: number;
 }) {
   return (
-    <td colSpan={colSpan} className={cn("px-4 py-3 align-middle text-navy/80", align === "right" && "text-right", className)}>
+    <td colSpan={colSpan} className={cn("px-4 py-3 align-middle text-navy", align === "right" && "text-right", className)}>
       {children}
     </td>
   );
@@ -452,7 +456,7 @@ export function Status({ tone = "plain", children }: { tone?: "done" | "attentio
         "inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold",
         tone === "done" && "bg-navy text-white",
         tone === "attention" && "bg-gold text-navy-deep",
-        tone === "plain" && "bg-navy/[0.06] text-navy/65"
+        tone === "plain" && "bg-navy/[0.06] text-navy"
       )}
     >
       {children}
@@ -464,7 +468,7 @@ export function Status({ tone = "plain", children }: { tone?: "done" | "attentio
 export function EmptyRow({ cols, children }: { cols: number; children: React.ReactNode }) {
   return (
     <tr>
-      <td colSpan={cols} className="py-8 text-sm text-navy/50">
+      <td colSpan={cols} className="py-8 text-sm text-navy">
         {/* stays in view when the table scrolls sideways on phones */}
         <div className="sticky left-0 w-[min(100%,calc(100vw-2.5rem))] px-4 text-center">{children}</div>
       </td>
@@ -479,9 +483,44 @@ export function RowLink({ onClick, children }: { onClick: () => void; children: 
       onClick={onClick}
       onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), onClick())}
       tabIndex={0}
-      className="cursor-pointer transition-colors hover:bg-navy/[0.025] focus:bg-navy/[0.04] focus:outline-none"
+      className="cursor-pointer transition-colors hover:bg-gold/[0.08] focus:bg-gold/[0.12] focus:outline-none"
     >
       {children}
     </tr>
+  );
+}
+
+/** Navy band at the top of a dashboard: date, greeting and a few key figures. */
+export function WelcomeBand({ date, title, figures }: { date: string; title: string; figures: { label: string; value: React.ReactNode }[] }) {
+  return (
+    <div className="mb-8 rounded-2xl bg-navy-deep p-6 md:p-7">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">{date}</p>
+      <h1 className="mt-2 text-[1.6rem] font-bold leading-tight tracking-tight text-white md:text-[1.9rem]">{title}</h1>
+      <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/10 pt-5 sm:grid-cols-4">
+        {figures.map((f) => (
+          <div key={f.label}>
+            <dd className="text-[1.6rem] font-bold leading-none tabular-nums text-gold">{f.value}</dd>
+            <dt className="mt-1.5 text-[13px] text-white/80">{f.label}</dt>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** Bordered side panel with a gold eyebrow and optional link. */
+export function Panel({ title, link, children }: { title: string; link?: { href: string; label: string }; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border border-navy/15">
+      <div className="flex items-center justify-between rounded-t-xl bg-navy-deep px-5 py-3">
+        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-gold">{title}</p>
+        {link && (
+          <Link href={link.href} className="text-[13px] font-medium text-white/85 hover:text-gold">
+            {link.label}
+          </Link>
+        )}
+      </div>
+      <div className="p-5">{children}</div>
+    </section>
   );
 }

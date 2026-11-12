@@ -49,10 +49,7 @@ export function MeetLinkForm({ cohortId, onSaved }: { cohortId: string; onSaved?
 
   return (
     <div>
-      <Field
-        label="Google Meet link"
-        hint="Use one standing room per cohort: the same link works for every class, so students never hunt for it."
-      >
+      <Field label="Google Meet link">
         <input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -72,7 +69,7 @@ export function MeetLinkForm({ cohortId, onSaved }: { cohortId: string; onSaved?
           disabled={!valid}
           onClick={async () => {
             if (!(await setCohortMeet(cohortId, url))) return;
-            toast("Meet link saved for this cohort");
+            toast("Meet link saved");
             onSaved?.();
           }}
         >
@@ -84,9 +81,6 @@ export function MeetLinkForm({ cohortId, onSaved }: { cohortId: string; onSaved?
           Create a new Meet room
         </Btn>
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-navy/50">
-        &ldquo;Create a new Meet room&rdquo; opens Google Meet in a new tab. Copy the link it gives you and paste it here.
-      </p>
     </div>
   );
 }
@@ -145,9 +139,8 @@ export function JoinButton({
           <MeetLinkForm cohortId={session.cohortId} onSaved={() => setMissing(false)} />
         ) : (
           <div>
-            <p className="text-[15px] leading-relaxed text-navy/70">
-              Your teacher hasn&apos;t added the Google Meet link for this class yet. As soon as they do, this button
-              takes you straight into the classroom and marks you present.
+            <p className="text-[15px] leading-relaxed text-navy">
+              Your teacher hasn&apos;t added the Meet link yet.
             </p>
             <div className="mt-5">
               <Btn variant="navy" onClick={() => setMissing(false)}>
@@ -161,7 +154,7 @@ export function JoinButton({
   );
 }
 
-/** The next (or live) class: one clean card with the time and the Join button. */
+/** The next (or live) class: navy card with the time and the Join button. */
 export function NextClassCard({ session, cohortLabel }: { session: Session; cohortLabel?: string }) {
   const now = useTick();
   const state = sessionState(session.start, session.durationMin, now);
@@ -171,29 +164,29 @@ export function NextClassCard({ session, cohortLabel }: { session: Session; coho
   const topic = [session.strand, session.unit].filter(Boolean).join(" · ");
 
   return (
-    <div className={cn("rounded-2xl border p-5 md:p-6", live ? "border-gold bg-gold/[0.06]" : "border-navy/10 bg-white")}>
+    <div className={cn("rounded-2xl bg-navy-deep p-5 md:p-6", live && "ring-2 ring-gold")}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 text-[13px] font-medium text-navy/55">
+          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-gold">
             {live && <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />}
             {live ? "Live now" : fmtDay(session.start, now)} · {fmtTime(session.start)} – {fmtTime(new Date(end).toISOString())}
           </p>
-          <h2 className="mt-1.5 truncate text-xl font-semibold tracking-tight text-navy">
-            {cohortLabel ? `${cohortLabel}` : session.title}
-          </h2>
-          <p className="mt-1 text-sm text-navy/55">
-            {cohortLabel ? session.title : null}
-            {cohortLabel && topic ? " · " : null}
-            {topic}
-          </p>
+          <h2 className="mt-2 truncate text-xl font-bold tracking-tight text-white">{cohortLabel ?? session.title}</h2>
+          {(topic || cohortLabel) && (
+            <p className="mt-1 text-sm text-white/85">
+              {cohortLabel ? session.title : null}
+              {cohortLabel && topic ? " · " : null}
+              {topic}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-4">
           {live && (
-            <span className="text-sm tabular-nums text-navy/55">
-              Ends in <Countdown to={new Date(end).toISOString()} className="font-semibold text-navy" />
+            <span className="text-sm tabular-nums text-white/85">
+              Ends in <Countdown to={new Date(end).toISOString()} className="font-semibold text-gold" />
             </span>
           )}
-          <JoinButton session={session} surface="white" />
+          <JoinButton session={session} surface="navy" />
         </div>
       </div>
     </div>

@@ -27,7 +27,7 @@ export default function TeacherAnnouncements() {
 
   return (
     <>
-      <PageHeader title="Announcements" sub="Students see these on their Announcements tab and dashboard." />
+      <PageHeader title="Announcements" />
 
       <Rise i={0}>
         <div className="rounded-2xl border border-navy/10 p-5 md:p-6">
@@ -61,7 +61,7 @@ export default function TeacherAnnouncements() {
       </Rise>
 
       <Rise i={1} className="mt-10">
-        <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">Sent</h2>
+        <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy">Sent</h2>
         {db.announcements.length === 0 ? (
           <Empty icon={<Megaphone size={20} />} title="No announcements yet" text="Anything you post appears here and on your students' portals." />
         ) : (
@@ -70,10 +70,10 @@ export default function TeacherAnnouncements() {
               <li key={n.id} className="py-4">
                 <div className="flex items-baseline justify-between gap-4">
                   <p className="text-[15px] font-medium tracking-tight text-navy">{n.title}</p>
-                  <span className="shrink-0 text-[13px] text-navy/45">{fmtRelative(n.at, now)}</span>
+                  <span className="shrink-0 text-[13px] font-semibold text-navy">{fmtRelative(n.at, now)}</span>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-navy/60">{n.body}</p>
-                <p className="mt-1.5 text-[13px] text-navy/45">To {n.cohortId ? cohortOf(db, n.cohortId).name : "everyone"}</p>
+                <p className="mt-1 text-sm leading-relaxed text-navy">{n.body}</p>
+                <p className="mt-1.5 text-[13px] text-navy">To {n.cohortId ? cohortOf(db, n.cohortId).name : "everyone"}</p>
               </li>
             ))}
           </ul>

@@ -3,19 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ArrowRight, ClipboardCheck, FolderOpen, KeyRound, LineChart, Video } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { usePortal } from "@/lib/portal/store";
-import { Label } from "@/components/portal/ui";
 import { GoogleSignInButton } from "@/components/portal/google-button";
-
-const POINTS = [
-  { icon: Video, t: "Join live classes", d: "One tap into your Google Meet classroom." },
-  { icon: FolderOpen, t: "Open The Vault", d: "Slides, notes, past papers and every recording." },
-  { icon: ClipboardCheck, t: "Submit your work", d: "Examiner feedback back within 24 hours." },
-  { icon: LineChart, t: "Track your grade", d: "Your predicted grade and what to fix next." },
-];
 
 function JoinForm() {
   const { email, joinWithCode, signOut } = usePortal();
@@ -36,16 +27,9 @@ function JoinForm() {
 
   return (
     <form onSubmit={submit}>
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-navy-deep text-gold">
-        <KeyRound size={20} />
-      </span>
-      <h2 className="mt-5 text-2xl font-semibold tracking-tight text-navy">Join your class</h2>
-      <p className="mt-2 text-sm leading-relaxed text-navy/60">
-        Enter the 8-character code your teacher sent you. You only need to do this once.
-      </p>
+      <h2 className="text-2xl font-bold tracking-tight text-navy">Class code</h2>
 
       <label className="mt-6 block">
-        <span className="block text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Class code</span>
         <input
           value={code}
           onChange={(e) => {
@@ -76,10 +60,10 @@ function JoinForm() {
         {!busy && <ArrowRight size={17} />}
       </button>
 
-      <p className="mt-6 text-center text-[13px] text-navy/50">
-        Signed in as <span className="font-semibold text-navy">{email}</span>.{" "}
+      <p className="mt-6 text-center text-[13px] text-navy">
+        <span className="font-semibold">{email}</span> ·{" "}
         <button type="button" onClick={signOut} className="font-semibold text-navy underline decoration-gold underline-offset-4 hover:text-gold">
-          Use another account
+          Switch account
         </button>
       </p>
     </form>
@@ -89,115 +73,65 @@ function JoinForm() {
 export default function PortalSignIn() {
   const { status, auth, signInWithGoogle } = usePortal();
   const router = useRouter();
-  const reduce = useReducedMotion();
   const [going, setGoing] = useState(false);
 
   useEffect(() => {
     if (status === "ready" && auth) router.replace(auth.role === "student" ? "/portal/student/" : "/portal/teacher/");
   }, [status, auth, router]);
 
-  const item = {
-    hidden: { opacity: 0, y: reduce ? 0 : 18 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] as const } },
-  };
-  const container = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.08 } } };
-
   return (
-    <main data-portal className="relative min-h-[100dvh] w-full overflow-hidden px-5 py-8 md:px-10 md:py-12">
-      <div className="aura" aria-hidden="true" />
-      <div className="absolute inset-0 bg-grid bg-grid-mask opacity-70" aria-hidden="true" />
-
-      <div className="relative z-10 mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-medium text-navy/60 transition-colors hover:text-gold">
-            <ArrowLeft size={16} />
-            Back to website
-          </Link>
-          <Wordmark />
-        </div>
-
-        <div className="mt-10 grid grid-cols-1 gap-6 lg:mt-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-8">
-          {/* brand panel */}
-          <motion.section variants={container} initial="hidden" animate="show" className="glass-navy rounded-[30px] p-8 md:p-10">
-            <motion.div variants={item}>
-              <Label className="text-gold">Concept Lab Portal</Label>
-            </motion.div>
-            <motion.h1
-              variants={item}
-              className="mt-4 text-[clamp(2rem,4.4vw,3.1rem)] font-semibold leading-[1.04] tracking-tightest text-white"
-            >
-              Your Classroom
-              <br />
-              <span className="text-gold">In One Place</span>
-            </motion.h1>
-            <motion.div variants={item} className="mt-7 h-px w-12 bg-gold" />
-            <ul className="mt-7 grid grid-cols-1 gap-5 sm:grid-cols-2">
-              {POINTS.map((p) => (
-                <motion.li key={p.t} variants={item} className="flex gap-3.5">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/[0.07] text-gold ring-1 ring-white/10">
-                    <p.icon size={17} />
-                  </span>
-                  <div>
-                    <p className="text-[15px] font-medium text-white">{p.t}</p>
-                    <p className="mt-0.5 text-[13px] leading-relaxed text-white/60">{p.d}</p>
-                  </div>
-                </motion.li>
-              ))}
-            </ul>
-          </motion.section>
-
-          {/* sign in / join */}
-          <section className="flex flex-col justify-center rounded-[30px] border border-navy/10 bg-white p-7 shadow-[0_30px_80px_-44px_rgba(26,39,68,0.4)] md:p-9">
-            {status === "loading" || status === "ready" ? (
-              <div className="flex flex-col items-center py-10 text-center">
-                <LogoMark className="h-12 w-12 animate-pulse-node" />
-                <p className="mt-4 text-sm text-navy/55">Opening your portal…</p>
-              </div>
-            ) : status === "needs-join" ? (
-              <JoinForm />
-            ) : (
-              <div>
-                <h2 className="text-2xl font-semibold tracking-tight text-navy">Sign in</h2>
-                <p className="mt-2 text-sm leading-relaxed text-navy/60">
-                  Use the Google account you&apos;ll use for your classes. New students will be asked for their class code once.
-                </p>
-                <div className="mt-7">
-                  {going ? (
-                    <div className="flex h-[44px] items-center justify-center gap-2.5 text-sm font-medium text-navy/60">
-                      <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
-                      Signing you in…
-                    </div>
-                  ) : null}
-                  <div className={going ? "hidden" : undefined}>
-                    <GoogleSignInButton onBusy={setGoing} />
-                  </div>
-                </div>
-                <p className="mt-4 text-center text-xs text-navy/45">
-                  Trouble signing in?{" "}
-                  <button
-                    type="button"
-                    onClick={() => signInWithGoogle()}
-                    className="font-semibold text-navy/60 underline decoration-gold underline-offset-2 hover:text-gold"
-                  >
-                    Try the other Google sign-in
-                  </button>
-                </p>
-                <p className="mt-6 text-center text-xs leading-relaxed text-navy/45">
-                  By signing in you agree to our{" "}
-                  <a href="/terms/" className="underline decoration-gold underline-offset-2 hover:text-gold">
-                    Terms
-                  </a>{" "}
-                  and{" "}
-                  <a href="/privacy/" className="underline decoration-gold underline-offset-2 hover:text-gold">
-                    Privacy Policy
-                  </a>
-                  .
-                </p>
-              </div>
-            )}
-          </section>
-        </div>
+    <main data-portal className="flex min-h-[100dvh] w-full flex-col items-center justify-center bg-navy-deep px-5 py-12">
+      <div className="flex flex-col items-center">
+        <Wordmark onDark />
+        <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.3em] text-gold">Portal</p>
       </div>
+
+      <section className="mt-8 w-full max-w-sm rounded-2xl bg-white p-7 md:p-8">
+        {status === "loading" || status === "ready" ? (
+          <div className="flex justify-center py-8">
+            <LogoMark className="h-12 w-12 animate-pulse-node" />
+          </div>
+        ) : status === "needs-join" ? (
+          <JoinForm />
+        ) : (
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-navy">Sign in</h1>
+            <span className="mt-2.5 block h-[3px] w-10 rounded-full bg-gold" />
+            <div className="mt-7">
+              {going && (
+                <div className="flex h-[44px] items-center justify-center gap-2.5 text-sm font-medium text-navy">
+                  <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
+                  Signing in…
+                </div>
+              )}
+              <div className={going ? "hidden" : undefined}>
+                <GoogleSignInButton onBusy={setGoing} />
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => signInWithGoogle()}
+              className="mx-auto mt-4 block text-[13px] font-medium text-navy underline decoration-gold decoration-2 underline-offset-4 hover:text-gold"
+            >
+              Other sign-in option
+            </button>
+            <p className="mt-6 text-center text-[12px] text-navy">
+              <a href="/terms/" className="hover:text-gold">
+                Terms
+              </a>{" "}
+              ·{" "}
+              <a href="/privacy/" className="hover:text-gold">
+                Privacy
+              </a>
+            </p>
+          </div>
+        )}
+      </section>
+
+      <Link href="/" className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-white/85 transition-colors hover:text-gold">
+        <ArrowLeft size={16} />
+        Back to website
+      </Link>
     </main>
   );
 }

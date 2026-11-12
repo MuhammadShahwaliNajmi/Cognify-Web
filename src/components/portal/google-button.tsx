@@ -98,7 +98,7 @@ export function GoogleSignInButton({ onBusy }: { onBusy?: (busy: boolean) => voi
       />
       <div ref={slot} className="flex min-h-[44px] w-full justify-center" />
       {failed && (
-        <p className="mt-3 text-center text-sm text-navy/60">
+        <p className="mt-3 text-center text-sm text-navy">
           Google sign-in couldn&apos;t load. Check your connection or turn off any blocker for accounts.google.com, then refresh.
         </p>
       )}

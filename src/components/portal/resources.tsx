@@ -47,19 +47,19 @@ export function ResourceTable({ items, onOpen, empty }: { items: Resource[]; onO
             <RowLink key={r.id} onClick={() => onOpen(r)}>
               <Td>
                 <span className="flex items-center gap-3">
-                  <Icon size={16} className="shrink-0 text-navy/45" />
+                  <Icon size={16} className="shrink-0 text-navy" />
                   <span className="min-w-0">
                     <span className="block font-medium text-navy">{r.title}</span>
                     {(r.meta && r.meta !== r.type) || !r.driveUrl ? (
-                      <span className="block text-[12px] text-navy/45">{r.driveUrl ? r.meta : "No Drive link yet"}</span>
+                      <span className="block text-[12px] text-navy">{r.driveUrl ? r.meta : "No Drive link yet"}</span>
                     ) : null}
                   </span>
                   {isNew && <Status tone="attention">New</Status>}
                 </span>
               </Td>
               <Td className="whitespace-nowrap">{r.type}</Td>
-              <Td className="text-navy/60">{r.unit}</Td>
-              <Td align="right" className="whitespace-nowrap text-navy/60">
+              <Td className="text-navy">{r.unit}</Td>
+              <Td align="right" className="whitespace-nowrap text-navy">
                 {fmtDate(r.addedAt)}
               </Td>
             </RowLink>
@@ -95,7 +95,7 @@ export function ResourceViewer({ resource, onClose }: { resource: Resource | nul
             </div>
           ) : (
             <div className="rounded-2xl border border-navy/10 bg-navy/[0.025] p-6 md:p-8">
-              <Label className="text-gold">{resource.strand} · {resource.unit}</Label>
+              <Label>{resource.strand} · {resource.unit}</Label>
               <p className="mt-3 text-lg font-semibold tracking-tight text-navy">{resource.title}</p>
               <div className="mt-5 space-y-2.5" aria-hidden="true">
                 {[100, 92, 97, 64, 0, 100, 88, 95, 71].map((w, i) =>
@@ -106,7 +106,7 @@ export function ResourceViewer({ resource, onClose }: { resource: Resource | nul
           )}
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="max-w-md text-[13px] leading-relaxed text-navy/55">
+            <p className="max-w-md text-[13px] leading-relaxed text-navy">
               {resource.driveUrl
                 ? "Stored in Concept Lab's Google Drive."
                 : "No file is attached to this item yet."}

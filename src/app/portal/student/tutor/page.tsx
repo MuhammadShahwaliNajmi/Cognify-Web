@@ -69,7 +69,7 @@ function Bubble({ m }: { m: Msg }) {
       <div
         className={cn(
           "max-w-[85%] rounded-[20px] px-4 py-3 text-[15px] leading-relaxed md:max-w-[75%]",
-          mine ? "rounded-br-md bg-navy-deep text-white" : "rounded-bl-md border border-navy/10 bg-white text-navy/85"
+          mine ? "rounded-br-md bg-navy-deep text-white" : "rounded-bl-md border border-navy/10 bg-white text-navy"
         )}
       >
         {m.text.split("\n").map((line, i) =>
@@ -137,7 +137,6 @@ export default function StudentTutor() {
     <>
       <PageHeader
         title="AI Tutor"
-        sub="A preview of the Lab AI Tutor. It answers the sample questions below; the full tutor is coming soon."
         actions={<Status tone="attention">Coming soon</Status>}
       />
 
@@ -168,7 +167,7 @@ export default function StudentTutor() {
                 key={s}
                 type="button"
                 onClick={() => ask(s)}
-                className="shrink-0 rounded-full border border-navy/15 px-3.5 py-2 text-[13px] font-medium text-navy/75 transition-colors hover:border-gold hover:text-navy focus-gold"
+                className="shrink-0 rounded-full border border-navy/15 px-3.5 py-2 text-[13px] font-medium text-navy transition-colors hover:border-gold hover:text-navy focus-gold"
               >
                 {s}
               </button>

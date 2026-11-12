@@ -45,7 +45,7 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
       : `${start.toLocaleDateString([], { day: "numeric", month: "short" })} – ${end.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" })}`;
 
   const navBtn =
-    "grid h-9 w-9 place-items-center rounded-lg border border-navy/12 text-navy/70 transition-colors hover:border-navy/30 hover:text-navy focus-gold";
+    "grid h-9 w-9 place-items-center rounded-lg border border-navy/12 text-navy transition-colors hover:border-navy/30 hover:text-navy focus-gold";
 
   return (
     <div>
@@ -66,9 +66,9 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
           </button>
         </div>
         <p className="text-[15px] font-semibold text-navy">{range}</p>
-        <div className="flex items-center gap-4 text-[13px] text-navy/55">
+        <div className="flex items-center gap-4 text-[13px] text-navy">
           <span className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-navy" /> Class
+            <span className="h-2.5 w-2.5 rounded-sm bg-navy-deep" /> Class
           </span>
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-gold" /> Deadline
@@ -81,8 +81,8 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
           const isToday = sameDay(d, today);
           return (
             <div key={i} className={cn("min-h-[3.5rem] border-navy/12 md:min-h-[14rem]", i > 0 && "border-t md:border-l md:border-t-0")}>
-              <div className={cn("flex items-center gap-2 border-b border-navy/10 px-3 py-2", isToday ? "bg-gold/15" : "bg-navy/[0.03]")}>
-                <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-navy/55">
+              <div className={cn("flex items-center gap-2 border-b border-navy/10 px-3 py-2", isToday ? "bg-gold/25" : "bg-navy/[0.04]")}>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-navy">
                   {d.toLocaleDateString([], { weekday: "short" })}
                 </span>
                 <span
@@ -104,15 +104,17 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
                       disabled={!e.onClick}
                       className={cn(
                         "block w-full rounded-md border-l-[3px] px-2 py-1.5 text-left transition-colors focus-gold",
-                        e.kind === "class" ? "border-navy bg-navy/[0.05] hover:bg-navy/[0.09]" : "border-gold bg-gold/15 hover:bg-gold/25",
+                        e.kind === "class" ? "border-gold bg-navy-deep hover:bg-navy" : "border-gold bg-gold/20 hover:bg-gold/30",
                         !e.onClick && "cursor-default"
                       )}
                     >
-                      <span className="block text-[11px] font-semibold tabular-nums text-navy/60">
+                      <span className={cn("block text-[11px] font-semibold tabular-nums", e.kind === "class" ? "text-gold" : "text-navy")}>
                         {e.kind === "due" ? `Due ${fmtTime(e.start)}` : fmtTime(e.start)}
                       </span>
-                      <span className="block truncate text-[13px] font-medium leading-snug text-navy">{e.title}</span>
-                      {e.sub && <span className="block truncate text-[11px] text-navy/50">{e.sub}</span>}
+                      <span className={cn("block truncate text-[13px] font-semibold leading-snug", e.kind === "class" ? "text-white" : "text-navy")}>
+                        {e.title}
+                      </span>
+                      {e.sub && <span className={cn("block truncate text-[11px]", e.kind === "class" ? "text-white/80" : "text-navy")}>{e.sub}</span>}
                     </button>
                   </li>
                 ))}

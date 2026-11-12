@@ -6,6 +6,7 @@ import { fmtDate } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
+import { ClassSetup } from "@/components/portal/class-tools";
 
 /** Predicted and target grade — set by the teacher, shown to the student. */
 function GradeForm({ s }: { s: Student }) {
@@ -54,7 +55,7 @@ function Profile({ s }: { s: Student }) {
       <div className="flex items-center gap-4">
         <Avatar name={s.name} size="lg" />
         <div className="min-w-0">
-          <p className="truncate text-sm text-navy/55">{s.email}</p>
+          <p className="truncate text-sm text-navy">{s.email}</p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
             <Chip tone="navy">{s.plan}</Chip>
             <Chip tone="soft">{cohortOf(db, s.cohortId).name}</Chip>
@@ -78,14 +79,18 @@ function Profile({ s }: { s: Student }) {
         </div>
       )}
 
-      <div className="mt-5">
+      <div className="mt-6 border-t border-navy/10 pt-5">
+        <ClassSetup cohortId={s.cohortId} />
+      </div>
+
+      <div className="mt-6">
         <Label>Work this term</Label>
         <ul className="mt-2">
           {work.map(({ a, sub }) => (
             <li key={a.id} className="flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium tracking-tight text-navy">{a.title}</p>
-                <p className="text-xs text-navy/45">
+                <p className="text-xs text-navy">
                   {a.kind} · due {fmtDate(a.dueAt)}
                 </p>
               </div>
@@ -113,6 +118,7 @@ function Profile({ s }: { s: Student }) {
 export default function TeacherStudents() {
   const { db, now } = useTeacher();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [setupId, setSetupId] = useState<string | null>(null);
 
   const students = [...db.students].sort((a, b) => a.name.localeCompare(b.name));
   const open = db.students.find((s) => s.id === openId) ?? null;
@@ -120,7 +126,7 @@ export default function TeacherStudents() {
 
   return (
     <>
-      <PageHeader title="Students" sub="Click a student for their grades, attendance and predicted grade." />
+      <PageHeader title="Students" />
 
       <Table
         minWidth={720}
@@ -144,7 +150,7 @@ export default function TeacherStudents() {
                 <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
                   <Td>
                     <span className="block font-medium text-navy">{s.name}</span>
-                    <span className="block text-[12px] text-navy/45">{s.email}</span>
+                    <span className="block text-[12px] text-navy">{s.email}</span>
                   </Td>
                   <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
                   <Td align="right" className="tabular-nums">{attendancePct(db, s.id, s.cohortId, now)}%</Td>
@@ -155,28 +161,26 @@ export default function TeacherStudents() {
               );
             })}
             {waiting.map((c) => (
-              <tr key={c.id}>
+              <RowLink key={c.id} onClick={() => setSetupId(c.id)}>
                 <Td>
-                  <span className="block font-medium text-navy/70">{c.name}</span>
-                  <span className="block text-[12px] text-navy/45">Join code {c.joinCode}</span>
+                  <span className="block font-medium text-navy">{c.name}</span>
+                  <span className="block text-[12px] text-navy">Join code {c.joinCode}</span>
                 </Td>
                 <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
                 <Td colSpan={4} align="right">
-                  <Status>Not joined yet</Status>
+                  <Status tone="attention">Not joined yet</Status>
                 </Td>
-              </tr>
+              </RowLink>
             ))}
           </>
         )}
       </Table>
-      {waiting.length > 0 && (
-        <p className="mt-3 text-[13px] text-navy/50">
-          Students who haven&apos;t joined sign in at cognifypk.com/portal with Google and enter their join code once. Codes can be renewed under Classes → Setup.
-        </p>
-      )}
 
       <Modal open={!!open} onClose={() => setOpenId(null)} title={open?.name ?? ""}>
         {open && <Profile key={open.id} s={open} />}
+      </Modal>
+      <Modal open={!!setupId} onClose={() => setSetupId(null)} eyebrow="Not joined yet" title={db.cohorts.find((c) => c.id === setupId)?.name ?? ""}>
+        {setupId && <ClassSetup cohortId={setupId} />}
       </Modal>
     </>
   );

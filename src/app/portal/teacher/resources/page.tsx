@@ -43,7 +43,7 @@ function AddResource({ cohortId, onDone }: { cohortId: string; onDone: () => voi
           <input value={f.meta} onChange={(e) => set("meta", e.target.value)} placeholder="18 pages, 24 slides, 58 min…" className={fieldCls} />
         </Field>
       </div>
-      <Field label="Google Drive link" hint="In Drive: right-click the file, Share, Copy link. Students open it without leaving the portal.">
+      <Field label="Google Drive link">
         <input value={f.driveUrl} onChange={(e) => set("driveUrl", e.target.value)} placeholder="https://drive.google.com/file/d/…" inputMode="url" className={fieldCls} />
       </Field>
       {!linkOk && <p className="-mt-2 text-xs font-medium text-navy">That doesn&apos;t look like a Google Drive link.</p>}
@@ -54,12 +54,12 @@ function AddResource({ cohortId, onDone }: { cohortId: string; onDone: () => voi
         onClick={async () => {
           const saved = await addResource({ cohortId, title: f.title.trim(), type: f.type, strand: f.strand, unit: f.unit.trim(), meta: f.meta.trim() || f.type, driveUrl: f.driveUrl.trim() });
           if (!saved) return;
-          toast("Added to The Vault");
+          toast("Resource added");
           onDone();
         }}
       >
         <Plus size={16} />
-        Add to The Vault
+        Add resource
       </Btn>
     </div>
   );
@@ -79,13 +79,12 @@ export default function TeacherResources() {
     .filter((r) => type === "All" || r.type === type)
     .sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
 
-  if (!cohort) return <PageHeader title="Resources" sub="No students yet." />;
+  if (!cohort) return <PageHeader title="Resources" />;
 
   return (
     <>
       <PageHeader
         title="Resources"
-        sub="Files stay in your Google Drive. Add a Drive link here and that student can open it in their portal."
         actions={
           <Btn variant="navy" onClick={() => setAdding(true)}>
             <Plus size={15} />

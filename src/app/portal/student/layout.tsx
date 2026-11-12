@@ -16,7 +16,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const nav: NavItem[] = [
     { href: "/portal/student/", label: "Dashboard" },
     { href: "/portal/student/calendar/", label: "Calendar" },
-    { href: "/portal/student/classes/", label: "Classes" },
     { href: "/portal/student/assignments/", label: "Assignments", badge: todo },
     { href: "/portal/student/grades/", label: "Grades" },
     { href: "/portal/student/resources/", label: "Resources" },

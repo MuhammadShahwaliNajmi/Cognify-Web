@@ -70,7 +70,7 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
           <input type="time" value={f.time} onChange={(e) => set("time", e.target.value)} className={fieldCls} />
         </Field>
       </div>
-      <Field label="Question paper (optional)" hint="Google Drive link to the PDF. In Drive: Share, set to 'Anyone with the link', then Copy link.">
+      <Field label="Question paper link (optional)">
         <input
           value={f.attachmentUrl}
           onChange={(e) => set("attachmentUrl", e.target.value)}
@@ -125,13 +125,12 @@ export default function TeacherAssignments() {
   const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now);
   const list = tab === "open" ? open : tab === "closed" ? closed : all;
 
-  if (!cohort) return <PageHeader title="Assignments" sub="No students yet." />;
+  if (!cohort) return <PageHeader title="Assignments" />;
 
   return (
     <>
       <PageHeader
         title="Assignments"
-        sub="Set work for each student. Click a handed-in assignment to mark it."
         actions={
           <Btn variant="navy" onClick={() => setCreating(true)}>
             <Plus size={15} />
@@ -177,16 +176,16 @@ export default function TeacherAssignments() {
                     ) : due < 0 ? (
                       <Status>Not handed in</Status>
                     ) : (
-                      <span className="text-navy/55">Due {fmtRelative(a.dueAt, now)}</span>
+                      <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
                     )}
                   </Td>
                   <Td align="right" className="whitespace-nowrap tabular-nums">
                     {sub?.status === "marked" ? (
                       <span className="font-semibold text-navy">
-                        {sub.marks} <span className="font-normal text-navy/45">/ {a.maxMarks}</span>
+                        {sub.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
                       </span>
                     ) : (
-                      <span className="text-navy/40">– / {a.maxMarks}</span>
+                      <span className="text-navy">– / {a.maxMarks}</span>
                     )}
                   </Td>
                 </>

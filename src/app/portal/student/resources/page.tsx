@@ -27,7 +27,7 @@ export default function StudentResources() {
 
   return (
     <>
-      <PageHeader title="Resources" sub="Slides, notes, past papers, essay plans and class recordings from The Vault." />
+      <PageHeader title="Resources" />
 
       {all.length === 0 ? (
         <Empty

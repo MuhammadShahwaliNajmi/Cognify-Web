@@ -13,9 +13,9 @@ const BOUNDARY: Record<string, number> = { "A*": 88, A: 78, B: 68, C: 58, D: 48,
 function Figure({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="min-w-0">
-      <p className="text-[13px] text-navy/50">{label}</p>
+      <p className="text-[13px] text-navy">{label}</p>
       <p className="mt-1 text-[1.75rem] font-semibold leading-none tracking-tight tabular-nums text-navy">{value}</p>
-      {sub && <p className="mt-1.5 text-[13px] text-navy/45">{sub}</p>}
+      {sub && <p className="mt-1.5 text-[13px] text-navy">{sub}</p>}
     </div>
   );
 }
@@ -40,16 +40,16 @@ export default function StudentGrades() {
 
   return (
     <>
-      <PageHeader title="Grades" sub="Every assignment and its score. Your predicted grade is an estimate set by your teacher." />
+      <PageHeader title="Grades" />
 
       <div className="grid grid-cols-2 gap-6 rounded-xl border border-navy/12 p-5 sm:grid-cols-4">
         <Figure label="Predicted grade" value={me.predicted || "–"} sub={me.predicted ? "set by your teacher" : "after your first graded work"} />
         <Figure label="Target" value={me.target || "–"} />
         <Figure label="Overall" value={max ? `${Math.round((got / max) * 100)}%` : "–"} sub={`${graded.length} graded`} />
-        <Figure label="Attendance" value={`${attendancePct(db, me.id, me.cohortId, now)}%`} sub="of live classes" />
+        <Figure label="Attendance" value={`${attendancePct(db, me.id, me.cohortId, now)}%`} />
       </div>
       {targetPct !== undefined && latest !== null && (
-        <div className="mt-3 flex items-center gap-4 text-[13px] text-navy/55">
+        <div className="mt-3 flex items-center gap-4 text-[13px] text-navy">
           <Bar value={(latest / targetPct) * 100} className="flex-1" />
           {latest >= targetPct ? "On target" : `${targetPct - latest} points to your target`}
         </div>
@@ -83,19 +83,19 @@ export default function StudentGrades() {
                     <Td className="whitespace-nowrap">{a.kind}</Td>
                     <Td className="whitespace-nowrap">{fmtDate(a.dueAt)}</Td>
                     <Td className="whitespace-nowrap">
-                      {done ? fmtDate(sub!.markedAt!) : sub ? <Status>Being marked</Status> : <span className="text-navy/40">Not submitted</span>}
+                      {done ? fmtDate(sub!.markedAt!) : sub ? <Status>Being marked</Status> : <span className="text-navy">Not submitted</span>}
                     </Td>
                     <Td align="right" className="whitespace-nowrap tabular-nums">
                       {done ? (
                         <span className="font-semibold text-navy">
-                          {sub!.marks} <span className="font-normal text-navy/45">/ {a.maxMarks}</span>
+                          {sub!.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
                         </span>
                       ) : (
-                        <span className="text-navy/40">– / {a.maxMarks}</span>
+                        <span className="text-navy">– / {a.maxMarks}</span>
                       )}
                     </Td>
                     <Td align="right" className="tabular-nums font-semibold text-navy">
-                      {done ? `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%` : <span className="font-normal text-navy/40">–</span>}
+                      {done ? `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%` : <span className="font-normal text-navy">–</span>}
                     </Td>
                   </RowLink>
                 );
@@ -131,7 +131,7 @@ export default function StudentGrades() {
                       <span className="w-10 text-right font-semibold tabular-nums text-navy">{m.score}%</span>
                     </div>
                   </Td>
-                  <Td className="text-navy/65">{m.fix || "—"}</Td>
+                  <Td className="text-navy">{m.fix || "—"}</Td>
                 </tr>
               ))
             )}

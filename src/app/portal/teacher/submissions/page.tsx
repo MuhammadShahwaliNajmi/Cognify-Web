@@ -34,7 +34,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
           <Avatar name={st.name} />
           <div>
             <p className="text-[15px] font-semibold tracking-tight text-navy">{st.name}</p>
-            <p className="text-[13px] text-navy/50">
+            <p className="text-[13px] text-navy">
               {cohortOf(db, st.cohortId).name} {st.predicted ? ` · predicted ${st.predicted}` : ""}
             </p>
           </div>
@@ -50,7 +50,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
           </span>
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold text-navy">{sub.fileName}</span>
-            <span className="block text-xs text-navy/50">
+            <span className="block text-xs text-navy">
               {sub.fileSize} · {fmtDate(sub.submittedAt)}, {fmtTime(sub.submittedAt)} · tap to open
             </span>
           </span>
@@ -58,14 +58,14 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
 
         {sub.note && (
           <div className="mt-3 rounded-2xl bg-gold/15 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy/55">Note from {st.name.split(" ")[0]}</p>
-            <p className="mt-1.5 text-sm italic leading-relaxed text-navy/80">&ldquo;{sub.note}&rdquo;</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">Note from {st.name.split(" ")[0]}</p>
+            <p className="mt-1.5 text-sm italic leading-relaxed text-navy">&ldquo;{sub.note}&rdquo;</p>
           </div>
         )}
 
         <div className="mt-3 rounded-2xl bg-navy/[0.04] p-4">
           <Label>The task · {a.maxMarks} marks</Label>
-          <p className="mt-2 text-sm leading-relaxed text-navy/70">{a.brief}</p>
+          <p className="mt-2 text-sm leading-relaxed text-navy">{a.brief}</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
               aria-invalid={marks !== "" && !marksOk}
               className={cn(fieldCls, "!mt-0 w-28 text-center text-xl font-semibold tabular-nums")}
             />
-            <span className="text-lg font-medium text-navy/40">/ {a.maxMarks}</span>
+            <span className="text-lg font-medium text-navy">/ {a.maxMarks}</span>
             {marksOk && <Chip tone="navy">{Math.round((n / a.maxMarks) * 100)}%</Chip>}
           </div>
         </Field>
@@ -96,10 +96,10 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
             className={cn(fieldCls, "resize-none")}
           />
         </Field>
-        <Field label="What they did well" hint="One point per line.">
+        <Field label="What they did well">
           <textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} className={cn(fieldCls, "resize-none")} />
         </Field>
-        <Field label="To gain more marks" hint="One point per line. These feed the student's 'what to fix' list.">
+        <Field label="To gain more marks">
           <textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} rows={2} className={cn(fieldCls, "resize-none")} />
         </Field>
 
@@ -146,7 +146,6 @@ function Submissions() {
 
   const open = db.submissions.find((x) => x.id === openId) ?? null;
   const openA = open && db.assignments.find((a) => a.id === open.assignmentId);
-  const urgent = queue.filter((x) => new Date(x.submittedAt).getTime() + 24 * HOUR - now < 6 * HOUR).length;
   const close = () => {
     setOpenId(null);
     if (params.get("open")) router.replace("/portal/teacher/submissions/", { scroll: false });
@@ -154,10 +153,7 @@ function Submissions() {
 
   return (
     <>
-      <PageHeader
-        title="Submissions"
-        sub={`Oldest first. Feedback is due within 24 hours of hand-in.${urgent ? ` ${urgent} due in the next 6 hours.` : ""}`}
-      />
+      <PageHeader title="Submissions" />
 
       <div className="mb-5">
         <Picker
@@ -213,7 +209,7 @@ function Submissions() {
                   <Td align="right" className="whitespace-nowrap tabular-nums">
                     {x.status === "marked" ? (
                       <span className="font-semibold text-navy">
-                        {x.marks} <span className="font-normal text-navy/45">/ {a.maxMarks}</span>
+                        {x.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
                       </span>
                     ) : (
                       <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">Mark</span>

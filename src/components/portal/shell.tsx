@@ -65,10 +65,10 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
   return (
     <div data-portal className="min-h-[100dvh] bg-white text-navy">
       {/* ---------- header + tabs ---------- */}
-      <header className="sticky top-0 z-40 border-b border-navy/10 bg-white/95 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 bg-navy-deep">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pt-4 md:px-8">
           <Link href={nav[0].href} aria-label="Portal home">
-            <Wordmark />
+            <Wordmark onDark />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                 onClick={() => setMenu((v) => !v)}
                 aria-label="Account"
                 aria-expanded={menu}
-                className="rounded-full focus-gold"
+                className="rounded-full ring-1 ring-gold/60 focus-gold"
               >
                 <Avatar name={me.name} size="sm" />
               </button>
@@ -94,15 +94,15 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                   >
                     <div className="px-3 py-2.5">
                       <p className="truncate text-sm font-semibold text-navy">{me.name}</p>
-                      <p className="truncate text-[13px] text-navy/50">{me.email}</p>
-                      <p className="mt-0.5 text-[13px] text-navy/50">{sub}</p>
+                      <p className="truncate text-[13px] text-navy">{me.email}</p>
+                      <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-navy">{sub}</p>
                     </div>
                     <button
                       type="button"
                       onClick={leave}
                       className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-navy transition-colors hover:bg-navy/[0.04] focus-gold"
                     >
-                      <LogOut size={15} className="text-navy/50" />
+                      <LogOut size={15} className="text-navy" />
                       Sign out
                     </button>
                   </motion.div>
@@ -123,7 +123,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                   aria-current={on ? "page" : undefined}
                   className={cn(
                     "relative flex items-center gap-1.5 whitespace-nowrap px-3 pb-3 pt-4 text-[14px] font-medium tracking-tight transition-colors focus-gold",
-                    on ? "text-navy" : "text-navy/50 hover:text-navy/80"
+                    on ? "text-white" : "text-white/65 hover:text-white"
                   )}
                 >
                   {item.label}
@@ -135,7 +135,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                   {on && (
                     <motion.span
                       layoutId="portal-tab"
-                      className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-gold"
+                      className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-gold"
                       transition={{ type: "spring", stiffness: 420, damping: 34 }}
                     />
                   )}
