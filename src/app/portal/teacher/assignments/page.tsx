@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Clock, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
+import { uploadFile } from "@/lib/portal/storage";
 import { fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { AssignmentKind, Strand } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
@@ -23,13 +24,13 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
     date: dateInput(new Date(Date.now() + 7 * 86_400_000)),
     time: "23:59",
     maxMarks: "20",
-    attachmentUrl: "",
   });
+  const [paper, setPaper] = useState<File | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const marks = Number(f.maxMarks);
-  const linkOk = !f.attachmentUrl.trim() || /^https:\/\/(drive|docs)\.google\.com\//.test(f.attachmentUrl.trim());
-  const ok = f.title.trim() && f.unit.trim() && f.brief.trim() && marks > 0 && linkOk;
+  const ok = f.title.trim() && f.unit.trim() && f.brief.trim() && marks > 0;
 
   return (
     <div className="space-y-5">
@@ -70,22 +71,37 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
           <input type="time" value={f.time} onChange={(e) => set("time", e.target.value)} className={fieldCls} />
         </Field>
       </div>
-      <Field label="Question paper link (optional)">
+      <Field label="Question paper (optional)">
         <input
-          value={f.attachmentUrl}
-          onChange={(e) => set("attachmentUrl", e.target.value)}
-          placeholder="https://drive.google.com/file/d/…"
-          inputMode="url"
-          className={fieldCls}
+          type="file"
+          onChange={(e) => setPaper(e.target.files?.[0] ?? null)}
+          className="block w-full text-sm text-navy file:mr-3 file:rounded-full file:border-0 file:bg-navy-deep file:px-4 file:py-2 file:text-sm file:font-semibold file:text-gold"
         />
       </Field>
-      {!linkOk && <p className="-mt-2 text-xs font-medium text-navy">That doesn&apos;t look like a Google Drive link.</p>}
+      {progress !== null && (
+        <div className="-mt-2 h-1.5 overflow-hidden rounded-full bg-navy/10">
+          <div className="h-full rounded-full bg-gold" style={{ width: `${Math.max(3, progress * 100)}%` }} />
+        </div>
+      )}
       <Btn
         variant="gold"
         size="lg"
         disabled={!ok || busy}
         onClick={async () => {
           setBusy(true);
+          let attachment: { attachmentFileId?: string; attachmentName?: string; attachmentMime?: string } = {};
+          if (paper) {
+            try {
+              setProgress(0);
+              const up = await uploadFile(paper, { purpose: "assignment", cohortId }, setProgress);
+              attachment = { attachmentFileId: up.id, attachmentName: paper.name, attachmentMime: up.mimeType || paper.type };
+            } catch (e) {
+              setBusy(false);
+              setProgress(null);
+              toast(e instanceof Error ? e.message : "Upload failed");
+              return;
+            }
+          }
           const saved = await addAssignment({
             cohortId,
             title: f.title.trim(),
@@ -95,7 +111,7 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
             brief: f.brief.trim(),
             dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
             maxMarks: marks,
-            attachmentUrl: f.attachmentUrl.trim() || undefined,
+            ...attachment,
           });
           setBusy(false);
           if (!saved) return;

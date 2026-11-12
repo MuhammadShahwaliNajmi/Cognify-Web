@@ -59,19 +59,31 @@ export type ResourceType =
   | "Summary sheet"
   | "Past paper"
   | "Essay structure"
-  | "Recording";
+  | "Recording"
+  | "File";
 
 export type Resource = {
   id: string;
   cohortId: string;
   title: string;
   type: ResourceType;
-  strand: Strand;
+  strand: Strand | null;
   unit: string;
   meta: string;
-  driveUrl: string; // Google Drive file link ("" if none)
+  driveUrl: string; // pasted link ("" if none)
   sessionId?: string; // set for a class's slides / recording
   addedAt: string; // ISO
+  folderId?: string; // portal folder (none → the student's top level)
+  driveFileId?: string; // uploaded file in storage
+  mimeType?: string;
+  sizeBytes?: number;
+};
+
+export type Folder = {
+  id: string;
+  cohortId: string;
+  parentId: string | null;
+  name: string;
 };
 
 export type AssignmentKind = "Essay" | "Past paper" | "Problem set" | "Assessment";
@@ -86,7 +98,10 @@ export type Assignment = {
   brief: string;
   dueAt: string; // ISO
   maxMarks: number;
-  attachmentUrl?: string; // Google Drive link to the question paper
+  attachmentUrl?: string; // pasted link to the question paper
+  attachmentFileId?: string; // uploaded question paper
+  attachmentName?: string;
+  attachmentMime?: string;
 };
 
 export type Submission = {
@@ -96,7 +111,9 @@ export type Submission = {
   submittedAt: string; // ISO
   fileName: string;
   fileSize: string; // formatted, e.g. "1.2 MB"
-  filePath?: string; // private storage path
+  filePath?: string; // older uploads: private storage path
+  driveFileId?: string; // newer uploads: stored file id
+  mimeType?: string;
   note?: string;
   status: "submitted" | "marked";
   marks?: number;
@@ -147,6 +164,7 @@ export type DB = {
   announcements: Announcement[];
   progress: Progress[];
   requests: ClassRequest[];
+  folders: Folder[];
 };
 
 export const EMPTY_DB: DB = {
@@ -160,4 +178,5 @@ export const EMPTY_DB: DB = {
   announcements: [],
   progress: [],
   requests: [],
+  folders: [],
 };

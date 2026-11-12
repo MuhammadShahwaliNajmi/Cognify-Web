@@ -13,7 +13,7 @@ const HOUR = 3_600_000;
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
 function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
-  const { db, markWork, openFile, toast } = useTeacher();
+  const { db, markWork, openSubmission, toast } = useTeacher();
   const [busy, setBusy] = useState(false);
   const a = db.assignments.find((x) => x.id === sub.assignmentId)!;
   const st = db.students.find((s) => s.id === sub.studentId)!;
@@ -42,7 +42,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
 
         <button
           type="button"
-          onClick={() => (sub.filePath ? openFile(sub.filePath) : toast("No file was attached to this submission."))}
+          onClick={() => (sub.filePath || sub.driveFileId ? openSubmission(sub) : toast("No file was attached to this submission."))}
           className="mt-4 flex w-full items-center gap-3 rounded-2xl border border-navy/10 p-3.5 text-left transition-colors hover:border-gold focus-gold"
         >
           <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy-deep text-gold">

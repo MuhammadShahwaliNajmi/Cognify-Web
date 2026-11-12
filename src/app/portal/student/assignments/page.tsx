@@ -20,6 +20,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
   const [note, setNote] = useState("");
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const input = useRef<HTMLInputElement>(null);
 
   const pick = (f: File | null) => {
@@ -33,7 +34,8 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
   const submit = async () => {
     if (!file || busy) return;
     setBusy(true);
-    const ok = await submitWork({ assignmentId: a.id, studentId: me.id, file, note });
+    setProgress(0);
+    const ok = await submitWork({ assignmentId: a.id, studentId: me.id, file, note, onProgress: setProgress });
     setBusy(false);
     if (!ok) return;
     toast("Submitted. Feedback within 24 hours.");
@@ -110,7 +112,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
       <div className="mt-5 flex items-center gap-3">
         <Btn variant="gold" size="lg" disabled={!file || busy} onClick={submit}>
           <ArrowUpRight size={17} />
-          {busy ? "Uploading…" : replacing ? "Replace submission" : "Submit work"}
+          {busy ? `Uploading… ${Math.round(progress * 100)}%` : replacing ? "Replace submission" : "Submit work"}
         </Btn>
         {replacing && (
           <Btn variant="ghost" onClick={onDone}>
@@ -124,7 +126,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
 
 /* ---------- detail (inside the modal) ---------- */
 function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
-  const { now, openFile } = useStudent();
+  const { now, openSubmission, openStored } = useStudent();
   const [replacing, setReplacing] = useState(false);
   const msLeft = new Date(a.dueAt).getTime() - now;
 
@@ -167,7 +169,17 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
       <div className="mt-5 rounded-2xl bg-navy/[0.04] p-5">
         <Label>The task</Label>
         <p className="mt-2 text-[15px] leading-relaxed text-navy">{a.brief}</p>
-        {a.attachmentUrl && (
+        {a.attachmentFileId && (
+          <button
+            type="button"
+            onClick={() => openStored("assignment", a.id)}
+            className="mt-4 inline-flex items-center gap-2 rounded-full border border-navy/15 bg-white px-3.5 py-2 text-[13px] font-semibold text-navy transition-colors hover:border-gold hover:text-gold focus-gold"
+          >
+            <Paperclip size={13} />
+            Open the question paper
+          </button>
+        )}
+        {!a.attachmentFileId && a.attachmentUrl && (
           <a
             href={a.attachmentUrl}
             target="_blank"
@@ -233,8 +245,8 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
           <div className="mt-3 flex items-center gap-3 rounded-2xl border border-navy/10 p-3.5">
             <button
               type="button"
-              onClick={() => sub.filePath && openFile(sub.filePath)}
-              disabled={!sub.filePath}
+              onClick={() => (sub.filePath || sub.driveFileId) && openSubmission(sub)}
+              disabled={!sub.filePath && !sub.driveFileId}
               className="group flex min-w-0 flex-1 items-center gap-3 text-left focus-gold"
             >
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy/[0.05] text-navy transition-colors group-hover:bg-gold/20">
@@ -242,7 +254,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-navy transition-colors group-hover:text-gold">{sub.fileName}</span>
-                <span className="block text-xs text-navy">{sub.fileSize}{sub.filePath ? " · tap to open" : ""}</span>
+                <span className="block text-xs text-navy">{sub.fileSize}{sub.filePath || sub.driveFileId ? " · tap to open" : ""}</span>
               </span>
             </button>
             {sub.status === "submitted" && !replacing && (

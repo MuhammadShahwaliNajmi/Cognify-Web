@@ -9,6 +9,7 @@ import type {
   Auth,
   Cohort,
   DB,
+  Folder,
   Plan,
   Progress,
   Resource,
@@ -21,6 +22,7 @@ import type {
 } from "./types";
 import { EMPTY_DB } from "./types";
 import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
+import { StorageError, fileLink, trashResource, uploadFile } from "./storage";
 
 /**
  * Portal store backed by Supabase. Every screen reads and writes through this
@@ -70,12 +72,19 @@ type Store = {
   /** teacher: approve (applies the change) or decline a request */
   resolveRequest: (id: string, approve: boolean) => Promise<boolean>;
 
-  submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string }) => Promise<boolean>;
+  submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string; onProgress?: (p: number) => void }) => Promise<boolean>;
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
-  openFile: (path: string) => Promise<void>;
+  /** open a handed-in piece of work in a new tab */
+  openSubmission: (sub: Submission) => Promise<void>;
+  /** open any stored file in a new tab (view or download) */
+  openStored: (kind: "resource" | "submission" | "assignment", id: string, download?: boolean) => Promise<void>;
   addAssignment: (a: Omit<Assignment, "id">) => Promise<boolean>;
 
   addResource: (r: Omit<Resource, "id" | "addedAt">) => Promise<boolean>;
+  deleteResource: (id: string) => Promise<boolean>;
+  addFolder: (f: { cohortId: string; parentId: string | null; name: string }) => Promise<boolean>;
+  renameFolder: (id: string, name: string) => Promise<boolean>;
+  deleteFolder: (id: string) => Promise<boolean>;
   addAnnouncement: (a: { cohortId: string | null; title: string; body: string }) => Promise<boolean>;
   updateStudent: (id: string, p: { predicted: string; target: string }) => Promise<boolean>;
 };
@@ -102,7 +111,7 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
   const email = auth.user?.email?.toLowerCase() ?? "";
 
   const since = new Date(Date.now() - 180 * 86_400_000).toISOString();
-  const [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests] =
+  const [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests, folders] =
     await Promise.all([
       sb.from("members").select("*"),
       sb.from("cohorts").select("*").order("id"),
@@ -115,9 +124,10 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
       sb.from("announcements").select("*").order("created_at", { ascending: false }),
       sb.from("mastery").select("*"),
       sb.from("class_requests").select("*").order("created_at", { ascending: false }),
+      sb.from("folders").select("id, cohort_id, parent_id, name").order("name"),
     ]);
 
-  const firstError = [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests].find(
+  const firstError = [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests, folders].find(
     (r) => r.error
   )?.error;
   if (firstError) return { db: EMPTY_DB, meRow: null, error: firstError.message };
@@ -158,6 +168,9 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
     dueAt: str(a.due_at),
     maxMarks: num(a.max_marks),
     attachmentUrl: str(a.attachment_url) || undefined,
+    attachmentFileId: str(a.attachment_file_id) || undefined,
+    attachmentName: str(a.attachment_name) || undefined,
+    attachmentMime: str(a.attachment_mime) || undefined,
   }));
 
   const submissionRows: Submission[] = ((submissions.data ?? []) as Row[]).map((s) => {
@@ -170,6 +183,8 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
       fileName: str(s.file_name),
       fileSize: fmtBytes(s.file_size as number | null),
       filePath: str(s.file_path) || undefined,
+      driveFileId: str(s.drive_file_id) || undefined,
+      mimeType: str(s.mime_type) || undefined,
       note: str(s.note) || undefined,
       status: f ? "marked" : "submitted",
       marks: f ? num(f.marks) : undefined,
@@ -231,13 +246,20 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
         cohortId: str(r.cohort_id),
         title: str(r.title),
         type: str(r.type) as ResourceType,
-        strand: str(r.strand) as Strand,
+        strand: r.strand ? (str(r.strand) as Strand) : null,
         unit: str(r.unit),
         meta: str(r.meta),
         driveUrl: str(r.drive_url),
         sessionId: str(r.session_id) || undefined,
         addedAt: str(r.created_at),
+        folderId: str(r.folder_id) || undefined,
+        driveFileId: str(r.drive_file_id) || undefined,
+        mimeType: str(r.mime_type) || undefined,
+        sizeBytes: r.size_bytes === null || r.size_bytes === undefined ? undefined : num(r.size_bytes),
       })
+    ),
+    folders: ((folders.data ?? []) as Row[]).map(
+      (f): Folder => ({ id: str(f.id), cohortId: str(f.cohort_id), parentId: f.parent_id ? str(f.parent_id) : null, name: str(f.name) })
     ),
     assignments: assignmentRows,
     submissions: submissionRows,
@@ -476,18 +498,34 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
                 unit: ses.unit || "Class recordings",
                 meta: `${ses.durationMin} min`,
                 drive_url: driveUrl,
+                folder_id: (() => {
+                  const f = db.folders.find((x) => x.cohortId === ses.cohortId && !x.parentId && x.name.toLowerCase() === "recordings");
+                  return f ? num(f.id) : null;
+                })(),
               })
         );
       },
 
-      submitWork: async ({ assignmentId, studentId, file, note }) => {
+      submitWork: async ({ assignmentId, studentId, file, note, onProgress }) => {
         if (!sb) return false;
-        const safe = file.name.replace(/[^\w.\- ]+/g, "_").slice(-120);
-        const path = `${studentId}/${assignmentId}/${Date.now()}-${safe}`;
-        const up = await sb.storage.from("submissions").upload(path, file, { contentType: file.type || undefined });
-        if (up.error) {
-          toast(`Upload failed: ${up.error.message}`);
-          return false;
+        let stored: { drive_file_id: string | null; file_path: string | null; mime_type: string | null };
+        try {
+          const up = await uploadFile(file, { purpose: "submission", assignmentId }, onProgress);
+          stored = { drive_file_id: up.id, file_path: null, mime_type: up.mimeType || file.type || null };
+        } catch (e) {
+          // storage not connected yet → keep working with the built-in bucket
+          if (!(e instanceof StorageError && e.status === 503)) {
+            toast(e instanceof Error ? e.message : "Upload failed");
+            return false;
+          }
+          const safe = file.name.replace(/[^\w.\- ]+/g, "_").slice(-120);
+          const path = `${studentId}/${assignmentId}/${Date.now()}-${safe}`;
+          const up = await sb.storage.from("submissions").upload(path, file, { contentType: file.type || undefined });
+          if (up.error) {
+            toast(`Upload failed: ${up.error.message}`);
+            return false;
+          }
+          stored = { drive_file_id: null, file_path: path, mime_type: file.type || null };
         }
         return run("Submitting", () =>
           sb.from("submissions").upsert(
@@ -496,7 +534,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
               member_id: num(studentId),
               file_name: file.name,
               file_size: file.size,
-              file_path: path,
+              ...stored,
               note: note?.trim() || null,
               submitted_at: new Date().toISOString(),
             },
@@ -516,18 +554,36 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             marked_at: new Date().toISOString(),
           })
         ),
-      openFile: async (path) => {
+      openSubmission: async (sub) => {
         if (!sb) return;
         // open the tab first so pop-up blockers allow it, then point it at the signed link
         const w = window.open("", "_blank");
-        const { data, error } = await sb.storage.from("submissions").createSignedUrl(path, 600);
-        if (error || !data) {
+        let url: string | null = null;
+        let err = "No file was attached.";
+        if (sub.driveFileId) {
+          url = await fileLink("submission", sub.id).catch((e) => ((err = e.message), null));
+        } else if (sub.filePath) {
+          const { data, error } = await sb.storage.from("submissions").createSignedUrl(sub.filePath, 600);
+          url = data?.signedUrl ?? null;
+          if (error) err = error.message;
+        }
+        if (!url) {
           w?.close();
-          toast(`Couldn't open the file: ${error?.message ?? "unknown error"}`);
+          toast(`Couldn't open the file: ${err}`);
           return;
         }
-        if (w) w.location.href = data.signedUrl;
-        else window.location.href = data.signedUrl;
+        if (w) w.location.href = url;
+        else window.location.href = url;
+      },
+      openStored: async (kind, id, download = false) => {
+        const w = download ? null : window.open("", "_blank");
+        const url = await fileLink(kind, id, download).catch((e) => {
+          toast(`Couldn't open the file: ${e.message}`);
+          return null;
+        });
+        if (!url) return void w?.close();
+        if (w) w.location.href = url;
+        else window.location.href = url;
       },
       addAssignment: (a) =>
         run("Setting the assignment", () =>
@@ -541,11 +597,14 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             due_at: a.dueAt,
             max_marks: a.maxMarks,
             attachment_url: a.attachmentUrl || null,
+            attachment_file_id: a.attachmentFileId || null,
+            attachment_name: a.attachmentName || null,
+            attachment_mime: a.attachmentMime || null,
           })
         ),
 
       addResource: (r) =>
-        run("Adding to The Vault", () =>
+        run("Adding the file", () =>
           sb!.from("resources").insert({
             cohort_id: num(r.cohortId),
             title: r.title,
@@ -555,8 +614,28 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             meta: r.meta || null,
             drive_url: r.driveUrl || null,
             session_id: r.sessionId ? num(r.sessionId) : null,
+            folder_id: r.folderId ? num(r.folderId) : null,
+            drive_file_id: r.driveFileId || null,
+            mime_type: r.mimeType || null,
+            size_bytes: r.sizeBytes ?? null,
           })
         ),
+      deleteResource: async (id) => {
+        try {
+          await trashResource(id);
+          await reload();
+          return true;
+        } catch (e) {
+          toast(e instanceof Error ? e.message : "Couldn't delete the file");
+          return false;
+        }
+      },
+      addFolder: ({ cohortId, parentId, name }) =>
+        run("Creating the folder", () =>
+          sb!.from("folders").insert({ cohort_id: num(cohortId), parent_id: parentId ? num(parentId) : null, name: name.trim() })
+        ),
+      renameFolder: (id, name) => run("Renaming the folder", () => sb!.from("folders").update({ name: name.trim() }).eq("id", num(id))),
+      deleteFolder: (id) => run("Deleting the folder", () => sb!.from("folders").delete().eq("id", num(id))),
       addAnnouncement: (a) =>
         run("Posting", () =>
           sb!.from("announcements").insert({
