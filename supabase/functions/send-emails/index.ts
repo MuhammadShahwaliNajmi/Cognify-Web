@@ -49,14 +49,14 @@ ${lines}
 ${cta}
 </td></tr>
 <tr><td style="padding:16px 28px;border-top:1px solid #1a274414;font-size:12px;color:#1a2744;">
-Concept Lab Education · <a href="https://cognifypk.com/portal/" style="color:#1a2744;">cognifypk.com/portal</a><br>
-Reply to this email to reach us.
+You are receiving this because you are enrolled with Concept Lab Education. Reply to this email to reach your teacher, or reply &ldquo;Unsubscribe&rdquo; to stop these updates.<br><br>
+Concept Lab Education · 44 Block C, New Muslim Town, Lahore · <a href="https://cognifypk.com/portal/" style="color:#1a2744;">cognifypk.com/portal</a>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
 
 const text = (m: Email) =>
-  [m.heading, "", m.body, "", m.cta_label && m.cta_url ? `${m.cta_label}: ${m.cta_url}` : "", "", "Concept Lab Education · cognifypk.com/portal"]
+  [m.heading, "", m.body, "", m.cta_label && m.cta_url ? `${m.cta_label}: ${m.cta_url}` : "", "", "You are receiving this because you are enrolled with Concept Lab Education. Reply to reach your teacher, or reply \"Unsubscribe\" to stop these updates.", "Concept Lab Education · 44 Block C, New Muslim Town, Lahore · cognifypk.com/portal"]
     .filter((l, i, a) => l !== "" || a[i - 1] !== "")
     .join("\n");
 
@@ -88,6 +88,7 @@ Deno.serve(async () => {
         from: FROM,
         to: [m.to_email],
         reply_to: REPLY_TO,
+        headers: { "List-Unsubscribe": `<mailto:${REPLY_TO}?subject=Unsubscribe>` },
         subject: m.subject,
         html: html(m),
         text: text(m),
