@@ -24,6 +24,7 @@ export default function StudentCalendar() {
       title: s.title,
       sub: topicOf(s) || `${s.durationMin} min`,
       kind: "class" as const,
+      live: sessionState(s.start, s.durationMin, now) === "live",
       onClick: () => setOpenId(s.id),
     })),
     ...db.assignments

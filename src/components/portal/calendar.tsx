@@ -11,6 +11,8 @@ export type CalEvent = {
   title: string;
   sub?: string;
   kind: "class" | "due";
+  /** class in progress: stays highlighted until it finishes */
+  live?: boolean;
   onClick?: () => void;
 };
 
@@ -105,11 +107,12 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
                       className={cn(
                         "block w-full rounded-md border-l-[3px] px-2 py-1.5 text-left transition-colors focus-gold",
                         e.kind === "class" ? "border-gold bg-navy-deep hover:bg-navy" : "border-gold bg-gold/20 hover:bg-gold/30",
+                        e.live && "ring-2 ring-gold",
                         !e.onClick && "cursor-default"
                       )}
                     >
                       <span className={cn("block text-[11px] font-semibold tabular-nums", e.kind === "class" ? "text-gold" : "text-navy")}>
-                        {e.kind === "due" ? `Due ${fmtTime(e.start)}` : fmtTime(e.start)}
+                        {e.kind === "due" ? `Due ${fmtTime(e.start)}` : e.live ? `Live now · ${fmtTime(e.start)}` : fmtTime(e.start)}
                       </span>
                       <span className={cn("block truncate text-[13px] font-semibold leading-snug", e.kind === "class" ? "text-white" : "text-navy")}>
                         {e.title}

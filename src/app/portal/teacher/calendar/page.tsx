@@ -4,12 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
 import { cohortOf, topicOf, useTeacher } from "@/lib/portal/store";
+import { sessionState } from "@/lib/portal/format";
 import { Btn, Modal, PageHeader, Picker } from "@/components/portal/ui";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
 import { ClassDialog, ScheduleForm } from "@/components/portal/class-tools";
 
 export default function TeacherCalendar() {
-  const { db } = useTeacher();
+  const { db, now } = useTeacher();
   const router = useRouter();
   const [who, setWho] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -25,6 +26,7 @@ export default function TeacherCalendar() {
       title: cohortOf(db, s.cohortId).name,
       sub: topicOf(s) || s.title,
       kind: "class" as const,
+      live: sessionState(s.start, s.durationMin, now) === "live",
       onClick: () => setOpenId(s.id),
     })),
     ...db.assignments.filter(mine).map((a) => ({
