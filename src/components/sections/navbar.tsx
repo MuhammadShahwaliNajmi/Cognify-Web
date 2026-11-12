@@ -118,12 +118,14 @@ export function Navbar() {
         <div className="hidden items-center gap-2.5 md:flex">
           <a
             href="/portal/"
-            className="inline-flex items-center gap-1.5 rounded-full border border-navy/25 bg-white/70 px-4 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors hover:border-gold hover:bg-navy-deep hover:text-gold focus-gold lg:px-5"
+            aria-label="Portal"
+            title="Portal"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/25 bg-white/70 px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors hover:border-gold hover:bg-navy-deep hover:text-gold focus-gold xl:px-5"
           >
             <LogIn size={14} />
-            Portal
+            <span className="hidden xl:inline">Portal</span>
           </a>
-          <LiquidButton href="/apply/" className="px-5 py-2.5 text-[0.8125rem] lg:px-6">
+          <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
         </div>
