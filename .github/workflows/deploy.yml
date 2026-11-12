@@ -31,6 +31,7 @@ jobs:
           # by row-level security in Supabase). Never put secret keys here.
           NEXT_PUBLIC_SUPABASE_URL: https://shrgjfevwjbqlzpqqfck.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_xNpzkh6NXgakTN9rNkQxsw_O948qPPf
+          NEXT_PUBLIC_GOOGLE_CLIENT_ID: 693012559122-tkcqq354iqifu4mdmp3poet5deskp97n.apps.googleusercontent.com
       # GitHub Pages would otherwise strip the _next/ folder via Jekyll.
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3

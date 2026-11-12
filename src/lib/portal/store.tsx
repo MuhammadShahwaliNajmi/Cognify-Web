@@ -47,6 +47,8 @@ type Store = {
   toast: (text: string) => void;
 
   signInWithGoogle: () => Promise<void>;
+  /** Google Identity Services button: exchange Google's ID token for a session. */
+  signInWithGoogleToken: (idToken: string, nonce: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   joinWithCode: (code: string) => Promise<{ ok: boolean; message: string }>;
   reload: () => Promise<void>;
@@ -352,6 +354,15 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           options: { redirectTo: `${window.location.origin}/portal/`, queryParams: { prompt: "select_account" } },
         });
         if (error) toast(`Google sign-in failed: ${error.message}`);
+      },
+      signInWithGoogleToken: async (idToken, nonce) => {
+        if (!sb) return false;
+        const { error } = await sb.auth.signInWithIdToken({ provider: "google", token: idToken, nonce });
+        if (error) {
+          toast(`Google sign-in failed: ${error.message}`);
+          return false;
+        }
+        return true;
       },
       signOut: async () => {
         await sb?.auth.signOut();
