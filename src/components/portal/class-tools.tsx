@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, CalendarPlus, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
+import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
 import { cohortOf, meetLink, topicOf, usePortal } from "@/lib/portal/store";
 import { fmtDateLong, fmtTime, sessionState } from "@/lib/portal/format";
 import type { Resource, Session, Strand } from "@/lib/portal/types";
@@ -232,13 +232,16 @@ function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDon
 
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
-  const { db, auth, toggleAttendance } = usePortal();
+  const { db, auth, toggleAttendance, cancelSession, toast } = usePortal();
   const now = useTick(30_000);
   const [viewing, setViewing] = useState<Resource | null>(null);
   const [moving, setMoving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [busy, setBusy] = useState(false);
   const teacher = auth?.role === "teacher";
   const close = () => {
     setMoving(false);
+    setCancelling(false);
     onClose();
   };
 
@@ -270,17 +273,46 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             {!ended && (
               <div className="flex flex-wrap items-center gap-3">
                 <JoinButton session={s} size="lg" surface="white" />
-                {teacher && !moving && (
-                  <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
-                    <CalendarClock size={16} />
-                    Reschedule
-                  </Btn>
+                {teacher && !moving && !cancelling && (
+                  <>
+                    <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
+                      <CalendarClock size={16} />
+                      Reschedule
+                    </Btn>
+                    <Btn variant="ghost" size="lg" onClick={() => setCancelling(true)}>
+                      <CalendarX size={16} />
+                      Cancel class
+                    </Btn>
+                  </>
                 )}
                 {teacher && link && (
                   <a href={link} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
                     {link.replace("https://", "")}
                   </a>
                 )}
+              </div>
+            )}
+
+            {!ended && teacher && cancelling && (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+                <p className="flex-1 text-[15px] font-semibold text-navy">Cancel this class?</p>
+                <Btn
+                  variant="navy"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    const ok = await cancelSession(s.id);
+                    setBusy(false);
+                    if (!ok) return;
+                    toast("Class cancelled");
+                    close();
+                  }}
+                >
+                  {busy ? "Cancelling…" : "Yes, cancel"}
+                </Btn>
+                <Btn variant="ghost" onClick={() => setCancelling(false)}>
+                  Keep
+                </Btn>
               </div>
             )}
 

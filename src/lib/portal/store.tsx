@@ -62,6 +62,8 @@ type Store = {
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
   /** move an upcoming class (timetable classes are moved as a one-off; the weekly slot stays) */
   rescheduleSession: (sessionId: string, start: string, durationMin: number) => Promise<boolean>;
+  /** cancel an upcoming class (it disappears from calendars; a timetable slot won't come back) */
+  cancelSession: (sessionId: string) => Promise<boolean>;
 
   submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string }) => Promise<boolean>;
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
@@ -421,6 +423,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Rescheduling", () =>
           sb!.rpc("reschedule_session", { p_session: num(sessionId), p_start: start, p_duration: durationMin })
         ),
+      cancelSession: (sessionId) =>
+        run("Cancelling the class", () => sb!.from("sessions").update({ cancelled: true }).eq("id", num(sessionId))),
       setRecording: async (sessionId, url) => {
         const ses = db.sessions.find((s) => s.id === sessionId);
         if (!sb || !ses) return false;
