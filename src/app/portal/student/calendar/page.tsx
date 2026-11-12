@@ -22,7 +22,7 @@ export default function StudentCalendar() {
       id: `s${s.id}`,
       start: s.start,
       title: s.title,
-      sub: topicOf(s) || `${s.durationMin} min`,
+      sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Change requested" : topicOf(s) || `${s.durationMin} min`,
       kind: "class" as const,
       live: sessionState(s.start, s.durationMin, now) === "live",
       onClick: () => setOpenId(s.id),

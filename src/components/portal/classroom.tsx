@@ -93,12 +93,11 @@ export function MeetLinkForm({ cohortId, onSaved }: { cohortId: string; onSaved?
 export function JoinButton({
   session,
   size = "md",
-  surface = "navy",
   className,
 }: {
   session: Session;
   size?: "sm" | "md" | "lg";
-  /** what the button sits on — picks a readable style for the "not open yet" state */
+  /** kept for call sites; the button is always gold now */
   surface?: "navy" | "white";
   className?: string;
 }) {
@@ -115,23 +114,17 @@ export function JoinButton({
     if (!link) return setMissing(true);
     // open Meet straight away (inside the click, so pop-up blockers allow it)
     window.open(link, "_blank", "noopener,noreferrer");
-    if (!teacher && auth) {
+    // attendance only counts from 10 minutes before the start; joining earlier just opens the room
+    if (!teacher && auth && state !== "upcoming") {
       markJoined(session.id, auth.userId).then((ok) => ok && toast("You're marked present. Enjoy the class!"));
     }
   };
 
-  const joinable = teacher || state !== "upcoming";
   return (
     <>
-      <Btn
-        variant={joinable ? "gold" : surface === "white" ? "outline" : "onNavy"}
-        size={size}
-        disabled={!joinable}
-        onClick={open}
-        className={cn(!joinable && "!opacity-70", className)}
-      >
+      <Btn variant="gold" size={size} onClick={open} className={className}>
         <Video size={size === "lg" ? 18 : 15} />
-        {teacher ? "Start class" : joinable ? "Join class" : `Opens in ${fmtDuration(new Date(session.start).getTime() - 600_000 - now)}`}
+        {teacher ? "Start class" : "Join class"}
       </Btn>
 
       <Modal open={missing} onClose={() => setMissing(false)} eyebrow="Google Meet" title={teacher ? "Add this cohort's Meet link" : "No Meet link yet"}>

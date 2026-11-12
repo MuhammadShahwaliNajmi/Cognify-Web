@@ -33,6 +33,7 @@ export default function TeacherDashboard() {
     return ms > 0 && ms < 7 * DAY;
   }).length;
   const notices = db.announcements.slice(0, 3);
+  const requests = db.requests.filter((r) => r.status === "pending" && db.sessions.some((s) => s.id === r.sessionId));
 
   return (
     <>
@@ -82,6 +83,35 @@ export default function TeacherDashboard() {
               )}
             </Table>
           </section>
+
+          {requests.length > 0 && (
+            <section>
+              <SectionTitle>Class requests</SectionTitle>
+              <Table minWidth={560} head={[{ label: "Student" }, { label: "Class" }, { label: "Request" }, { label: "Sent", align: "right" }]}>
+                {requests.map((r) => {
+                  const s = db.sessions.find((x) => x.id === r.sessionId)!;
+                  return (
+                    <RowLink key={r.id} onClick={() => setOpenId(s.id)}>
+                      <Td className="font-medium">{db.students.find((x) => x.id === r.studentId)?.name ?? "Student"}</Td>
+                      <Td className="whitespace-nowrap">
+                        {fmtDay(s.start, now)}, {fmtTime(s.start)}
+                      </Td>
+                      <Td>
+                        {r.kind === "cancel" ? (
+                          <Status tone="attention">Cancel</Status>
+                        ) : (
+                          <Status tone="attention">Move to {r.proposedStart ? `${fmtDay(r.proposedStart, now)}, ${fmtTime(r.proposedStart)}` : "?"}</Status>
+                        )}
+                      </Td>
+                      <Td align="right" className="whitespace-nowrap">
+                        {fmtRelative(r.createdAt, now)}
+                      </Td>
+                    </RowLink>
+                  );
+                })}
+              </Table>
+            </section>
+          )}
 
           <section>
             <SectionTitle

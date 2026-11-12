@@ -24,7 +24,7 @@ export default function TeacherCalendar() {
       id: `s${s.id}`,
       start: s.start,
       title: cohortOf(db, s.cohortId).name,
-      sub: topicOf(s) || s.title,
+      sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Request pending" : topicOf(s) || s.title,
       kind: "class" as const,
       live: sessionState(s.start, s.durationMin, now) === "live",
       onClick: () => setOpenId(s.id),

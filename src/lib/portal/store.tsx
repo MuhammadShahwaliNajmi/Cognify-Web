@@ -64,6 +64,11 @@ type Store = {
   rescheduleSession: (sessionId: string, start: string, durationMin: number) => Promise<boolean>;
   /** cancel an upcoming class (it disappears from calendars; a timetable slot won't come back) */
   cancelSession: (sessionId: string) => Promise<boolean>;
+  /** student: ask to move or cancel an upcoming class */
+  requestChange: (r: { sessionId: string; studentId: string; kind: "reschedule" | "cancel"; proposedStart?: string; note?: string }) => Promise<boolean>;
+  withdrawRequest: (id: string) => Promise<boolean>;
+  /** teacher: approve (applies the change) or decline a request */
+  resolveRequest: (id: string, approve: boolean) => Promise<boolean>;
 
   submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string }) => Promise<boolean>;
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
@@ -97,7 +102,7 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
   const email = auth.user?.email?.toLowerCase() ?? "";
 
   const since = new Date(Date.now() - 180 * 86_400_000).toISOString();
-  const [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery] =
+  const [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests] =
     await Promise.all([
       sb.from("members").select("*"),
       sb.from("cohorts").select("*").order("id"),
@@ -109,9 +114,10 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
       sb.from("feedback").select("*"),
       sb.from("announcements").select("*").order("created_at", { ascending: false }),
       sb.from("mastery").select("*"),
+      sb.from("class_requests").select("*").order("created_at", { ascending: false }),
     ]);
 
-  const firstError = [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery].find(
+  const firstError = [members, cohorts, sessions, attendance, resources, assignments, submissions, feedback, announcements, mastery, requests].find(
     (r) => r.error
   )?.error;
   if (firstError) return { db: EMPTY_DB, meRow: null, error: firstError.message };
@@ -243,6 +249,16 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
       at: str(a.created_at),
     })),
     progress,
+    requests: ((requests.data ?? []) as Row[]).map((r) => ({
+      id: str(r.id),
+      sessionId: str(r.session_id),
+      studentId: str(r.member_id),
+      kind: r.kind === "cancel" ? ("cancel" as const) : ("reschedule" as const),
+      proposedStart: r.proposed_start ? str(r.proposed_start) : null,
+      note: str(r.note),
+      status: (r.status === "approved" || r.status === "declined" ? r.status : "pending") as "pending" | "approved" | "declined",
+      createdAt: str(r.created_at),
+    })),
   };
   return { db, meRow };
 }
@@ -423,6 +439,19 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Rescheduling", () =>
           sb!.rpc("reschedule_session", { p_session: num(sessionId), p_start: start, p_duration: durationMin })
         ),
+      requestChange: ({ sessionId, studentId, kind, proposedStart, note }) =>
+        run("Sending the request", () =>
+          sb!.from("class_requests").insert({
+            session_id: num(sessionId),
+            member_id: num(studentId),
+            kind,
+            proposed_start: kind === "reschedule" ? proposedStart : null,
+            note: note?.trim() || null,
+          })
+        ),
+      withdrawRequest: (id) => run("Withdrawing the request", () => sb!.from("class_requests").delete().eq("id", num(id))),
+      resolveRequest: (id, approve) =>
+        run(approve ? "Approving" : "Declining", () => sb!.rpc("resolve_class_request", { p_request: num(id), p_approve: approve })),
       cancelSession: (sessionId) =>
         run("Cancelling the class", () => sb!.from("sessions").update({ cancelled: true }).eq("id", num(sessionId))),
       setRecording: async (sessionId, url) => {

@@ -125,6 +125,17 @@ export type Progress = {
 
 export type Auth = { role: Role; userId: string } | null;
 
+export type ClassRequest = {
+  id: string;
+  sessionId: string;
+  studentId: string;
+  kind: "reschedule" | "cancel";
+  proposedStart: string | null; // ISO, for reschedule
+  note: string;
+  status: "pending" | "approved" | "declined";
+  createdAt: string; // ISO
+};
+
 export type DB = {
   cohorts: Cohort[];
   students: Student[];
@@ -135,6 +146,7 @@ export type DB = {
   submissions: Submission[];
   announcements: Announcement[];
   progress: Progress[];
+  requests: ClassRequest[];
 };
 
 export const EMPTY_DB: DB = {
@@ -147,4 +159,5 @@ export const EMPTY_DB: DB = {
   submissions: [],
   announcements: [],
   progress: [],
+  requests: [],
 };

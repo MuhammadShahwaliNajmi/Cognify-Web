@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
 import { cohortOf, meetLink, topicOf, usePortal } from "@/lib/portal/store";
 import { fmtDateLong, fmtTime, sessionState } from "@/lib/portal/format";
-import type { Resource, Session, Strand } from "@/lib/portal/types";
+import type { ClassRequest, Resource, Session, Strand } from "@/lib/portal/types";
 import { Btn, Field, Label, Modal, Status, fieldCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
 import { ResourceViewer } from "./resources";
@@ -230,6 +230,113 @@ function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDon
   );
 }
 
+const fmtWhen = (iso: string) => `${fmtDateLong(iso)}, ${fmtTime(iso)}`;
+
+/** Student: ask to move or cancel a class. */
+function RequestForm({ session, kind, onDone, onCancel }: { session: Session; kind: "reschedule" | "cancel"; onDone: () => void; onCancel: () => void }) {
+  const { auth, requestChange, toast } = usePortal();
+  const start = new Date(session.start);
+  const [date, setDate] = useState(dateInput(start));
+  const [time, setTime] = useState(timeInput(start));
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const next = new Date(`${date}T${time}`);
+  const valid = kind === "cancel" || (date && time && next.getTime() > Date.now() && next.getTime() !== start.getTime());
+
+  return (
+    <div className="rounded-xl border border-navy/15 p-4">
+      <p className="text-[15px] font-semibold text-navy">{kind === "cancel" ? "Request to cancel this class" : "Request a new time"}</p>
+      {kind === "reschedule" && (
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Date">
+            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+          </Field>
+          <Field label="Start">
+            <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldCls} />
+          </Field>
+        </div>
+      )}
+      <div className="mt-4">
+        <Field label="Reason (optional)">
+          <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 500))} className={fieldCls} />
+        </Field>
+      </div>
+      <div className="mt-4 flex gap-2.5">
+        <Btn
+          variant="gold"
+          disabled={!valid || busy || !auth}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await requestChange({
+              sessionId: session.id,
+              studentId: auth!.userId,
+              kind,
+              proposedStart: kind === "reschedule" ? next.toISOString() : undefined,
+              note,
+            });
+            setBusy(false);
+            if (!ok) return;
+            toast("Request sent to your teacher");
+            onDone();
+          }}
+        >
+          {busy ? "Sending…" : "Send request"}
+        </Btn>
+        <Btn variant="ghost" onClick={onCancel}>
+          Back
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
+/** A student's request, as the teacher sees it (approve / decline) or the student sees it (status / withdraw). */
+function RequestCard({ r, teacher }: { r: ClassRequest; teacher: boolean }) {
+  const { db, resolveRequest, withdrawRequest, toast } = usePortal();
+  const [busy, setBusy] = useState(false);
+  const who = db.students.find((x) => x.id === r.studentId)?.name ?? "Student";
+  const act = async (fn: () => Promise<boolean>, msg: string) => {
+    setBusy(true);
+    const ok = await fn();
+    setBusy(false);
+    if (ok) toast(msg);
+  };
+
+  return (
+    <div className="rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[15px] font-semibold text-navy">
+          {teacher ? `${who} asks to ` : "You asked to "}
+          {r.kind === "cancel" ? "cancel this class" : "reschedule"}
+        </p>
+        <Status tone={r.status === "pending" ? "attention" : r.status === "approved" ? "done" : "plain"}>
+          {r.status === "pending" ? "Pending" : r.status === "approved" ? "Approved" : "Declined"}
+        </Status>
+      </div>
+      {r.kind === "reschedule" && r.proposedStart && <p className="mt-1 text-sm text-navy">New time: {fmtWhen(r.proposedStart)}</p>}
+      {r.note && <p className="mt-1 text-sm italic text-navy">&ldquo;{r.note}&rdquo;</p>}
+      {r.status === "pending" && (
+        <div className="mt-3 flex gap-2.5">
+          {teacher ? (
+            <>
+              <Btn variant="navy" size="sm" disabled={busy} onClick={() => act(() => resolveRequest(r.id, true), r.kind === "cancel" ? "Class cancelled" : "Class rescheduled")}>
+                Approve
+              </Btn>
+              <Btn variant="ghost" size="sm" disabled={busy} onClick={() => act(() => resolveRequest(r.id, false), "Request declined")}>
+                Decline
+              </Btn>
+            </>
+          ) : (
+            <Btn variant="ghost" size="sm" disabled={busy} onClick={() => act(() => withdrawRequest(r.id), "Request withdrawn")}>
+              Withdraw
+            </Btn>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
   const { db, auth, toggleAttendance, cancelSession, toast } = usePortal();
@@ -244,6 +351,12 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
     setCancelling(false);
     onClose();
   };
+  // requests on this class: teachers see pending ones; a student sees their latest one
+  const requests = session
+    ? db.requests.filter((r) => r.sessionId === session.id && (teacher ? r.status === "pending" : r.studentId === auth?.userId))
+    : [];
+  const shownRequests = teacher ? requests : requests.slice(0, 1);
+  const myPending = !teacher && requests.some((r) => r.status === "pending");
 
   const s = session;
   const state = s ? sessionState(s.start, s.durationMin, now) : "upcoming";
@@ -285,6 +398,18 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                     </Btn>
                   </>
                 )}
+                {!teacher && !myPending && !moving && !cancelling && (
+                  <>
+                    <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
+                      <CalendarClock size={16} />
+                      Request reschedule
+                    </Btn>
+                    <Btn variant="ghost" size="lg" onClick={() => setCancelling(true)}>
+                      <CalendarX size={16} />
+                      Request cancellation
+                    </Btn>
+                  </>
+                )}
                 {teacher && link && (
                   <a href={link} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
                     {link.replace("https://", "")}
@@ -317,6 +442,26 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             )}
 
             {!ended && teacher && moving && <RescheduleForm key={s.id} session={s} onDone={close} onCancel={() => setMoving(false)} />}
+
+            {!ended && !teacher && (moving || cancelling) && (
+              <RequestForm
+                key={`${s.id}-${moving ? "r" : "c"}`}
+                session={s}
+                kind={moving ? "reschedule" : "cancel"}
+                onDone={() => {
+                  setMoving(false);
+                  setCancelling(false);
+                }}
+                onCancel={() => {
+                  setMoving(false);
+                  setCancelling(false);
+                }}
+              />
+            )}
+
+            {shownRequests.map((r) => (
+              <RequestCard key={r.id} r={r} teacher={teacher} />
+            ))}
 
             {ended && !teacher && me && (
               <p className="text-[15px] text-navy">
