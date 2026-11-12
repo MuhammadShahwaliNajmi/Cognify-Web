@@ -20,6 +20,7 @@ import type {
   Teacher,
 } from "./types";
 import { EMPTY_DB } from "./types";
+import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
 
 /**
  * Portal store backed by Supabase. Every screen reads and writes through this
@@ -59,6 +60,8 @@ type Store = {
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
+  /** move an upcoming class (timetable classes are moved as a one-off; the weekly slot stays) */
+  rescheduleSession: (sessionId: string, start: string, durationMin: number) => Promise<boolean>;
 
   submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string }) => Promise<boolean>;
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
@@ -96,7 +99,7 @@ async function loadAll(): Promise<{ db: DB; meRow: Row | null; error?: string }>
     await Promise.all([
       sb.from("members").select("*"),
       sb.from("cohorts").select("*").order("id"),
-      sb.from("sessions").select("*").gte("starts_at", since).order("starts_at"),
+      sb.from("sessions").select("*").eq("cancelled", false).gte("starts_at", since).order("starts_at"),
       sb.from("attendance").select("session_id, member_id, present"),
       sb.from("resources").select("*").order("created_at", { ascending: false }),
       sb.from("assignments").select("*").order("due_at"),
@@ -280,10 +283,23 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     let cancelled = false;
+    // back from the full-page Google sign-in? exchange its ID token for a session
+    const back = takeGoogleRedirect();
+    if (back && "error" in back) toast(back.error);
+    if (back && "idToken" in back) {
+      setStatus("loading");
+      sb.auth.signInWithIdToken({ provider: "google", token: back.idToken, nonce: back.nonce }).then(({ error }) => {
+        if (error) {
+          toast(`Google sign-in failed: ${error.message}`);
+          setStatus("signed-out");
+        }
+      });
+    }
     sb.auth.getSession().then(({ data }) => {
       if (cancelled) return;
       setSession(data.session);
-      if (!data.session) setStatus("signed-out");
+      // while a Google token is being exchanged, stay on "loading"
+      if (!data.session && !(back && "idToken" in back)) setStatus("signed-out");
     });
     const { data: sub } = sb.auth.onAuthStateChange((_event, s) => {
       setSession(s);
@@ -297,7 +313,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-  }, [sb]);
+  }, [sb, toast]);
 
   // load data whenever the signed-in user changes
   const userId = session?.user.id;
@@ -347,13 +363,10 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       toast,
       reload,
 
+      // full-page Google sign-in on our own domain (Google names cognifypk.com, not Supabase)
       signInWithGoogle: async () => {
         if (!sb) return;
-        const { error } = await sb.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: `${window.location.origin}/portal/`, queryParams: { prompt: "select_account" } },
-        });
-        if (error) toast(`Google sign-in failed: ${error.message}`);
+        if (!(await startGoogleRedirect())) toast("Google sign-in isn't set up.");
       },
       signInWithGoogleToken: async (idToken, nonce) => {
         if (!sb) return false;
@@ -403,6 +416,10 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             duration_min: s.durationMin,
             meet_url: s.meetUrl ?? null,
           })
+        ),
+      rescheduleSession: (sessionId, start, durationMin) =>
+        run("Rescheduling", () =>
+          sb!.rpc("reschedule_session", { p_session: num(sessionId), p_start: start, p_duration: durationMin })
         ),
       setRecording: async (sessionId, url) => {
         const ses = db.sessions.find((s) => s.id === sessionId);

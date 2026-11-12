@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
@@ -115,7 +115,14 @@ export function Navbar() {
           ))}
         </ul>
 
-        <div className="hidden md:block">
+        <div className="hidden items-center gap-2.5 md:flex">
+          <a
+            href="/portal/"
+            className="inline-flex items-center gap-1.5 rounded-full border border-navy/25 bg-white/70 px-4 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors hover:border-gold hover:bg-navy-deep hover:text-gold focus-gold lg:px-5"
+          >
+            <LogIn size={14} />
+            Portal
+          </a>
           <LiquidButton href="/apply/" className="px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
@@ -171,6 +178,19 @@ export function Navbar() {
                     className="flex w-full items-center gap-2 rounded-full border border-gold bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-gold transition-colors duration-200 hover:bg-gold hover:text-navy-deep"
                   >
                     Apply for Cohort →
+                  </a>
+                </motion.li>
+                <motion.li
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 * (LINKS.length + 1), ...spring.snappy }}
+                >
+                  <a
+                    href="/portal/"
+                    onClick={() => setOpen(false)}
+                    className="flex w-full items-center gap-2 rounded-full border border-white/40 bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-white transition-colors duration-200 hover:border-gold hover:text-gold"
+                  >
+                    <LogIn size={13} /> Portal
                   </a>
                 </motion.li>
               </ul>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { usePortal } from "@/lib/portal/store";
+import { makeNonce } from "@/lib/portal/google-redirect";
 
 /**
  * "Sign in with Google" using Google Identity Services on cognifypk.com.
@@ -26,15 +27,6 @@ declare global {
   interface Window {
     google?: { accounts: { id: GoogleId } };
   }
-}
-
-async function makeNonce(): Promise<[raw: string, hashed: string]> {
-  const raw = btoa(String.fromCharCode(...Array.from(crypto.getRandomValues(new Uint8Array(32)))));
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
-  const hashed = Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return [raw, hashed];
 }
 
 export function GoogleSignInButton({ onBusy }: { onBusy?: (busy: boolean) => void }) {

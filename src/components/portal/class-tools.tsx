@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarPlus, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
+import { CalendarClock, CalendarPlus, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
 import { cohortOf, meetLink, topicOf, usePortal } from "@/lib/portal/store";
 import { fmtDateLong, fmtTime, sessionState } from "@/lib/portal/format";
 import type { Resource, Session, Strand } from "@/lib/portal/types";
@@ -173,12 +173,74 @@ function RecordingField({ session }: { session: Session }) {
   );
 }
 
+const timeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+/** Teacher: move an upcoming class to a new date / time. */
+function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDone: () => void; onCancel: () => void }) {
+  const { rescheduleSession, toast } = usePortal();
+  const start = new Date(session.start);
+  const [date, setDate] = useState(dateInput(start));
+  const [time, setTime] = useState(timeInput(start));
+  const [duration, setDuration] = useState(session.durationMin);
+  const [busy, setBusy] = useState(false);
+  const next = new Date(`${date}T${time}`);
+  const valid = date && time && !Number.isNaN(next.getTime()) && next.getTime() + duration * 60_000 > Date.now();
+  const same = next.getTime() === start.getTime() && duration === session.durationMin;
+
+  return (
+    <div className="rounded-xl border border-navy/15 p-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Field label="Date">
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+        </Field>
+        <Field label="Start">
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldCls} />
+        </Field>
+        <Field label="Length">
+          <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={fieldCls}>
+            {Array.from(new Set([45, 60, 75, 90, session.durationMin])).sort((a, b) => a - b).map((m) => (
+              <option key={m} value={m}>
+                {m} min
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      <div className="mt-4 flex gap-2.5">
+        <Btn
+          variant="gold"
+          disabled={!valid || same || busy}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await rescheduleSession(session.id, next.toISOString(), duration);
+            setBusy(false);
+            if (!ok) return;
+            toast("Class rescheduled");
+            onDone();
+          }}
+        >
+          <CalendarClock size={15} />
+          {busy ? "Saving…" : "Save new time"}
+        </Btn>
+        <Btn variant="ghost" onClick={onCancel}>
+          Cancel
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
   const { db, auth, toggleAttendance } = usePortal();
   const now = useTick(30_000);
   const [viewing, setViewing] = useState<Resource | null>(null);
+  const [moving, setMoving] = useState(false);
   const teacher = auth?.role === "teacher";
+  const close = () => {
+    setMoving(false);
+    onClose();
+  };
 
   const s = session;
   const state = s ? sessionState(s.start, s.durationMin, now) : "upcoming";
@@ -193,7 +255,7 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
     <>
       <Modal
         open={!!s && !viewing}
-        onClose={onClose}
+        onClose={close}
         eyebrow={s ? `${fmtDateLong(s.start)} · ${fmtTime(s.start)} – ${fmtTime(new Date(new Date(s.start).getTime() + s.durationMin * 60_000).toISOString())}` : undefined}
         title={s ? (teacher ? cohort!.name : s.title) : ""}
       >
@@ -208,6 +270,12 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             {!ended && (
               <div className="flex flex-wrap items-center gap-3">
                 <JoinButton session={s} size="lg" surface="white" />
+                {teacher && !moving && (
+                  <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
+                    <CalendarClock size={16} />
+                    Reschedule
+                  </Btn>
+                )}
                 {teacher && link && (
                   <a href={link} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
                     {link.replace("https://", "")}
@@ -215,6 +283,8 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                 )}
               </div>
             )}
+
+            {!ended && teacher && moving && <RescheduleForm key={s.id} session={s} onDone={close} onCancel={() => setMoving(false)} />}
 
             {ended && !teacher && me && (
               <p className="text-[15px] text-navy">

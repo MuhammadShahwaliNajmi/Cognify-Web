@@ -71,7 +71,7 @@ function JoinForm() {
 }
 
 export default function PortalSignIn() {
-  const { status, auth, signInWithGoogle } = usePortal();
+  const { status, auth, signInWithGoogle, toasts } = usePortal();
   const router = useRouter();
   const [going, setGoing] = useState(false);
 
@@ -127,6 +127,12 @@ export default function PortalSignIn() {
           </div>
         )}
       </section>
+
+      {toasts.length > 0 && (
+        <p role="status" className="mt-4 rounded-full bg-gold px-5 py-2 text-sm font-semibold text-navy-deep">
+          {toasts[toasts.length - 1].text}
+        </p>
+      )}
 
       <Link href="/" className="mt-8 inline-flex items-center gap-2 text-sm font-medium text-white/85 transition-colors hover:text-gold">
         <ArrowLeft size={16} />
