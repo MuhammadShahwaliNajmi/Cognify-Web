@@ -142,71 +142,69 @@ export default function TeacherMarking() {
   return (
     <>
       <PageHeader
-        eyebrow="Feedback within 24 hours"
         title="Marking"
-        gold="Queue"
         sub={
           queue.length
-            ? `${queue.length} waiting, oldest first.${urgent ? ` ${urgent} need${urgent === 1 ? "s" : ""} returning in the next 6 hours.` : ""}`
-            : "Everything has been returned. Nothing is waiting."
+            ? `Oldest first. Feedback is due within 24 hours of hand-in.${urgent ? ` ${urgent} due in the next 6 hours.` : ""}`
+            : "Nothing waiting. Everything has been returned."
         }
       />
 
-      <Rise i={0}>
-        <Segmented
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: "queue", label: "To mark", count: queue.length },
-            { value: "returned", label: "Returned", count: returned.length },
-          ]}
-        />
-      </Rise>
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "queue", label: "To mark", count: queue.length },
+          { value: "returned", label: "Returned", count: returned.length },
+        ]}
+      />
 
-      <Rise i={1} className="mt-5">
-        {tab === "queue" && queue.length === 0 ? (
-          <Empty icon={<CheckCircle2 size={20} />} title="Queue is clear" text="New submissions appear here the moment a student hands in work." />
+      <Rise key={tab} className="mt-2">
+        {(tab === "queue" ? queue : returned).length === 0 ? (
+          <div className="mt-6">
+            <Empty
+              icon={<CheckCircle2 size={20} />}
+              title={tab === "queue" ? "Nothing to mark" : "Nothing returned yet"}
+              text={tab === "queue" ? "New work appears here the moment a student hands it in." : "Marked work collects here."}
+            />
+          </div>
         ) : (
-          <Card>
-            <ul>
-              {(tab === "queue" ? queue : returned).map((x) => {
-                const st = db.students.find((s) => s.id === x.studentId)!;
-                const a = db.assignments.find((y) => y.id === x.assignmentId)!;
-                const left = new Date(x.submittedAt).getTime() + 24 * HOUR - now;
-                return (
-                  <li key={x.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-navy/10 py-4 first:border-t-0 first:pt-0 last:pb-0">
-                    <Avatar name={st.name} />
-                    <div className="min-w-0 flex-1 basis-56">
-                      <p className="text-[15px] font-semibold tracking-tight text-navy">{st.name}</p>
-                      <p className="mt-0.5 truncate text-[13px] text-navy/55">{a.title}</p>
-                      <p className="mt-0.5 text-xs text-navy/40">
-                        {cohortOf(db, st.cohortId).name} · {a.kind} · submitted {fmtRelative(x.submittedAt, now)}
-                      </p>
-                    </div>
+          <ul className="divide-y divide-navy/10">
+            {(tab === "queue" ? queue : returned).map((x) => {
+              const st = db.students.find((s) => s.id === x.studentId);
+              const a = db.assignments.find((y) => y.id === x.assignmentId);
+              if (!st || !a) return null;
+              const left = new Date(x.submittedAt).getTime() + 24 * HOUR - now;
+              return (
+                <li key={x.id}>
+                  <button type="button" onClick={() => setOpenId(x.id)} className="group flex w-full items-center gap-4 py-4 text-left focus-gold">
+                    <Avatar name={st.name} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">
+                        {st.name}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
+                        {a.title} · handed in {fmtRelative(x.submittedAt, now)}
+                      </span>
+                    </span>
                     {tab === "queue" ? (
-                      <div className="flex items-center gap-2.5">
-                        <Chip tone={left < 0 ? "navy" : left < 6 * HOUR ? "gold" : "soft"} dot={left < 6 * HOUR}>
-                          {left < 0 ? `Late by ${fmtDuration(-left)}` : `${fmtDuration(left)} left`}
-                        </Chip>
-                        <Btn variant="navy" size="sm" onClick={() => setOpenId(x.id)}>
-                          <PenLine size={13} /> Mark
-                        </Btn>
-                      </div>
+                      <span className={left < 6 * HOUR ? "text-sm font-semibold text-navy" : "text-sm text-navy/55"}>
+                        {left < 0 ? `Late by ${fmtDuration(-left)}` : `${fmtDuration(left)} left`}
+                      </span>
                     ) : (
-                      <div className="flex items-center gap-2.5">
-                        <Chip tone="navy">
-                          {x.marks} / {a.maxMarks}
-                        </Chip>
-                        <Btn variant="ghost" size="sm" onClick={() => setOpenId(x.id)}>
-                          Edit
-                        </Btn>
-                      </div>
+                      <span className="text-[15px] font-semibold tabular-nums text-navy">
+                        {x.marks}
+                        <span className="text-navy/40">/{a.maxMarks}</span>
+                      </span>
                     )}
-                  </li>
-                );
-              })}
-            </ul>
-          </Card>
+                    <span className="hidden text-sm font-medium text-navy/45 group-hover:text-gold sm:inline">
+                      {tab === "queue" ? "Mark" : "Edit"}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </Rise>
 

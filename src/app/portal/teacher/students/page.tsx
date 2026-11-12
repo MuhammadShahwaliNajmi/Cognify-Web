@@ -5,8 +5,8 @@ import { ChevronRight } from "lucide-react";
 import { attendancePct, averagePct, cohortOf, useTeacher } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
-import { Avatar, Bar, Btn, Card, Chip, Empty, Label, Modal, PageHeader, Rise, Segmented, Stat, fieldCls } from "@/components/portal/ui";
-import { Spark, TrendChart } from "@/components/portal/charts";
+import { Avatar, Btn, Chip, Empty, Label, Modal, PageHeader, Rise, Stat, fieldCls } from "@/components/portal/ui";
+import { TrendChart } from "@/components/portal/charts";
 
 /** Predicted and target grade — set by the teacher, shown to the student. */
 function GradeForm({ s }: { s: Student }) {
@@ -113,106 +113,66 @@ function Profile({ s }: { s: Student }) {
 
 export default function TeacherStudents() {
   const { db, now } = useTeacher();
-  const [cohortId, setCohortId] = useState<string>("all");
   const [openId, setOpenId] = useState<string | null>(null);
 
-  const students = db.students
-    .filter((s) => cohortId === "all" || s.cohortId === cohortId)
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const students = [...db.students].sort((a, b) => a.name.localeCompare(b.name));
   const open = db.students.find((s) => s.id === openId) ?? null;
+  const waiting = db.cohorts.filter((c) => !db.students.some((s) => s.cohortId === c.id));
 
   return (
     <>
-      <PageHeader eyebrow={`${db.students.length} enrolled`} title="Your" gold="Students" sub="Attendance, marks and predicted grades for every student. Open a name for the full picture." />
+      <PageHeader title="Students" sub="Open a student for their grades, attendance and work." />
 
       <Rise i={0}>
-        <Segmented
-          value={cohortId}
-          onChange={setCohortId}
-          options={[{ value: "all", label: "All students" }, ...db.cohorts.map((c) => ({ value: c.id, label: c.name }))]}
-        />
-      </Rise>
-
-      <Rise i={1} className="mt-5">
-        <Card className="!p-0">
-          {/* column headings (desktop) */}
-          <div className="hidden grid-cols-[minmax(0,2.2fr)_0.8fr_1.2fr_1fr_1fr_1.1fr_1.5rem] items-center gap-4 border-b border-navy/10 px-6 py-3.5 md:grid">
-            {["Student", "Plan", "Attendance", "Average", "Predicted", "Trend", ""].map((h) => (
-              <Label key={h}>{h}</Label>
-            ))}
-          </div>
-          <ul>
+        {students.length === 0 ? (
+          <Empty
+            icon={<ChevronRight size={20} />}
+            title="No students have joined yet"
+            text="Students appear here once they sign in with Google and enter their join code. Each code is under Classes → Setup."
+            action={
+              <Btn variant="navy" href="/portal/teacher/classes/">
+                Go to Classes
+              </Btn>
+            }
+          />
+        ) : (
+          <ul className="divide-y divide-navy/10 border-y border-navy/10">
             {students.map((s) => {
               const att = attendancePct(db, s.id, s.cohortId, now);
               const avg = averagePct(db, s.id);
-              const hist = db.progress.find((p) => p.studentId === s.id)?.history;
+              const c = cohortOf(db, s.cohortId);
               return (
-                <li key={s.id} className="border-t border-navy/10 first:border-t-0">
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(s.id)}
-                    className="group grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-3 px-5 py-4 text-left transition-colors hover:bg-navy/[0.025] focus-gold md:grid-cols-[minmax(0,2.2fr)_0.8fr_1.2fr_1fr_1fr_1.1fr_1.5rem] md:px-6"
-                  >
-                    <span className="flex min-w-0 items-center gap-3">
-                      <Avatar name={s.name} size="sm" />
-                      <span className="min-w-0">
-                        <span className="block truncate text-[15px] font-semibold tracking-tight text-navy transition-colors group-hover:text-gold">
-                          {s.name}
-                        </span>
-                        <span className="block truncate text-[13px] text-navy/50">{cohortOf(db, s.cohortId).name}</span>
+                <li key={s.id}>
+                  <button type="button" onClick={() => setOpenId(s.id)} className="group flex w-full items-center gap-4 py-4 text-left focus-gold">
+                    <Avatar name={s.name} size="sm" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">{s.name}</span>
+                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
+                        {[c.board, c.subject].filter(Boolean).join(" · ")}
                       </span>
                     </span>
-                    <span className="justify-self-end md:justify-self-start">
-                      <Chip tone={s.plan === "Elite" ? "navy" : s.plan === "Core" ? "soft" : "outline"}>{s.plan}</Chip>
+                    <span className="hidden w-24 text-right text-sm text-navy/55 sm:block">{att}% attended</span>
+                    <span className="hidden w-20 text-right text-sm text-navy/55 sm:block">{avg !== null ? `${avg}% avg` : "–"}</span>
+                    <span className="w-16 text-right text-[15px] font-semibold text-navy">
+                      {s.predicted || "–"}
+                      {s.target && <span className="font-normal text-navy/40"> → {s.target}</span>}
                     </span>
-
-                    {/* phone: one compact stats line */}
-                    <span className="col-span-2 flex items-center gap-4 text-[13px] text-navy/60 md:hidden">
-                      <span>
-                        <span className="font-semibold text-navy">{att}%</span> attendance
-                      </span>
-                      <span>
-                        <span className="font-semibold text-navy">{avg ?? "–"}%</span> average
-                      </span>
-                      <span>
-                        predicted <span className="font-semibold text-navy">{s.predicted || "–"}</span>
-                      </span>
-                    </span>
-
-                    <span className="hidden items-center gap-2.5 md:flex">
-                      <Bar value={att} className="w-16" />
-                      <span className="text-sm font-medium tabular-nums text-navy">{att}%</span>
-                    </span>
-                    <span className="hidden text-sm font-medium tabular-nums text-navy md:block">{avg !== null ? `${avg}%` : "–"}</span>
-                    <span className="hidden text-sm md:block">
-                      <span className="font-semibold text-navy">{s.predicted || "–"}</span>
-                      {s.target && <span className="text-navy/40"> → {s.target}</span>}
-                    </span>
-                    <span className="hidden md:block">{hist && <Spark points={hist} className="h-7 w-24" />}</span>
-                    <ChevronRight size={16} className="hidden text-navy/30 transition-all group-hover:translate-x-0.5 group-hover:text-gold md:block" />
+                    <ChevronRight size={16} className="shrink-0 text-navy/25 group-hover:text-gold" />
                   </button>
                 </li>
               );
             })}
           </ul>
-          {students.length === 0 && (
-            <div className="p-5">
-              <Empty
-                icon={<ChevronRight size={20} />}
-                title="No students have joined yet"
-                text="Students appear here once they sign in with Google and enter their class code. You'll find each code under Classes."
-                action={
-                  <Btn variant="navy" href="/portal/teacher/classes/">
-                    See join codes
-                  </Btn>
-                }
-              />
-            </div>
-          )}
-        </Card>
+        )}
+
+        {students.length > 0 && waiting.length > 0 && (
+          <p className="mt-5 text-sm text-navy/50">
+            Not joined yet: {waiting.map((c) => c.name).join(", ")}. Their join codes are under Classes → Setup.
+          </p>
+        )}
       </Rise>
 
-      <Modal open={!!open} onClose={() => setOpenId(null)} eyebrow="Student profile" title={open?.name ?? ""}>
+      <Modal open={!!open} onClose={() => setOpenId(null)} title={open?.name ?? ""}>
         {open && <Profile key={open.id} s={open} />}
       </Modal>
     </>

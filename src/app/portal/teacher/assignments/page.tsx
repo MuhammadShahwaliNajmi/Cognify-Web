@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { AssignmentKind, Strand } from "@/lib/portal/types";
-import { Bar, Btn, Card, Chip, Field, Label, Modal, PageHeader, Rise, Segmented, fieldCls } from "@/components/portal/ui";
+import { Btn, Field, Modal, PageHeader, Picker, Rise, Segmented, fieldCls } from "@/components/portal/ui";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -111,21 +111,22 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
 
 export default function TeacherAssignments() {
   const { db, now } = useTeacher();
-  const [cohortId, setCohortId] = useState(db.cohorts[0].id);
+  const [cohortId, setCohortId] = useState(db.cohorts[0]?.id ?? "");
+  const [tab, setTab] = useState<"open" | "closed">("open");
   const [creating, setCreating] = useState(false);
 
-  const cohort = db.cohorts.find((c) => c.id === cohortId)!;
-  const size = db.students.filter((s) => s.cohortId === cohortId).length;
-  const list = db.assignments
-    .filter((a) => a.cohortId === cohortId)
-    .sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
+  const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
+  const all = db.assignments.filter((a) => a.cohortId === cohort?.id);
+  const open = all.filter((a) => new Date(a.dueAt).getTime() > now).sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
+  const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now).sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
+  const list = tab === "open" ? open : closed;
+
+  if (!cohort) return <PageHeader title="Work" sub="No students yet." />;
 
   return (
     <>
       <PageHeader
-        eyebrow="Weekly assignments & monthly assessments"
-        title="Set"
-        gold="Work"
+        title="Work"
         actions={
           <Btn variant="navy" onClick={() => setCreating(true)}>
             <Plus size={15} />
@@ -134,50 +135,59 @@ export default function TeacherAssignments() {
         }
       />
 
-      <Rise i={0}>
-        <Segmented value={cohortId} onChange={setCohortId} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
-      </Rise>
-
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {list.map((a, i) => {
-          const subs = db.submissions.filter((x) => x.assignmentId === a.id);
-          const marked = subs.filter((x) => x.status === "marked").length;
-          const open = new Date(a.dueAt).getTime() > now;
-          return (
-            <Rise key={a.id} i={i + 1}>
-              <Card className="flex h-full flex-col">
-                <div className="flex items-center justify-between gap-3">
-                  <Label>
-                    {a.kind} · {a.strand}
-                  </Label>
-                  <Chip tone={open ? "gold" : "soft"}>
-                    <Clock size={11} />
-                    {open ? `Due ${fmtRelative(a.dueAt, now)}` : "Closed"}
-                  </Chip>
-                </div>
-                <h2 className="mt-3 text-[17px] font-semibold leading-snug tracking-tight text-navy">{a.title}</h2>
-                <p className="mt-1.5 text-[13px] text-navy/50">
-                  {a.unit} · {a.maxMarks} marks · due {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
-                </p>
-                <div className="mt-auto pt-5">
-                  <div className="flex items-center justify-between text-[13px]">
-                    <span className="font-semibold text-navy">
-                      {subs.length} of {size} handed in
-                    </span>
-                    <span className="text-navy/50">
-                      {marked} marked{subs.length - marked > 0 ? ` · ${subs.length - marked} waiting` : ""}
-                    </span>
-                  </div>
-                  <Bar value={(subs.length / Math.max(1, size)) * 100} className="mt-2.5" />
-                </div>
-              </Card>
-            </Rise>
-          );
-        })}
+      <div className="mb-5">
+        <Picker label="Student" value={cohort.id} onChange={setCohortId} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
       </div>
 
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "open", label: "Open", count: open.length },
+          { value: "closed", label: "Past due", count: closed.length },
+        ]}
+      />
+
+      <Rise key={`${cohort.id}-${tab}`} className="mt-2">
+        {list.length === 0 ? (
+          <p className="py-10 text-center text-sm text-navy/50">
+            {tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing past due yet."}
+          </p>
+        ) : (
+          <ul className="divide-y divide-navy/10">
+            {list.map((a) => {
+              const sub = db.submissions.find((x) => x.assignmentId === a.id);
+              return (
+                <li key={a.id} className="flex items-center gap-4 py-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[15px] font-medium tracking-tight text-navy">{a.title}</p>
+                    <p className="mt-0.5 truncate text-[13px] text-navy/50">
+                      {a.kind} · {a.maxMarks} marks · due {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-sm text-navy/55">
+                    {sub?.status === "marked" ? (
+                      <span className="font-semibold tabular-nums text-navy">
+                        {sub.marks}
+                        <span className="text-navy/40">/{a.maxMarks}</span>
+                      </span>
+                    ) : sub ? (
+                      "Handed in · to mark"
+                    ) : tab === "open" ? (
+                      `Due ${fmtRelative(a.dueAt, now)}`
+                    ) : (
+                      "Not handed in"
+                    )}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Rise>
+
       <Modal open={creating} onClose={() => setCreating(false)} eyebrow={cohort.name} title="New assignment">
-        <NewAssignment cohortId={cohortId} onDone={() => setCreating(false)} />
+        <NewAssignment cohortId={cohort.id} onDone={() => setCreating(false)} />
       </Modal>
     </>
   );

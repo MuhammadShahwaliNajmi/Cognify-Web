@@ -1,6 +1,5 @@
 "use client";
 
-import { ClipboardList, FolderOpen, LayoutDashboard, LineChart, Sparkles, Video } from "lucide-react";
 import { Shell, type NavItem } from "@/components/portal/shell";
 import { usePortal } from "@/lib/portal/store";
 
@@ -12,12 +11,12 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   ).length;
 
   const nav: NavItem[] = [
-    { href: "/portal/student/", label: "Dashboard", short: "Home", icon: LayoutDashboard },
-    { href: "/portal/student/classes/", label: "Live classes", short: "Classes", icon: Video },
-    { href: "/portal/student/vault/", label: "The Vault", short: "Vault", icon: FolderOpen },
-    { href: "/portal/student/assignments/", label: "Assignments", short: "Work", icon: ClipboardList, badge: todo },
-    { href: "/portal/student/progress/", label: "Progress", short: "Progress", icon: LineChart },
-    { href: "/portal/student/tutor/", label: "Lab AI Tutor", short: "Tutor", icon: Sparkles },
+    { href: "/portal/student/", label: "Home" },
+    { href: "/portal/student/classes/", label: "Classes" },
+    { href: "/portal/student/vault/", label: "Vault" },
+    { href: "/portal/student/assignments/", label: "Work", badge: todo },
+    { href: "/portal/student/progress/", label: "Progress" },
+    { href: "/portal/student/tutor/", label: "Tutor" },
   ];
   return (
     <Shell role="student" nav={nav}>

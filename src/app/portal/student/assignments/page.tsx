@@ -2,7 +2,7 @@
 
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, CheckCircle2, ClipboardCheck, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, CheckCircle2, ClipboardCheck, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { fmtBytes, submissionFor, useStudent } from "@/lib/portal/store";
 import { fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
@@ -323,81 +323,73 @@ function Assignments() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Weekly assignments & monthly assessments"
-        title="Your"
-        gold="Work"
-        sub="Hand in each piece here. A trained examiner marks it against the mark scheme and returns it within 24 hours."
+      <PageHeader title="Work" sub="Hand in each piece here. An examiner marks it and returns feedback within 24 hours." />
+
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "todo", label: "To do", count: groups.todo.length },
+          { value: "submitted", label: "With examiner", count: groups.submitted.length },
+          { value: "marked", label: "Marked", count: groups.marked.length },
+        ]}
       />
 
-      <Rise i={0}>
-        <Segmented
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: "todo", label: "To do", count: groups.todo.length },
-            { value: "submitted", label: "With examiner", count: groups.submitted.length },
-            { value: "marked", label: "Marked", count: groups.marked.length },
-          ]}
-        />
-      </Rise>
-
-      <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-        {groups[tab].map(({ a, sub }, i) => {
-          const ms = new Date(a.dueAt).getTime() - now;
-          return (
-            <Rise key={a.id} i={i + 1}>
-              <button type="button" onClick={() => setOpenId(a.id)} className="group block h-full w-full text-left focus-gold">
-                <Card className="flex h-full flex-col transition-[border-color,transform,box-shadow] duration-200 group-hover:-translate-y-1 group-hover:border-gold/60">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label>
-                      {a.kind} · {a.strand}
-                    </Label>
+      <Rise key={tab} className="mt-2">
+        {groups[tab].length === 0 ? (
+          <div className="mt-6">
+            <Empty
+              icon={<ClipboardCheck size={20} />}
+              title={tab === "todo" ? "Nothing to hand in" : tab === "submitted" ? "Nothing waiting on an examiner" : "No marked work yet"}
+              text={
+                tab === "todo"
+                  ? "You're up to date. New assignments appear here."
+                  : tab === "submitted"
+                    ? "Work you hand in shows here until your feedback comes back."
+                    : "Your marks and feedback will collect here."
+              }
+            />
+          </div>
+        ) : (
+          <ul className="divide-y divide-navy/10">
+            {groups[tab].map(({ a, sub }) => {
+              const ms = new Date(a.dueAt).getTime() - now;
+              return (
+                <li key={a.id}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenId(a.id)}
+                    className="group flex w-full items-center gap-4 py-4 text-left focus-gold"
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-medium tracking-tight text-navy group-hover:text-gold">
+                        {a.title}
+                      </span>
+                      <span className="mt-0.5 block truncate text-[13px] text-navy/50">
+                        {a.kind} · {a.maxMarks} marks
+                        {sub ? ` · handed in ${fmtRelative(sub.submittedAt, now)}` : ""}
+                      </span>
+                    </span>
                     {sub?.status === "marked" ? (
-                      <Chip tone="navy">
-                        {sub.marks} / {a.maxMarks}
-                      </Chip>
+                      <span className="text-[15px] font-semibold tabular-nums text-navy">
+                        {sub.marks}
+                        <span className="text-navy/40">/{a.maxMarks}</span>
+                      </span>
                     ) : sub ? (
-                      <Chip tone="soft" dot>
-                        With examiner
-                      </Chip>
+                      <span className="text-sm text-navy/55">Being marked</span>
                     ) : (
-                      <Chip tone={ms < 0 ? "navy" : ms < 48 * HOUR ? "gold" : "soft"}>
-                        <Clock size={11} />
+                      <span className={ms < 48 * HOUR ? "text-sm font-semibold text-navy" : "text-sm text-navy/55"}>
                         {ms < 0 ? "Overdue" : `Due ${fmtRelative(a.dueAt, now)}`}
-                      </Chip>
+                      </span>
                     )}
-                  </div>
-                  <h2 className="mt-3 text-[17px] font-semibold leading-snug tracking-tight text-navy transition-colors group-hover:text-gold">
-                    {a.title}
-                  </h2>
-                  <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-navy/55">
-                    {sub?.status === "marked" ? sub.feedback : a.brief}
-                  </p>
-                  <p className="mt-auto pt-4 text-[13px] font-medium text-navy/45">
-                    {a.unit} · {a.maxMarks} marks
-                    {sub ? ` · submitted ${fmtRelative(sub.submittedAt, now)}` : ""}
-                  </p>
-                </Card>
-              </button>
-            </Rise>
-          );
-        })}
-      </div>
-
-      {groups[tab].length === 0 && (
-        <Empty
-          icon={<ClipboardCheck size={20} />}
-          title={tab === "todo" ? "Nothing to hand in" : tab === "submitted" ? "Nothing waiting on an examiner" : "No marked work yet"}
-          text={
-            tab === "todo"
-              ? "You're up to date. New assignments appear here every week."
-              : tab === "submitted"
-                ? "Work you submit shows here until your feedback comes back."
-                : "Your marks and feedback will collect here."
-          }
-        />
-      )}
+                    <ArrowRight size={16} className="shrink-0 text-navy/25 transition-colors group-hover:text-gold" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Rise>
 
       <Modal open={!!open} onClose={close} wide eyebrow={open ? `${open.a.kind} · ${open.a.unit}` : undefined} title={open?.a.title ?? ""}>
         {open && <Detail key={open.a.id} a={open.a} sub={open.sub} />}

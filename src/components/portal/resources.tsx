@@ -29,22 +29,17 @@ export function ResourceRow({ r, onOpen, action }: { r: Resource; onOpen: () => 
   const Icon = TYPE_ICON[r.type];
   const isNew = now - new Date(r.addedAt).getTime() < 2 * 86_400_000;
   return (
-    <div className="group flex items-center gap-3.5 border-t border-navy/10 py-3.5 first:border-t-0">
+    <div className="group flex items-center gap-3.5 py-3.5">
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-3.5 text-left focus-gold">
-        <span
-          className={cn(
-            "grid h-11 w-11 shrink-0 place-items-center rounded-2xl transition-colors",
-            r.type === "Recording" ? "bg-navy-deep text-gold" : "bg-navy/[0.05] text-navy group-hover:bg-gold/20"
-          )}
-        >
-          <Icon size={17} className={r.type === "Recording" ? "fill-current" : undefined} />
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy/[0.04] text-navy/70 transition-colors group-hover:bg-gold/15 group-hover:text-navy">
+          <Icon size={16} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-medium tracking-tight text-navy transition-colors group-hover:text-gold">
             {r.title}
           </span>
           <span className="mt-0.5 block truncate text-[13px] text-navy/50">
-            {r.type} · {r.meta} · added {fmtRelative(r.addedAt, now)}
+            {[r.type, r.meta].filter(Boolean).join(" · ")} · {fmtRelative(r.addedAt, now)}
           </span>
         </span>
       </button>

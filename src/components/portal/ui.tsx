@@ -7,8 +7,8 @@ import { X } from "lucide-react";
 import { cn, spring } from "@/lib/utils";
 import { initials } from "@/lib/portal/format";
 
-/* Portal UI kit — the marketing site's visual language (white / navy / gold,
-   mono micro-labels, rounded navy panels, gold pills) sized for an app. */
+/* Portal UI kit — calm and uncluttered: white surfaces, hairline borders,
+   navy text, gold only for the active state and the main action. */
 
 export function Card({
   className,
@@ -19,10 +19,8 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[22px] p-5 md:p-6",
-        tone === "navy"
-          ? "glass-navy-solid text-white"
-          : "border border-navy/10 bg-white shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)]",
+        "rounded-2xl p-5 md:p-6",
+        tone === "navy" ? "bg-navy-deep text-white" : "border border-navy/10 bg-white",
         className
       )}
       {...rest}
@@ -116,12 +114,12 @@ export function Btn({ variant = "navy", size = "md", href, external, className, 
 }
 
 export function PageHeader({
-  eyebrow,
   title,
   gold,
   sub,
   actions,
 }: {
+  /** kept for older call sites; no longer shown */
   eyebrow?: string;
   title: string;
   gold?: string;
@@ -129,19 +127,12 @@ export function PageHeader({
   actions?: React.ReactNode;
 }) {
   return (
-    <div className="mb-7 flex flex-col gap-4 md:mb-9 md:flex-row md:items-end md:justify-between">
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-8">
       <div>
-        {eyebrow && <Label>{eyebrow}</Label>}
-        <h1 className="mt-2 text-[clamp(1.7rem,3.4vw,2.4rem)] font-semibold leading-[1.05] tracking-tightest text-navy">
-          {title}
-          {gold && (
-            <>
-              {" "}
-              <span className="text-gold">{gold}</span>
-            </>
-          )}
+        <h1 className="text-[1.6rem] font-semibold leading-tight tracking-tight text-navy md:text-[1.85rem]">
+          {gold ? `${title} ${gold}` : title}
         </h1>
-        {sub && <p className="mt-2.5 max-w-xl text-[15px] leading-relaxed text-navy/60">{sub}</p>}
+        {sub && <p className="mt-1.5 max-w-xl text-[15px] leading-relaxed text-navy/55">{sub}</p>}
       </div>
       {actions && <div className="flex shrink-0 flex-wrap items-center gap-2.5">{actions}</div>}
     </div>
@@ -178,7 +169,7 @@ export function Bar({ value, className, onNavy }: { value: number; className?: s
   );
 }
 
-/** Segmented control — the pricing toggle from the marketing site. */
+/** Sub-tabs inside a page: plain labels with a gold underline on the active one. */
 export function Segmented<T extends string>({
   options,
   value,
@@ -192,36 +183,69 @@ export function Segmented<T extends string>({
 }) {
   const id = useId();
   return (
-    <div className={cn("no-scrollbar max-w-full overflow-x-auto", className)}>
-      <div className="inline-flex rounded-full bg-navy-deep p-1">
+    <div className={cn("no-scrollbar -mx-1 overflow-x-auto border-b border-navy/10", className)}>
+      <div role="tablist" className="flex gap-1 px-1">
         {options.map((o) => {
           const on = o.value === value;
           return (
             <button
               key={o.value}
               type="button"
-              onClick={() => onChange(o.value)}
+              role="tab"
+              aria-selected={on}
               aria-pressed={on}
-              className="relative whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-semibold tracking-tight focus-gold"
+              onClick={() => onChange(o.value)}
+              className={cn(
+                "relative whitespace-nowrap px-3 pb-3 pt-1 text-[14px] font-medium tracking-tight transition-colors focus-gold",
+                on ? "text-navy" : "text-navy/45 hover:text-navy/75"
+              )}
             >
+              {o.label}
+              {o.count !== undefined && (
+                <span className={cn("ml-1.5 tabular-nums", on ? "text-gold" : "text-navy/35")}>{o.count}</span>
+              )}
               {on && (
                 <motion.span
-                  layoutId={`seg-${id}`}
-                  className="absolute inset-0 rounded-full bg-gold"
+                  layoutId={`tab-${id}`}
+                  className="absolute inset-x-2 -bottom-px h-[2px] rounded-full bg-gold"
                   transition={{ type: "spring", stiffness: 420, damping: 34 }}
                 />
               )}
-              <span className={cn("relative z-10 transition-colors duration-200", on ? "text-navy-deep" : "text-white/85")}>
-                {o.label}
-                {o.count !== undefined && (
-                  <span className={cn("ml-1.5 tabular-nums", on ? "text-navy-deep/60" : "text-white/45")}>{o.count}</span>
-                )}
-              </span>
             </button>
           );
         })}
       </div>
     </div>
+  );
+}
+
+/** Native select for choosing a student / cohort. */
+export function Picker<T extends string>({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: T;
+  onChange: (v: T) => void;
+  options: { value: T; label: string }[];
+}) {
+  return (
+    <label className="inline-flex items-center gap-2.5 text-sm text-navy/55">
+      {label}
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="rounded-full border border-navy/15 bg-white py-2 pl-4 pr-9 text-sm font-medium text-navy outline-none transition-colors hover:border-navy/30 focus:border-gold focus:ring-4 focus:ring-gold/15"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -337,15 +361,15 @@ export function Stat({ label, value, sub, onNavy }: { label: string; value: Reac
   );
 }
 
-/** Staggered entrance for a page's blocks. */
+/** Gentle entrance for a page's blocks. */
 export function Rise({ i = 0, className, children }: { i?: number; className?: string; children: React.ReactNode }) {
   const reduce = useReducedMotion();
   return (
     <motion.div
       className={className}
-      initial={reduce ? false : { opacity: 0, y: 14 }}
+      initial={reduce ? false : { opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ ...spring.soft, delay: 0.04 + i * 0.06 }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1], delay: Math.min(i, 4) * 0.04 }}
     >
       {children}
     </motion.div>

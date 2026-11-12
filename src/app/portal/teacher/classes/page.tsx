@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarPlus, Check, Copy, ExternalLink, KeyRound, Link2, Pencil, Play, RefreshCw, Users } from "lucide-react";
+import { CalendarPlus, Check, Copy, ExternalLink, Link2, Pencil, Play, RefreshCw, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { topicOf, useTeacher } from "@/lib/portal/store";
 import { fmtDay, fmtTime, sessionState } from "@/lib/portal/format";
 import type { Session, Strand } from "@/lib/portal/types";
-import { Avatar, Btn, Card, Chip, Field, Label, Modal, PageHeader, Rise, Segmented, fieldCls } from "@/components/portal/ui";
-import { DateTile, JoinButton, MeetLinkForm, NextClassCard, SessionStatus } from "@/components/portal/classroom";
+import { Avatar, Btn, Field, Modal, PageHeader, Picker, Rise, Segmented, fieldCls } from "@/components/portal/ui";
+import { DateTile, JoinButton, MeetLinkForm, SessionStatus } from "@/components/portal/classroom";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -117,169 +117,83 @@ function RecordingForm({ session, onDone }: { session: Session; onDone: () => vo
 export default function TeacherClasses() {
   const { db, now, toggleAttendance, regenerateCode, toast } = useTeacher();
   const [renewing, setRenewing] = useState(false);
-  const [cohortId, setCohortId] = useState(db.cohorts[0].id);
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const [cohortId, setCohortId] = useState(db.cohorts[0]?.id ?? "");
+  const [tab, setTab] = useState<"upcoming" | "past" | "setup">("upcoming");
   const [scheduling, setScheduling] = useState(false);
   const [editingLink, setEditingLink] = useState(false);
   const [registerId, setRegisterId] = useState<string | null>(null);
   const [recordingFor, setRecordingFor] = useState<Session | null>(null);
 
-  const cohort = db.cohorts.find((c) => c.id === cohortId)!;
-  const students = db.students.filter((s) => s.cohortId === cohortId);
-  const sessions = db.sessions.filter((s) => s.cohortId === cohortId);
+  const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
+  const students = db.students.filter((s) => s.cohortId === cohort?.id);
+  const sessions = db.sessions.filter((s) => s.cohortId === cohort?.id);
   const upcoming = sessions.filter((s) => sessionState(s.start, s.durationMin, now) !== "ended");
   const past = sessions.filter((s) => sessionState(s.start, s.durationMin, now) === "ended").reverse();
   const register = sessions.find((s) => s.id === registerId) ?? null;
+  const list = tab === "upcoming" ? upcoming : past;
+
+  if (!cohort) {
+    return (
+      <>
+        <PageHeader title="Classes" />
+        <p className="text-sm text-navy/55">No students yet.</p>
+      </>
+    );
+  }
 
   return (
     <>
       <PageHeader
-        eyebrow="Google Meet classroom"
-        title="Your"
-        gold="Classes"
+        title="Classes"
         actions={
           <Btn variant="navy" onClick={() => setScheduling(true)}>
             <CalendarPlus size={15} />
-            Schedule a class
+            Add a class
           </Btn>
         }
       />
 
-      <Rise i={0}>
-        <Segmented value={cohortId} onChange={setCohortId} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
-      </Rise>
+      <div className="mb-5">
+        <Picker
+          label="Student"
+          value={cohort.id}
+          onChange={(v) => {
+            setCohortId(v);
+            setEditingLink(false);
+          }}
+          options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))}
+        />
+      </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-12">
-        <Rise i={1} className="lg:col-span-7">
-          {upcoming[0] ? (
-            <NextClassCard session={upcoming[0]} cohortLabel={cohort.name} />
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "upcoming", label: "Upcoming", count: upcoming.length },
+          { value: "past", label: "Past", count: past.length },
+          { value: "setup", label: "Setup" },
+        ]}
+      />
+
+      <Rise key={`${cohort.id}-${tab}`} className="mt-2">
+        {tab !== "setup" ? (
+          list.length === 0 ? (
+            <p className="py-10 text-center text-sm text-navy/50">
+              {tab === "upcoming" ? "No classes scheduled." : "No past classes yet."}
+            </p>
           ) : (
-            <Card tone="navy" className="flex h-full flex-col rounded-[26px] !p-8">
-              <Label className="text-white/50">{cohort.name}</Label>
-              <h2 className="mt-4 text-2xl font-semibold tracking-tight">No class scheduled</h2>
-              <div className="mt-auto pt-7">
-                <Btn variant="gold" onClick={() => setScheduling(true)}>
-                  <CalendarPlus size={15} />
-                  Schedule a class
-                </Btn>
-              </div>
-            </Card>
-          )}
-        </Rise>
-
-        {/* the cohort's Meet room */}
-        <Rise i={2} className="lg:col-span-5">
-          <Card className="flex h-full flex-col">
-            <div className="flex items-center justify-between">
-              <Label>Meet room · {cohort.name}</Label>
-              {cohort.meetUrl ? <Chip tone="navy"><Check size={11} /> Connected</Chip> : <Chip tone="gold">Not set</Chip>}
-            </div>
-
-            {cohort.meetUrl && !editingLink ? (
-              <>
-                <p className="mt-4 break-all rounded-2xl bg-navy/[0.04] p-4 font-mono text-[13px] text-navy">{cohort.meetUrl}</p>
-                <p className="mt-3 text-sm leading-relaxed text-navy/60">
-                  Students reach this room through the Join class button. They never need the link itself.
-                </p>
-                <div className="mt-auto flex flex-wrap gap-2.5 pt-5">
-                  <Btn variant="navy" size="sm" href={cohort.meetUrl} external>
-                    <ExternalLink size={13} /> Open room
-                  </Btn>
-                  <Btn
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigator.clipboard?.writeText(cohort.meetUrl).then(() => toast("Link copied"))}
-                  >
-                    <Copy size={13} /> Copy
-                  </Btn>
-                  <Btn variant="ghost" size="sm" onClick={() => setEditingLink(true)}>
-                    <Pencil size={13} /> Change
-                  </Btn>
-                </div>
-              </>
-            ) : (
-              <div className="mt-4">
-                <MeetLinkForm key={cohortId} cohortId={cohortId} onSaved={() => setEditingLink(false)} />
-              </div>
-            )}
-          </Card>
-        </Rise>
-
-        {/* the student + their join code */}
-        <Rise i={3} className="lg:col-span-12">
-          <Card className="flex flex-wrap items-center gap-x-6 gap-y-4">
-            {students.length ? (
-              <div className="flex min-w-0 flex-1 basis-64 items-center gap-3.5">
-                <Avatar name={students[0].name} />
-                <div className="min-w-0">
-                  <Label>Student</Label>
-                  <p className="mt-1 truncate text-[15px] font-semibold tracking-tight text-navy">{students[0].name}</p>
-                  <p className="truncate text-[13px] text-navy/50">{students[0].email}</p>
-                </div>
-                <Chip tone="navy" className="ml-auto">
-                  <Check size={11} /> Joined
-                </Chip>
-              </div>
-            ) : (
-              <div className="flex min-w-0 flex-1 basis-64 items-center gap-3.5">
-                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold/20 text-navy">
-                  <KeyRound size={17} />
-                </span>
-                <div className="min-w-0">
-                  <Label>Waiting for {cohort.name} to join</Label>
-                  <p className="mt-1 text-sm leading-relaxed text-navy/60">
-                    Send this code privately. They sign in at cognifypk.com/portal with Google and enter it once.
-                  </p>
-                </div>
-              </div>
-            )}
-            <div className="flex flex-wrap items-center gap-2.5">
-              <span className="rounded-xl bg-navy-deep px-4 py-2.5 font-mono text-lg tracking-[0.2em] text-gold">{cohort.joinCode}</span>
-              <Btn
-                variant="outline"
-                size="sm"
-                onClick={() => navigator.clipboard?.writeText(cohort.joinCode).then(() => toast("Code copied"))}
-              >
-                <Copy size={13} /> Copy
-              </Btn>
-              <Btn
-                variant="ghost"
-                size="sm"
-                disabled={renewing}
-                onClick={async () => {
-                  setRenewing(true);
-                  const ok = await regenerateCode(cohortId);
-                  setRenewing(false);
-                  if (ok) toast("New code issued. The old one no longer works.");
-                }}
-              >
-                <RefreshCw size={13} /> New code
-              </Btn>
-            </div>
-          </Card>
-        </Rise>
-
-        <Rise i={4} className="lg:col-span-12">
-          <Card>
-            <Segmented
-              value={tab}
-              onChange={setTab}
-              options={[
-                { value: "upcoming", label: "Upcoming", count: upcoming.length },
-                { value: "past", label: "Past classes", count: past.length },
-              ]}
-            />
-            <ul className="mt-4">
-              {(tab === "upcoming" ? upcoming : past).map((s, i) => {
+            <ul className="divide-y divide-navy/10">
+              {list.map((s, i) => {
                 const present = students.filter((st) => s.attendance[st.id]).length;
+                const topic = topicOf(s);
                 return (
-                  <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 border-t border-navy/10 py-4 first:border-t-0">
+                  <li key={s.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
                     <DateTile iso={s.start} active={tab === "upcoming" && i === 0} />
-                    <div className="min-w-0 flex-1 basis-56">
-                      <p className="text-[15px] font-medium leading-snug tracking-tight text-navy">{s.title}</p>
-                      <p className="mt-1 text-[13px] text-navy/50">
+                    <div className="min-w-0 flex-1 basis-48">
+                      <p className="truncate text-[15px] font-medium tracking-tight text-navy">{s.title}</p>
+                      <p className="mt-0.5 text-[13px] text-navy/50">
                         {fmtDay(s.start, now)} · {fmtTime(s.start)} · {s.durationMin} min
-                        {topicOf(s) ? ` · ${topicOf(s)}` : ""}
+                        {topic ? ` · ${topic}` : ""}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -291,12 +205,12 @@ export default function TeacherClasses() {
                         ) : null
                       ) : (
                         <>
-                          <Btn variant="outline" size="sm" onClick={() => setRegisterId(s.id)}>
-                            <Users size={13} /> {present} / {students.length} present
+                          <Btn variant="ghost" size="sm" onClick={() => setRegisterId(s.id)}>
+                            <Users size={13} /> {present}/{students.length} present
                           </Btn>
-                          <Btn variant={s.recordingUrl ? "outline" : "navy"} size="sm" onClick={() => setRecordingFor(s)}>
+                          <Btn variant="outline" size="sm" onClick={() => setRecordingFor(s)}>
                             {s.recordingUrl ? <Check size={13} /> : <Link2 size={13} />}
-                            {s.recordingUrl ? "Recording linked" : "Add recording"}
+                            {s.recordingUrl ? "Recording" : "Add recording"}
                           </Btn>
                         </>
                       )}
@@ -305,12 +219,76 @@ export default function TeacherClasses() {
                 );
               })}
             </ul>
-          </Card>
-        </Rise>
-      </div>
+          )
+        ) : (
+          <div className="divide-y divide-navy/10">
+            {/* student */}
+            <section className="py-6">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">Student</h2>
+              {students.length ? (
+                <div className="mt-3 flex items-center gap-3.5">
+                  <Avatar name={students[0].name} />
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-medium text-navy">{students[0].name}</p>
+                    <p className="truncate text-[13px] text-navy/50">{students[0].email} · joined</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm leading-relaxed text-navy/60">
+                  Not joined yet. Send them the join code below. They sign in at cognifypk.com/portal with Google and enter it once.
+                </p>
+              )}
+            </section>
 
-      <Modal open={scheduling} onClose={() => setScheduling(false)} eyebrow={cohort.name} title="Schedule a class">
-        <ScheduleForm cohortId={cohortId} onDone={() => setScheduling(false)} />
+            {/* join code */}
+            <section className="py-6">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">Join code</h2>
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <span className="rounded-xl border border-navy/12 px-4 py-2 font-mono text-lg tracking-[0.2em] text-navy">{cohort.joinCode}</span>
+                <Btn variant="outline" size="sm" onClick={() => navigator.clipboard?.writeText(cohort.joinCode).then(() => toast("Code copied"))}>
+                  <Copy size={13} /> Copy
+                </Btn>
+                <Btn
+                  variant="ghost"
+                  size="sm"
+                  disabled={renewing}
+                  onClick={async () => {
+                    setRenewing(true);
+                    const ok = await regenerateCode(cohort.id);
+                    setRenewing(false);
+                    if (ok) toast("New code issued. The old one no longer works.");
+                  }}
+                >
+                  <RefreshCw size={13} /> New code
+                </Btn>
+              </div>
+            </section>
+
+            {/* meet room */}
+            <section className="py-6">
+              <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-navy/45">Google Meet room</h2>
+              {cohort.meetUrl && !editingLink ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                  <span className="break-all text-[15px] text-navy">{cohort.meetUrl}</span>
+                  <Btn variant="outline" size="sm" href={cohort.meetUrl} external>
+                    <ExternalLink size={13} /> Open
+                  </Btn>
+                  <Btn variant="ghost" size="sm" onClick={() => setEditingLink(true)}>
+                    <Pencil size={13} /> Change
+                  </Btn>
+                </div>
+              ) : (
+                <div className="mt-3 max-w-xl">
+                  <MeetLinkForm key={cohort.id} cohortId={cohort.id} onSaved={() => setEditingLink(false)} />
+                </div>
+              )}
+            </section>
+          </div>
+        )}
+      </Rise>
+
+      <Modal open={scheduling} onClose={() => setScheduling(false)} eyebrow={cohort.name} title="Add a class">
+        <ScheduleForm cohortId={cohort.id} onDone={() => setScheduling(false)} />
       </Modal>
 
       <Modal open={!!register} onClose={() => setRegisterId(null)} eyebrow="Attendance register" title={register?.title ?? ""}>

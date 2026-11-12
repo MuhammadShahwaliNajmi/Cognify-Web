@@ -161,49 +161,39 @@ export function JoinButton({
   );
 }
 
-/** The navy "next class" hero used on both dashboards. */
+/** The next (or live) class: one clean card with the time and the Join button. */
 export function NextClassCard({ session, cohortLabel }: { session: Session; cohortLabel?: string }) {
   const now = useTick();
   const state = sessionState(session.start, session.durationMin, now);
   const start = new Date(session.start).getTime();
   const end = start + session.durationMin * 60_000;
+  const live = state === "live";
+  const topic = [session.strand, session.unit].filter(Boolean).join(" · ");
 
   return (
-    <div className="glass-navy-solid relative flex h-full flex-col overflow-hidden rounded-[26px] p-6 text-white md:p-8">
-      {/* faint supply & demand lines — the brand's graph motif */}
-      <svg viewBox="0 0 300 200" className="pointer-events-none absolute -right-6 -top-4 h-[130%] w-[62%] opacity-[0.09]" aria-hidden="true">
-        <path d="M30 170 L270 30" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d="M30 30 L270 170" stroke="#D4B254" strokeWidth="3" strokeLinecap="round" fill="none" />
-        <circle cx="150" cy="100" r="9" fill="#D4B254" />
-      </svg>
-
-      <div className="relative flex flex-wrap items-center gap-2.5">
-        <Label className="text-white/50">{state === "live" ? "Happening now" : "Next live class"}</Label>
-        <SessionStatus session={session} onNavy />
-      </div>
-
-      <h2 className="relative mt-4 max-w-xl text-[clamp(1.35rem,2.6vw,1.9rem)] font-semibold leading-[1.15] tracking-tight">
-        {session.title}
-      </h2>
-      <p className="relative mt-3 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-white/60">
-        {[cohortLabel, session.strand, session.unit].filter(Boolean).map((part, i) => (
-          <span key={i} className="contents">
-            <span className={i === 0 && cohortLabel ? "text-white/80" : undefined}>{part}</span>
-            <span className="text-gold/70">|</span>
-          </span>
-        ))}
-        <span>
-          {fmtDay(session.start, now)} {fmtTime(session.start)} – {fmtTime(new Date(end).toISOString())}
-        </span>
-      </p>
-
-      <div className="relative mt-auto flex flex-wrap items-end justify-between gap-5 pt-8">
-        <JoinButton session={session} size="lg" />
-        <div className="text-right">
-          <Label className="text-white/40">{state === "live" ? "Ends in" : "Starts in"}</Label>
-          <p className="mt-1 font-mono text-[2rem] font-medium leading-none text-gold">
-            <Countdown to={new Date(state === "live" ? end : start).toISOString()} />
+    <div className={cn("rounded-2xl border p-5 md:p-6", live ? "border-gold bg-gold/[0.06]" : "border-navy/10 bg-white")}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="flex items-center gap-2 text-[13px] font-medium text-navy/55">
+            {live && <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />}
+            {live ? "Live now" : fmtDay(session.start, now)} · {fmtTime(session.start)} – {fmtTime(new Date(end).toISOString())}
           </p>
+          <h2 className="mt-1.5 truncate text-xl font-semibold tracking-tight text-navy">
+            {cohortLabel ? `${cohortLabel}` : session.title}
+          </h2>
+          <p className="mt-1 text-sm text-navy/55">
+            {cohortLabel ? session.title : null}
+            {cohortLabel && topic ? " · " : null}
+            {topic}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-4">
+          {live && (
+            <span className="text-sm tabular-nums text-navy/55">
+              Ends in <Countdown to={new Date(end).toISOString()} className="font-semibold text-navy" />
+            </span>
+          )}
+          <JoinButton session={session} surface="white" />
         </div>
       </div>
     </div>

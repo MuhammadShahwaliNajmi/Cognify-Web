@@ -135,14 +135,9 @@ export default function StudentTutor() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Available 24 / 7"
-        title="Lab AI"
-        gold="Tutor"
-        actions={<Chip tone="outline">Preview: sample answers</Chip>}
-      />
+      <PageHeader title="Tutor" sub="Ask about any topic in your syllabus. This is a preview with a few sample answers for now." />
 
-      <div className="flex h-[calc(100dvh-19.75rem)] min-h-[22rem] flex-col overflow-hidden rounded-[26px] border border-navy/10 bg-white shadow-[0_20px_50px_-38px_rgba(26,39,68,0.4)] lg:h-[calc(100dvh-14rem)]">
+      <div className="flex h-[calc(100dvh-17rem)] min-h-[22rem] flex-col overflow-hidden rounded-2xl border border-navy/10 bg-white">
         <div ref={scroller} className="thin-scroll flex-1 space-y-4 overflow-y-auto p-5 md:p-7">
           {msgs.map((m, i) => (
             <Bubble key={i} m={m} />
