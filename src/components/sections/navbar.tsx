@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useState } from "react";
 import { LogIn, Menu, X } from "lucide-react";
@@ -114,7 +115,7 @@ export function Navbar() {
         </ul>
 
         <div className="hidden items-center gap-2.5 md:flex">
-          <a
+          <Link
             href="/portal/"
             aria-label="Portal"
             title="Portal"
@@ -122,7 +123,7 @@ export function Navbar() {
           >
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
-          </a>
+          </Link>
           <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
@@ -185,13 +186,13 @@ export function Navbar() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.04 * (LINKS.length + 1), ...spring.snappy }}
                 >
-                  <a
+                  <Link
                     href="/portal/"
                     onClick={() => setOpen(false)}
                     className="flex w-full items-center gap-2 rounded-full border border-white/40 bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-white transition-colors duration-200 hover:border-gold hover:text-gold"
                   >
                     <LogIn size={13} /> Portal
-                  </a>
+                  </Link>
                 </motion.li>
               </ul>
 

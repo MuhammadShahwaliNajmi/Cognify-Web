@@ -8,5 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
-  return <PortalProvider>{children}</PortalProvider>;
+  return (
+    <>
+      <link rel="preconnect" href="https://shrgjfevwjbqlzpqqfck.supabase.co" crossOrigin="" />
+      <link rel="preload" href="https://accounts.google.com/gsi/client" as="script" />
+      <PortalProvider>{children}</PortalProvider>
+    </>
+  );
 }

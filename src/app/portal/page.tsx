@@ -71,9 +71,12 @@ function JoinForm() {
 }
 
 export default function PortalSignIn() {
-  const { status, auth, signInWithGoogle, toasts } = usePortal();
+  const { status, auth, email, signInWithGoogle, toasts } = usePortal();
   const router = useRouter();
   const [going, setGoing] = useState(false);
+  // back from Google's full-page sign-in (the store swaps the token for a session)
+  const [returning, setReturning] = useState(false);
+  useEffect(() => setReturning(window.location.hash.includes("id_token=")), []);
 
   useEffect(() => {
     if (status === "ready" && auth) router.replace(auth.role === "student" ? "/portal/student/" : "/portal/teacher/");
@@ -87,9 +90,16 @@ export default function PortalSignIn() {
       </div>
 
       <section className="mt-8 w-full max-w-sm rounded-2xl bg-white p-7 md:p-8">
-        {status === "loading" || status === "ready" ? (
-          <div className="flex justify-center py-8">
-            <LogoMark className="h-12 w-12 animate-pulse-node" />
+        {/* The sign-in card renders straight away (it's in the static HTML); only someone
+            who is already signed in sees the brief "opening" state. */}
+        {status === "ready" || (status === "loading" && (email || returning)) ? (
+          <div className="flex flex-col items-center py-8">
+            <LogoMark className="h-12 w-12" />
+            <span className="mt-4 flex gap-1.5" aria-label="Opening your portal">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" style={{ animationDelay: `${i * 0.2}s` }} />
+              ))}
+            </span>
           </div>
         ) : status === "needs-join" ? (
           <JoinForm />
