@@ -41,13 +41,21 @@ export function GoogleSignInButton({ onBusy }: { onBusy?: (busy: boolean) => voi
   const { signInWithGoogleToken } = usePortal();
   const slot = useRef<HTMLDivElement>(null);
   const nonce = useRef<string>("");
+  const generation = useRef(0); // only the latest setup() may draw the button
+  // keep the latest callbacks in refs so setup() itself never changes identity
+  const signInRef = useRef(signInWithGoogleToken);
+  const busyRef = useRef(onBusy);
+  signInRef.current = signInWithGoogleToken;
+  busyRef.current = onBusy;
   const [loaded, setLoaded] = useState(() => typeof window !== "undefined" && !!window.google?.accounts?.id);
   const [failed, setFailed] = useState(false);
 
   const setup = useCallback(async () => {
+    const run = ++generation.current;
     const id = window.google?.accounts?.id;
     if (!id || !slot.current || !CLIENT_ID) return;
     const [raw, hashed] = await makeNonce();
+    if (run !== generation.current || !slot.current) return; // a newer setup() took over
     nonce.current = raw;
     id.initialize({
       client_id: CLIENT_ID,
@@ -56,13 +64,13 @@ export function GoogleSignInButton({ onBusy }: { onBusy?: (busy: boolean) => voi
       itp_support: true,
       use_fedcm_for_button: true,
       callback: async (res: CredentialResponse) => {
-        onBusy?.(true);
-        const ok = await signInWithGoogleToken(res.credential, nonce.current);
-        onBusy?.(false);
+        busyRef.current?.(true);
+        const ok = await signInRef.current(res.credential, nonce.current);
+        busyRef.current?.(false);
         if (!ok) setup(); // fresh nonce for the next attempt
       },
     });
-    slot.current.innerHTML = "";
+    slot.current.replaceChildren();
     id.renderButton(slot.current, {
       type: "standard",
       theme: "outline",
@@ -72,7 +80,7 @@ export function GoogleSignInButton({ onBusy }: { onBusy?: (busy: boolean) => voi
       logo_alignment: "center",
       width: Math.min(400, Math.max(220, slot.current.clientWidth)),
     });
-  }, [onBusy, signInWithGoogleToken]);
+  }, []);
 
   useEffect(() => {
     if (loaded) setup();
