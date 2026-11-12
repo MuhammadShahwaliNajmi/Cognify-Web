@@ -8,8 +8,9 @@ import { cn } from "@/lib/utils";
  * upward gold regression vector ending in a node. Renders crisply on pure
  * white. Draws on mount; the node + vector re-energise on hover.
  */
-export function LogoMark({ className }: { className?: string }) {
+export function LogoMark({ className, onDark }: { className?: string; onDark?: boolean }) {
   const reduce = useReducedMotion();
+  const axis = onDark ? "#FFFFFF" : "#1a2744";
 
   return (
     <motion.svg
@@ -24,7 +25,7 @@ export function LogoMark({ className }: { className?: string }) {
       {/* Axes (navy) */}
       <motion.path
         d="M9 6 V31 H34"
-        stroke="#1a2744"
+        stroke={axis}
         strokeWidth={1.8}
         strokeLinecap="round"
         initial={reduce ? false : { pathLength: 0, opacity: 0 }}
@@ -32,8 +33,8 @@ export function LogoMark({ className }: { className?: string }) {
         transition={{ duration: 0.7, ease: "easeOut" }}
       />
       {/* Arrowheads */}
-      <path d="M9 6 l-2.4 3.4 M9 6 l2.4 3.4" stroke="#1a2744" strokeWidth={1.6} strokeLinecap="round" />
-      <path d="M34 31 l-3.4 -2.4 M34 31 l-3.4 2.4" stroke="#1a2744" strokeWidth={1.6} strokeLinecap="round" />
+      <path d="M9 6 l-2.4 3.4 M9 6 l2.4 3.4" stroke={axis} strokeWidth={1.6} strokeLinecap="round" />
+      <path d="M34 31 l-3.4 -2.4 M34 31 l-3.4 2.4" stroke={axis} strokeWidth={1.6} strokeLinecap="round" />
 
       {/* Gold regression vector */}
       <motion.path
@@ -67,15 +68,25 @@ export function LogoMark({ className }: { className?: string }) {
  * Concept Lab wordmark — the graph mark beside "CONCEPT LAB" (navy + gold),
  * with the "Education" strapline under a hairline, mirroring the brand logo.
  */
-export function Wordmark({ className }: { className?: string }) {
+export function Wordmark({ className, onDark }: { className?: string; onDark?: boolean }) {
   return (
     <span className={cn("flex items-center gap-2", className)}>
-      <LogoMark className="h-8 w-8 md:h-9 md:w-9" />
+      <LogoMark onDark={onDark} className="h-8 w-8 md:h-9 md:w-9" />
       <span className="flex flex-col leading-none">
-        <span className="text-[1.1rem] font-extrabold tracking-tight text-navy md:text-[1.25rem]">
+        <span
+          className={cn(
+            "text-[1.1rem] font-extrabold tracking-tight md:text-[1.25rem]",
+            onDark ? "text-white" : "text-navy"
+          )}
+        >
           CONCEPT <span className="text-gold">LAB</span>
         </span>
-        <span className="mt-1 border-t border-navy/60 pt-[3px] text-[0.5rem] font-semibold uppercase tracking-[0.42em] text-navy">
+        <span
+          className={cn(
+            "mt-1 border-t pt-[3px] text-[0.5rem] font-semibold uppercase tracking-[0.42em]",
+            onDark ? "border-white/40 text-white/80" : "border-navy/60 text-navy"
+          )}
+        >
           Education
         </span>
       </span>

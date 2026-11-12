@@ -26,6 +26,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Public by design (the portal runs in the browser; access is enforced
+          # by row-level security in Supabase). Never put secret keys here.
+          NEXT_PUBLIC_SUPABASE_URL: https://shrgjfevwjbqlzpqqfck.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_xNpzkh6NXgakTN9rNkQxsw_O948qPPf
       # GitHub Pages would otherwise strip the _next/ folder via Jekyll.
       - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3

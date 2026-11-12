@@ -219,3 +219,11 @@ body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ---------------------------------------------------------------
+   PORTAL — an app, not a scaled marketing page: fixed 16px root so
+   text stays readable on tablets, where the site scales the root down.
+----------------------------------------------------------------- */
+html:has([data-portal]) {
+  font-size: 16px;
+}

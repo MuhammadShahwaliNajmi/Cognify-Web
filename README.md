@@ -49,6 +49,16 @@ src/
 └── lib/utils.ts                # cn() + shared spring presets
 ```
 
+## Student portal (`/portal/`)
+- Google sign-in via Supabase Auth. Teachers are pre-listed in `members`;
+  students attach themselves once with their cohort's join code.
+- Data lives in Supabase project `shrgjfevwjbqlzpqqfck` (Postgres + row-level
+  security). Submitted work goes to the private `submissions` storage bucket;
+  recordings and resources are Google Drive links.
+- Schema, policies and jobs: `supabase/migrations/` (applied in order).
+- Local dev needs `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (both public by design).
+
 ## Notes
 - Images in `public/` are pre-sized for how they're displayed (the export is
   unoptimised). Keep originals elsewhere and resize before adding new ones.
