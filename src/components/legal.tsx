@@ -5,7 +5,7 @@ import { Wordmark } from "@/components/ui/logo";
 export const COMPANY = "Concept Lab Education Services (Pvt.) Limited";
 export const ADDRESS = "44 Block C, New Muslim Town, Lahore, Pakistan";
 export const CONTACT_EMAIL = "privacy@cognifypk.com";
-export const EFFECTIVE = "12 November 2026";
+const EFFECTIVE = "12 November 2026";
 
 export type LegalSection = { heading: string; body: (string | string[])[] };
 

@@ -12,7 +12,8 @@ interface RevealProps {
   once?: boolean;
 }
 
-/** Spring-physics scroll reveal (blur + lift + settle). Honors reduced motion. */
+/** Spring-physics scroll reveal (blur + lift + settle). Honors reduced motion.
+ *  The filter is removed once settled, so revealed blocks don't each keep a filtered layer. */
 export function Reveal({
   children,
   delay = 0,
@@ -39,7 +40,7 @@ export function Reveal({
       initial={{ opacity: 0, y, filter: "blur(10px)" }}
       animate={
         inView
-          ? { opacity: 1, y: 0, filter: "blur(0px)" }
+          ? { opacity: 1, y: 0, filter: "blur(0px)", transitionEnd: { filter: "none" } }
           : { opacity: 0, y, filter: "blur(10px)" }
       }
       transition={{ ...spring.soft, delay }}

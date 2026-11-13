@@ -711,7 +711,7 @@ export function Hero() {
               </p>
               <div className="flex flex-nowrap items-center gap-x-3 md:flex-wrap md:gap-x-8 md:gap-y-4">
                 <img
-                  src="/cambridge-logo.png"
+                  src="/cambridge-logo.webp"
                   width={191}
                   height={240}
                   alt="Cambridge Assessment International Education"
@@ -719,7 +719,7 @@ export function Hero() {
                 />
                 <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
-                  src="/pearson-logo.png"
+                  src="/pearson-logo.webp"
                   width={529}
                   height={160}
                   alt="Pearson Edexcel"
@@ -727,7 +727,7 @@ export function Hero() {
                 />
                 <span className="h-7 w-px bg-navy/10 md:h-11" aria-hidden="true" />
                 <img
-                  src="/ib-logo.png"
+                  src="/ib-logo.webp"
                   width={240}
                   height={240}
                   alt="International Baccalaureate"
