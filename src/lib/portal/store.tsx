@@ -61,7 +61,21 @@ type Store = {
   addAssignment: (a: Omit<Assignment, "id">) => Promise<boolean>;
   /** open an assignment's question paper in a new tab */
   openAttachment: (assignmentId: string) => Promise<void>;
-  submitWork: (s: { assignmentId: string; studentId: string; file: File; note?: string; onProgress?: (p: number) => void }) => Promise<boolean>;
+  /** hand in work: a file, a typed answer (assessments), or both */
+  submitWork: (s: {
+    assignmentId: string;
+    studentId: string;
+    file?: File | null;
+    answerText?: string;
+    note?: string;
+    onProgress?: (p: number) => void;
+  }) => Promise<boolean>;
+  /** teacher: set a timed assessment (questions stay hidden until each student starts) */
+  addAssessment: (a: Omit<Assignment, "id"> & { timeLimitMin: number; questions?: string }) => Promise<boolean>;
+  /** student: start the clock (once) */
+  startAssessment: (assignmentId: string) => Promise<boolean>;
+  /** teacher: let a student take an assessment again (clears their attempt and answer) */
+  allowRetake: (assignmentId: string, studentId: string) => Promise<boolean>;
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
   /** open a handed-in piece of work in a new tab */
   openSubmission: (sub: Submission) => Promise<void>;
@@ -305,11 +319,47 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             attachment_mime: a.attachmentMime || null,
           })
         ),
+      addAssessment: (a) =>
+        run("Setting the assessment", async (api) => {
+          const { data, error } = await api
+            .from("assignments")
+            .insert({
+              cohort_id: num(a.cohortId),
+              title: a.title,
+              kind: "Assessment",
+              strand: a.strand,
+              unit: a.unit,
+              brief: a.brief,
+              due_at: a.dueAt,
+              max_marks: a.maxMarks,
+              time_limit_min: a.timeLimitMin,
+              attachment_file_id: a.attachmentFileId || null,
+              attachment_name: a.attachmentName || null,
+              attachment_mime: a.attachmentMime || null,
+            })
+            .select("id")
+            .single();
+          if (error || !a.questions?.trim()) return { error };
+          return api.from("assessment_questions").insert({ assignment_id: data.id, body: a.questions.trim() });
+        }),
+      startAssessment: (assignmentId) =>
+        run("Starting the assessment", (api) => api.rpc("start_assessment", { p_assignment: num(assignmentId) })),
+      allowRetake: (assignmentId, studentId) =>
+        run("Allowing a retake", async (api) => {
+          const sub = await api.from("submissions").delete().eq("assignment_id", num(assignmentId)).eq("member_id", num(studentId));
+          if (sub.error) return sub;
+          return api.from("assessment_attempts").delete().eq("assignment_id", num(assignmentId)).eq("member_id", num(studentId));
+        }),
       openAttachment: (assignmentId) => open(() => fileLink("assignment", assignmentId)),
-      submitWork: async ({ assignmentId, studentId, file, note, onProgress }) => {
+      submitWork: async ({ assignmentId, studentId, file, answerText, note, onProgress }) => {
         if (!sb) return false;
-        let stored: { drive_file_id: string | null; file_path: string | null; mime_type: string | null };
-        try {
+        const existing = db.submissions.find((x) => x.assignmentId === assignmentId && x.studentId === studentId);
+        let stored: { drive_file_id: string | null; file_path: string | null; mime_type: string | null } = {
+          drive_file_id: existing?.driveFileId ?? null,
+          file_path: existing?.filePath ?? null,
+          mime_type: null,
+        };
+        if (file) try {
           const up = await uploadFile(file, { purpose: "submission", assignmentId }, onProgress);
           stored = { drive_file_id: up.id, file_path: null, mime_type: up.mimeType || file.type || null };
         } catch (e) {
@@ -331,9 +381,10 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             {
               assignment_id: num(assignmentId),
               member_id: num(studentId),
-              file_name: file.name,
-              file_size: file.size,
+              file_name: file ? file.name : existing?.fileName || null,
+              file_size: file ? file.size : null,
               ...stored,
+              ...(answerText !== undefined ? { answer_text: answerText.trim() || null } : {}),
               note: note?.trim() || null,
               submitted_at: new Date().toISOString(),
             },

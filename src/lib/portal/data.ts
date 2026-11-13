@@ -61,6 +61,7 @@ type Snapshot = {
     brief: string;
     due_at: string;
     max_marks: number;
+    time_limit_min: number | null;
     attachment_url: string | null;
     attachment_file_id: string | null;
     attachment_name: string | null;
@@ -74,6 +75,7 @@ type Snapshot = {
     file_size: number | null;
     file_path: string | null;
     drive_file_id: string | null;
+    answer_text: string | null;
     note: string | null;
     submitted_at: string;
     // from feedback; all null until the work is marked
@@ -128,6 +130,7 @@ function toPortal(snap: Snapshot): Portal {
       fileSize: fmtBytes(s.file_size),
       filePath: s.file_path ?? undefined,
       driveFileId: s.drive_file_id ?? undefined,
+      answerText: s.answer_text ?? undefined,
       note: s.note ?? undefined,
       status: marked ? "marked" : "submitted",
       marks: marked ? Number(s.marks) : undefined,
@@ -222,7 +225,15 @@ function toPortal(snap: Snapshot): Portal {
         attachmentFileId: a.attachment_file_id ?? undefined,
         attachmentName: a.attachment_name ?? undefined,
         attachmentMime: a.attachment_mime ?? undefined,
+        timeLimitMin: a.time_limit_min ?? undefined,
       })),
+      attempts: (snap.attempts ?? []).map((t) => ({
+        assignmentId: id(t.assignment_id),
+        studentId: id(t.member_id),
+        startedAt: t.started_at,
+        endsAt: t.ends_at,
+      })),
+      questions: Object.fromEntries((snap.questions ?? []).map((q) => [id(q.assignment_id), q.body])),
       announcements: snap.announcements.map((a) => ({
         id: id(a.id),
         cohortId: a.cohort_id === null ? null : id(a.cohort_id),

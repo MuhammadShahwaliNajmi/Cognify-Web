@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { attendancePct, submissionFor } from "@/lib/portal/selectors";
+import { attendancePct, submissionFor, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import { Bar, EmptyRow, PageHeader, RowLink, Segmented, Status, Table, Td } from "@/components/portal/ui";
@@ -79,7 +79,7 @@ export default function StudentGrades() {
               items.map(({ a, sub }) => {
                 const done = sub?.status === "marked";
                 return (
-                  <RowLink key={a.id} onClick={() => router.push(`/portal/student/assignments/?open=${a.id}`)}>
+                  <RowLink key={a.id} onClick={() => router.push(workHref(a))}>
                     <Td className="font-medium text-navy">{a.title}</Td>
                     <Td className="whitespace-nowrap">{a.kind}</Td>
                     <Td className="whitespace-nowrap">{fmtDate(a.dueAt)}</Td>

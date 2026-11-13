@@ -34,3 +34,33 @@ export function averagePct(db: DB, studentId: string) {
   }, 0);
   return Math.round((total / marked.length) * 100);
 }
+
+export const attemptFor = (db: DB, assignmentId: string, studentId: string) =>
+  db.attempts.find((t) => t.assignmentId === assignmentId && t.studentId === studentId);
+
+/** Timed assessments vs ordinary assignments. */
+export const isAssessment = (a: { timeLimitMin?: number }) => !!a.timeLimitMin;
+
+/** Where a student opens a piece of work. */
+export const workHref = (a: { id: string; timeLimitMin?: number }) =>
+  `/portal/student/${a.timeLimitMin ? "assessments" : "assignments"}/?open=${a.id}`;
+
+/** Grace after the clock runs out for an upload to finish (matches the database). */
+export const GRACE_MS = 2 * 60_000;
+
+export type AssessmentState = "upcoming" | "in-progress" | "grace" | "submitted" | "marked" | "missed" | "time-up";
+
+/** Where a student is with a timed assessment, right now. */
+export function assessmentState(db: DB, a: { id: string; dueAt: string }, studentId: string, now: number): AssessmentState {
+  const sub = db.submissions.find((x) => x.assignmentId === a.id && x.studentId === studentId);
+  if (sub?.status === "marked") return "marked";
+  const t = attemptFor(db, a.id, studentId);
+  if (t) {
+    const end = new Date(t.endsAt).getTime();
+    if (now < end) return "in-progress";
+    if (now < end + GRACE_MS) return "grace";
+    return sub ? "submitted" : "time-up";
+  }
+  if (sub) return "submitted";
+  return now <= new Date(a.dueAt).getTime() ? "upcoming" : "missed";
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { attendancePct } from "@/lib/portal/selectors";
+import { assessmentState, attendancePct, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
@@ -16,7 +16,12 @@ export default function StudentDashboard() {
   const next = db.sessions.find((s) => s.cohortId === me.cohortId && sessionState(s.start, s.durationMin, now) !== "ended");
   const mine = db.submissions.filter((x) => x.studentId === me.id);
   const deadlines = db.assignments
-    .filter((a) => a.cohortId === me.cohortId && !mine.some((x) => x.assignmentId === a.id))
+    .filter(
+      (a) =>
+        a.cohortId === me.cohortId &&
+        !mine.some((x) => x.assignmentId === a.id) &&
+        (!a.timeLimitMin || ["upcoming", "in-progress", "grace"].includes(assessmentState(db, a, me.id, now)))
+    )
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
   const notices = db.announcements.filter((a) => !a.cohortId || a.cohortId === me.cohortId).slice(0, 3);
   const graded = mine
@@ -67,13 +72,17 @@ export default function StudentDashboard() {
                 deadlines.slice(0, 6).map((a) => {
                   const ms = new Date(a.dueAt).getTime() - now;
                   return (
-                    <RowLink key={a.id} onClick={() => router.push(`/portal/student/assignments/?open=${a.id}`)}>
+                    <RowLink key={a.id} onClick={() => router.push(workHref(a))}>
                       <Td className="font-medium">{a.title}</Td>
                       <Td className="whitespace-nowrap">
                         {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
                       </Td>
                       <Td align="right">
-                        {ms < 0 ? (
+                        {a.timeLimitMin ? (
+                          <Status tone="attention">
+                            {assessmentState(db, a, me.id, now) === "upcoming" ? `Timed · start by ${fmtRelative(a.dueAt, now)}` : "In progress"}
+                          </Status>
+                        ) : ms < 0 ? (
                           <Status tone="attention">Overdue</Status>
                         ) : ms < 48 * HOUR ? (
                           <Status tone="attention">Due {fmtRelative(a.dueAt, now)}</Status>

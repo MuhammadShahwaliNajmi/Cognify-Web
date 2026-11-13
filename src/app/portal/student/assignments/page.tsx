@@ -317,7 +317,7 @@ function Assignments() {
   const [tab, setTab] = useState<Tab>("todo");
 
   const rows = db.assignments
-    .filter((a) => a.cohortId === me.cohortId)
+    .filter((a) => a.cohortId === me.cohortId && !a.timeLimitMin)
     .map((a) => ({ a, sub: submissionFor(db, a.id, me.id) }))
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const groups: Record<Tab, typeof rows> = {

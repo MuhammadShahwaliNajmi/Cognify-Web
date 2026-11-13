@@ -40,6 +40,14 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
           </div>
         </div>
 
+        {sub.answerText && (
+          <div className="mt-4 max-h-80 overflow-y-auto rounded-2xl border border-navy/10 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">Typed answer</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-navy">{sub.answerText}</p>
+          </div>
+        )}
+
+        {(sub.filePath || sub.driveFileId || !sub.answerText) && (
         <button
           type="button"
           onClick={() => (sub.filePath || sub.driveFileId ? openSubmission(sub) : toast("No file was attached to this submission."))}
@@ -55,6 +63,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
             </span>
           </span>
         </button>
+        )}
 
         {sub.note && (
           <div className="mt-3 rounded-2xl bg-gold/15 p-4">
@@ -66,6 +75,7 @@ function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {
         <div className="mt-3 rounded-2xl bg-navy/[0.04] p-4">
           <Label>The task · {a.maxMarks} marks</Label>
           <p className="mt-2 text-sm leading-relaxed text-navy">{a.brief}</p>
+          {db.questions[a.id] && <p className="mt-3 whitespace-pre-wrap border-t border-navy/10 pt-3 text-sm leading-relaxed text-navy">{db.questions[a.id]}</p>}
         </div>
       </div>
 

@@ -36,7 +36,7 @@ export default function TeacherCalendar() {
       title: a.title,
       sub: cohortOf(db, a.cohortId).name,
       kind: "due" as const,
-      onClick: () => router.push("/portal/teacher/assignments/"),
+      onClick: () => router.push(a.timeLimitMin ? "/portal/teacher/assessments/" : "/portal/teacher/assignments/"),
     })),
   ];
 

@@ -276,8 +276,14 @@ async function route(req: Request): Promise<Response> {
     if (body.purpose === "submission") {
       if (member.role !== "student" || !member.cohort_id) throw new HttpError(403, "Students only");
       if (size > 50 * MB) throw new HttpError(413, "Files must be under 50 MB");
-      const { data: a } = await admin.from("assignments").select("id, title, cohort_id").eq("id", body.assignmentId).single();
+      const { data: a } = await admin.from("assignments").select("id, title, cohort_id, time_limit_min").eq("id", body.assignmentId).single();
       if (!a || a.cohort_id !== member.cohort_id) throw new HttpError(404, "Assignment not found");
+      if (a.time_limit_min) {
+        // timed assessment: only inside the attempt (+2 minutes' grace)
+        const { data: t } = await admin.from("assessment_attempts").select("ends_at").eq("assignment_id", a.id).eq("member_id", member.id).maybeSingle();
+        if (!t) throw new HttpError(403, "Start the assessment first");
+        if (Date.now() > new Date(t.ends_at).getTime() + 2 * 60_000) throw new HttpError(403, "Time is up for this assessment");
+      }
       parent = await systemFolder(member.cohort_id, "Submissions");
       driveName = `${a.title} — ${name}`;
     } else {
@@ -322,7 +328,12 @@ async function route(req: Request): Promise<Response> {
       fileId = data?.drive_file_id ?? null;
       name = data?.file_name ?? name;
     } else if (kind === "assignment") {
-      const { data } = await db.from("assignments").select("attachment_file_id, attachment_name").eq("id", id).maybeSingle();
+      const { data } = await db.from("assignments").select("attachment_file_id, attachment_name, time_limit_min").eq("id", id).maybeSingle();
+      if (data?.time_limit_min && member.role === "student") {
+        // question papers for timed assessments unlock only once the student starts
+        const { data: t } = await db.from("assessment_attempts").select("assignment_id").eq("assignment_id", id).maybeSingle();
+        if (!t) throw new HttpError(403, "Start the assessment to see the questions");
+      }
       fileId = data?.attachment_file_id ?? null;
       name = data?.attachment_name ?? name;
     }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { topicOf } from "@/lib/portal/selectors";
+import { topicOf, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
 import { PageHeader } from "@/components/portal/ui";
@@ -36,7 +36,7 @@ export default function StudentCalendar() {
         title: a.title,
         sub: a.kind,
         kind: "due" as const,
-        onClick: () => router.push(`/portal/student/assignments/?open=${a.id}`),
+        onClick: () => router.push(workHref(a)),
       })),
   ];
 

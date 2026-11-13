@@ -99,7 +99,12 @@ export type Assignment = {
   attachmentFileId?: string; // uploaded question paper
   attachmentName?: string;
   attachmentMime?: string;
+  /** set → a timed assessment: start before dueAt, then this many minutes */
+  timeLimitMin?: number;
 };
+
+/** A student's run at a timed assessment. */
+export type Attempt = { assignmentId: string; studentId: string; startedAt: string; endsAt: string };
 
 export type Submission = {
   id: string;
@@ -110,6 +115,7 @@ export type Submission = {
   fileSize: string; // formatted, e.g. "1.2 MB"
   filePath?: string; // fallback uploads: private storage path
   driveFileId?: string; // stored file id
+  answerText?: string; // typed answer (assessments)
   note?: string;
   status: "submitted" | "marked";
   marks?: number;
@@ -161,6 +167,9 @@ export type DB = {
   announcements: Announcement[];
   progress: Progress[];
   requests: ClassRequest[];
+  attempts: Attempt[];
+  /** assessment questions, keyed by assignment id (students only see them once started) */
+  questions: Record<string, string>;
 };
 
 export const EMPTY_DB: DB = {
@@ -174,4 +183,6 @@ export const EMPTY_DB: DB = {
   announcements: [],
   progress: [],
   requests: [],
+  attempts: [],
+  questions: {},
 };

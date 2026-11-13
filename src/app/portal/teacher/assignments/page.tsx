@@ -133,7 +133,7 @@ export default function TeacherAssignments() {
 
   const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
   const all = db.assignments
-    .filter((a) => a.cohortId === cohort?.id)
+    .filter((a) => a.cohortId === cohort?.id && !a.timeLimitMin)
     .sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
   const open = all.filter((a) => new Date(a.dueAt).getTime() > now).reverse();
   const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now);
