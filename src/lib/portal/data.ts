@@ -56,7 +56,7 @@ type Snapshot = {
     cohort_id: Id;
     title: string;
     kind: AssignmentKind;
-    strand: Strand;
+    strand: Strand | null;
     unit: string;
     brief: string;
     due_at: string;

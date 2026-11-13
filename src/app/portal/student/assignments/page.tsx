@@ -154,9 +154,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <Chip tone="navy">{a.kind}</Chip>
-        <Chip tone="soft">
-          {a.strand} · {a.unit}
-        </Chip>
+        {a.unit && <Chip tone="soft">{a.unit}</Chip>}
         <Chip tone="soft">{a.maxMarks} marks</Chip>
         {!sub && (
           <Chip tone={msLeft < 0 ? "navy" : msLeft < 48 * HOUR ? "gold" : "outline"}>

@@ -8,7 +8,7 @@ import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
 import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
 import { DAY, dateInput, fmtDate, fmtDuration, fmtTime } from "@/lib/portal/format";
-import type { Assignment, Strand, Student } from "@/lib/portal/types";
+import type {Assignment, Student } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
@@ -28,7 +28,6 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
   const [f, setF] = useState({
     cohortId: cohorts[0]?.id ?? "",
     title: "",
-    strand: "Micro" as Strand,
     unit: "",
     brief: "",
     questions: "",
@@ -69,14 +68,7 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
       <Field label="Title">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Unit 2 test: market failure" className={fieldCls} />
       </Field>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <Field label="Strand">
-          <select value={f.strand} onChange={(e) => set("strand", e.target.value as Strand)} className={fieldCls}>
-            <option>Micro</option>
-            <option>Macro</option>
-            <option>Business</option>
-          </select>
-        </Field>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Topic">
           <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Market failure" className={fieldCls} />
         </Field>
@@ -136,7 +128,7 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
             cohortId: f.cohortId,
             title: f.title.trim(),
             kind: "Assessment",
-            strand: f.strand,
+            strand: null,
             unit: f.unit.trim(),
             brief: f.brief.trim(),
             dueAt: due.toISOString(),

@@ -90,7 +90,7 @@ export type Assignment = {
   cohortId: string;
   title: string;
   kind: AssignmentKind;
-  strand: Strand;
+  strand: Strand | null;
   unit: string;
   brief: string;
   dueAt: string; // ISO

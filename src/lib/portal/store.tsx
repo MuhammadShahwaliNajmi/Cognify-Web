@@ -87,6 +87,17 @@ type Store = {
   deleteFolder: (id: string) => Promise<boolean>;
   addAnnouncement: (a: { cohortId: string | null; title: string; body: string }) => Promise<boolean>;
   updateStudent: (id: string, p: { predicted: string; target: string }) => Promise<boolean>;
+  /** teacher: create a student's class (join code, folders, weekly timetable; login if an email is given) */
+  addStudent: (s: {
+    name: string;
+    board?: string;
+    subject?: string;
+    email?: string;
+    meetUrl?: string;
+    slots: { weekday: number; start: string; duration: number }[];
+  }) => Promise<{ joinCode: string } | null>;
+  /** teacher: delete a student and everything in their class */
+  removeStudent: (cohortId: string) => Promise<boolean>;
 };
 
 type Actions = Omit<Store, "status" | "ready" | "email" | "db" | "auth" | "me" | "now" | "toasts" | "toast">;
@@ -279,7 +290,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
                 folder_id: numOrNull(folder?.id),
                 title: `Class recording: ${ses.title}`,
                 type: "Recording",
-                strand: ses.strand ?? "Micro",
+                strand: ses.strand,
                 unit: ses.unit || "Class recordings",
                 drive_url: driveUrl,
               })
@@ -450,6 +461,24 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Posting", (api) =>
           api.from("announcements").insert({ cohort_id: numOrNull(a.cohortId), title: a.title, body: a.body, created_by: numOrNull(me?.id) })
         ),
+      addStudent: async (st) => {
+        if (!sb) return null;
+        const { data, error } = await sb.rpc("add_student", {
+          p_name: st.name,
+          p_board: st.board || null,
+          p_subject: st.subject || null,
+          p_email: st.email || null,
+          p_meet_url: st.meetUrl || null,
+          p_slots: st.slots,
+        });
+        if (error) {
+          toast(`Adding the student failed: ${error.message}`);
+          return null;
+        }
+        await reload();
+        return { joinCode: (data as { join_code: string }).join_code };
+      },
+      removeStudent: (cohortId) => run("Removing the student", (api) => api.rpc("remove_student", { p_cohort: num(cohortId) })),
       updateStudent: (id, p) =>
         run("Saving", (api) =>
           api.from("members").update({ predicted: p.predicted.trim() || null, target: p.target.trim() || null }).eq("id", num(id))

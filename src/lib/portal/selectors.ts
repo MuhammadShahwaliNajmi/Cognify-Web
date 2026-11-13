@@ -1,5 +1,5 @@
 /** Small read-only lookups over the portal data, shared by several screens. */
-import type { Cohort, DB, Session, Strand } from "./types";
+import type { Cohort, DB, Session } from "./types";
 
 const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "" };
 
@@ -12,7 +12,7 @@ export const courseOf = (c: Cohort) => [c.board, c.subject].filter(Boolean).join
 export const meetLink = (db: DB, s: Session) => s.meetUrl || cohortOf(db, s.cohortId).meetUrl;
 
 /** "Micro · Elasticities" — or "" for a timetable class with no topic yet. */
-export const topicOf = (s: { strand: Strand | null; unit: string | null }) => [s.strand, s.unit].filter(Boolean).join(" · ");
+export const topicOf = (s: { unit: string | null }) => s.unit ?? "";
 
 export const submissionFor = (db: DB, assignmentId: string, studentId: string) =>
   db.submissions.find((x) => x.assignmentId === assignmentId && x.studentId === studentId);

@@ -5,7 +5,7 @@ import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Pla
 import { cohortOf, meetLink, topicOf } from "@/lib/portal/selectors";
 import { usePortal } from "@/lib/portal/store";
 import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput } from "@/lib/portal/format";
-import type { ClassRequest, Resource, Session, Strand } from "@/lib/portal/types";
+import type {ClassRequest, Resource, Session } from "@/lib/portal/types";
 import { Btn, Field, Label, Modal, Status, fieldCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
 import { ResourceViewer } from "./resources";
@@ -16,7 +16,6 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
   const [f, setF] = useState({
     cohortId: cohorts[0]?.id ?? "",
     title: "Economics class",
-    strand: "Micro" as Strand,
     unit: "",
     date: dateInput(new Date(Date.now() + DAY)),
     time: "18:00",
@@ -36,16 +35,9 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
           ))}
         </select>
       </Field>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Class">
           <input value={f.title} onChange={(e) => set("title", e.target.value)} className={fieldCls} />
-        </Field>
-        <Field label="Strand">
-          <select value={f.strand} onChange={(e) => set("strand", e.target.value as Strand)} className={fieldCls}>
-            <option>Micro</option>
-            <option>Macro</option>
-            <option>Business</option>
-          </select>
         </Field>
         <Field label="Topic">
           <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Market structures" className={fieldCls} />
@@ -76,7 +68,7 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
           const saved = await addSession({
             cohortId: f.cohortId,
             title: f.title.trim(),
-            strand: f.strand,
+            strand: null,
             unit: f.unit.trim(),
             start: new Date(`${f.date}T${f.time}`).toISOString(),
             durationMin: f.duration,

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
-import type { AssignmentKind, Strand } from "@/lib/portal/types";
+import type {AssignmentKind } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 
@@ -16,7 +16,6 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
   const [f, setF] = useState({
     title: "",
     kind: "Essay" as AssignmentKind,
-    strand: "Micro" as Strand,
     unit: "",
     brief: "",
     date: dateInput(new Date(Date.now() + 7 * DAY)),
@@ -35,20 +34,13 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
       <Field label="Title">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Evaluate the case for a minimum wage" className={fieldCls} />
       </Field>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Type">
           <select value={f.kind} onChange={(e) => set("kind", e.target.value as AssignmentKind)} className={fieldCls}>
             <option>Essay</option>
             <option>Past paper</option>
             <option>Problem set</option>
             <option>Assessment</option>
-          </select>
-        </Field>
-        <Field label="Strand">
-          <select value={f.strand} onChange={(e) => set("strand", e.target.value as Strand)} className={fieldCls}>
-            <option>Micro</option>
-            <option>Macro</option>
-            <option>Business</option>
           </select>
         </Field>
         <Field label="Marks">
@@ -104,7 +96,7 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
             cohortId,
             title: f.title.trim(),
             kind: f.kind,
-            strand: f.strand,
+            strand: null,
             unit: f.unit.trim(),
             brief: f.brief.trim(),
             dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
