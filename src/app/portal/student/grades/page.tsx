@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { attendancePct, submissionFor, useStudent } from "@/lib/portal/store";
+import { attendancePct, submissionFor } from "@/lib/portal/selectors";
+import { useStudent } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import { Bar, EmptyRow, PageHeader, RowLink, Segmented, Status, Table, Td } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";

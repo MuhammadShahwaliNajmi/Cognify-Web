@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { attendancePct, useStudent } from "@/lib/portal/store";
-import { fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
+import { attendancePct } from "@/lib/portal/selectors";
+import { useStudent } from "@/lib/portal/store";
+import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { NextClassCard } from "@/components/portal/classroom";
 
-const HOUR = 3_600_000;
 
 export default function StudentDashboard() {
   const { db, me, now } = useStudent();

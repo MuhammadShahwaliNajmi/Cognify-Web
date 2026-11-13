@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowUp, Sparkles } from "lucide-react";
 import { cn, spring } from "@/lib/utils";
-import { courseOf, useStudent } from "@/lib/portal/store";
+import { courseOf } from "@/lib/portal/selectors";
+import { useStudent } from "@/lib/portal/store";
 import { Label, PageHeader, Status } from "@/components/portal/ui";
 
 type Msg = { from: "me" | "tutor"; text: string };

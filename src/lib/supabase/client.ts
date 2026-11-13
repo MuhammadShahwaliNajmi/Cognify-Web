@@ -7,15 +7,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  * Security in the database, never by this file.
  *
  * Both values are public by design (the publishable key only grants what the
- * RLS policies allow). Returns null until they're configured, so the portal
- * can keep running in demo mode.
+ * RLS policies allow). Returns null if they're missing from the build.
  */
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
 let client: SupabaseClient | null = null;
-
-export const supabaseConfigured = Boolean(url && key);
 
 export function getSupabase(): SupabaseClient | null {
   if (!url || !key) return null;

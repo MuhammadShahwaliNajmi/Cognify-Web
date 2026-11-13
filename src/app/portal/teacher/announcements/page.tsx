@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cohortOf, useTeacher } from "@/lib/portal/store";
+import { cohortOf } from "@/lib/portal/selectors";
+import { useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
 import { Btn, Empty, Field, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
 

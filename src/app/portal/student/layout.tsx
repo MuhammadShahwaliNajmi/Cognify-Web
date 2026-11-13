@@ -2,6 +2,7 @@
 
 import { Shell, type NavItem } from "@/components/portal/shell";
 import { usePortal } from "@/lib/portal/store";
+import { DAY } from "@/lib/portal/format";
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
   const { db, auth, now } = usePortal();
@@ -10,7 +11,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     (a) => a.cohortId === cohortId && !db.submissions.some((x) => x.assignmentId === a.id && x.studentId === auth?.userId)
   ).length;
   const fresh = db.announcements.filter(
-    (a) => (!a.cohortId || a.cohortId === cohortId) && now - new Date(a.at).getTime() < 3 * 86_400_000
+    (a) => (!a.cohortId || a.cohortId === cohortId) && now - new Date(a.at).getTime() < 3 * DAY
   ).length;
 
   const nav: NavItem[] = [

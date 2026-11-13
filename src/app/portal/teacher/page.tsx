@@ -3,14 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cohortOf, topicOf, useTeacher } from "@/lib/portal/store";
-import { fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
+import { cohortOf, topicOf } from "@/lib/portal/selectors";
+import { useTeacher } from "@/lib/portal/store";
+import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 import { ClassDialog } from "@/components/portal/class-tools";
 
-const HOUR = 3_600_000;
-const DAY = 24 * HOUR;
 const dayKey = (iso: string) => new Date(iso).toDateString();
 
 export default function TeacherDashboard() {
@@ -74,7 +73,7 @@ export default function TeacherDashboard() {
                       <Td align="right">
                         {/* stop the row click from also opening the dialog */}
                         <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
-                          {soon ? <JoinButton session={s} size="sm" surface="white" /> : <SessionStatus session={s} />}
+                          {soon ? <JoinButton session={s} size="sm" /> : <SessionStatus session={s} />}
                         </div>
                       </Td>
                     </RowLink>

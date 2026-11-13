@@ -4,12 +4,12 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FileText, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cohortOf, useTeacher } from "@/lib/portal/store";
-import { fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { cohortOf } from "@/lib/portal/selectors";
+import { useTeacher } from "@/lib/portal/store";
+import { HOUR, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Submission } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
-const HOUR = 3_600_000;
 const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
 
 function MarkForm({ sub, onDone }: { sub: Submission; onDone: () => void }) {

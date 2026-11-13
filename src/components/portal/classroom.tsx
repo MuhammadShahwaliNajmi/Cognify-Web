@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Link2, Play, Video } from "lucide-react";
+import { ExternalLink, Link2, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { meetLink, usePortal } from "@/lib/portal/store";
-import { fmtClock, fmtDay, fmtDuration, fmtTime, isMeetUrl, sessionState } from "@/lib/portal/format";
+import { meetLink, topicOf } from "@/lib/portal/selectors";
+import { usePortal } from "@/lib/portal/store";
+import { HOUR, fmtClock, fmtDay, fmtDuration, fmtTime, isMeetUrl, sessionState } from "@/lib/portal/format";
 import type { Session } from "@/lib/portal/types";
-import { Btn, Chip, Field, Label, Modal, fieldCls } from "./ui";
+import { Btn, Chip, Field, Modal, fieldCls } from "./ui";
 
 /** Re-renders its caller every second — only mount it inside small leaf components. */
 export function useTick(ms = 1000) {
@@ -18,11 +19,11 @@ export function useTick(ms = 1000) {
   return now;
 }
 
-export function Countdown({ to, className }: { to: string; className?: string }) {
+function Countdown({ to, className }: { to: string; className?: string }) {
   const now = useTick();
   const ms = new Date(to).getTime() - now;
   // a ticking clock only makes sense within the day; further out, "2d 4h" reads better
-  return <span className={cn("tabular-nums", className)}>{ms > 24 * 3_600_000 ? fmtDuration(ms) : fmtClock(ms)}</span>;
+  return <span className={cn("tabular-nums", className)}>{ms > 24 * HOUR ? fmtDuration(ms) : fmtClock(ms)}</span>;
 }
 
 /** Live / opens-soon / upcoming / ended status pill for a class. */
@@ -35,7 +36,7 @@ export function SessionStatus({ session, onNavy }: { session: Session; onNavy?: 
   const ms = new Date(session.start).getTime() - now;
   return (
     <Chip tone={onNavy ? "onNavy" : "soft"}>
-      {ms < 12 * 3_600_000 ? `Starts in ${fmtDuration(ms)}` : `${fmtDay(session.start, now)} · ${fmtTime(session.start)}`}
+      {ms < 12 * HOUR ? `Starts in ${fmtDuration(ms)}` : `${fmtDay(session.start, now)} · ${fmtTime(session.start)}`}
     </Chip>
   );
 }
@@ -97,8 +98,6 @@ export function JoinButton({
 }: {
   session: Session;
   size?: "sm" | "md" | "lg";
-  /** kept for call sites; the button is always gold now */
-  surface?: "navy" | "white";
   className?: string;
 }) {
   const { db, auth, markJoined, toast } = usePortal();
@@ -154,7 +153,7 @@ export function NextClassCard({ session, cohortLabel }: { session: Session; coho
   const start = new Date(session.start).getTime();
   const end = start + session.durationMin * 60_000;
   const live = state === "live";
-  const topic = [session.strand, session.unit].filter(Boolean).join(" · ");
+  const topic = topicOf(session);
 
   return (
     <div className={cn("rounded-2xl bg-navy-deep p-5 md:p-6", live && "ring-2 ring-gold")}>
@@ -179,36 +178,9 @@ export function NextClassCard({ session, cohortLabel }: { session: Session; coho
               Ends in <Countdown to={new Date(end).toISOString()} className="font-semibold text-gold" />
             </span>
           )}
-          <JoinButton session={session} surface="navy" />
+          <JoinButton session={session} />
         </div>
       </div>
     </div>
-  );
-}
-
-/** Compact date tile: "WED / 11". */
-export function DateTile({ iso, active }: { iso: string; active?: boolean }) {
-  const d = new Date(iso);
-  return (
-    <span
-      className={cn(
-        "flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl leading-none",
-        active ? "bg-gold text-navy-deep" : "bg-navy/[0.05] text-navy"
-      )}
-    >
-      <span className="text-[9px] font-bold uppercase tracking-[0.14em] opacity-70">
-        {d.toLocaleDateString([], { weekday: "short" })}
-      </span>
-      <span className="mt-1 text-[17px] font-semibold tabular-nums">{d.getDate()}</span>
-    </span>
-  );
-}
-
-export function WatchButton({ onClick }: { onClick: () => void }) {
-  return (
-    <Btn variant="outline" size="sm" onClick={onClick}>
-      <Play size={13} className="fill-current" />
-      Recording
-    </Btn>
   );
 }

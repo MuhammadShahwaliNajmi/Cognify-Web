@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { topicOf, useStudent } from "@/lib/portal/store";
+import { topicOf } from "@/lib/portal/selectors";
+import { useStudent } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
 import { PageHeader } from "@/components/portal/ui";
 import { NextClassCard } from "@/components/portal/classroom";

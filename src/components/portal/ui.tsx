@@ -10,26 +10,6 @@ import { initials } from "@/lib/portal/format";
 /* Portal UI kit — calm and uncluttered: white surfaces, hairline borders,
    navy text, gold only for the active state and the main action. */
 
-export function Card({
-  className,
-  tone = "white",
-  children,
-  ...rest
-}: React.HTMLAttributes<HTMLDivElement> & { tone?: "white" | "navy" }) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl p-5 md:p-6",
-        tone === "navy" ? "bg-navy-deep text-white" : "border border-navy/10 bg-white",
-        className
-      )}
-      {...rest}
-    >
-      {children}
-    </div>
-  );
-}
-
 export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
     <span className={cn("font-mono text-[11px] uppercase tracking-[0.2em] text-navy", className)}>
@@ -118,12 +98,8 @@ export function PageHeader({
   gold,
   actions,
 }: {
-  /** kept for older call sites; not shown */
-  eyebrow?: string;
   title: string;
   gold?: string;
-  /** kept for older call sites; not shown */
-  sub?: string;
   actions?: React.ReactNode;
 }) {
   return (

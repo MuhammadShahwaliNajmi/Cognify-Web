@@ -2,27 +2,23 @@
 
 import { useState } from "react";
 import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
-import { cohortOf, meetLink, topicOf, usePortal } from "@/lib/portal/store";
-import { fmtDateLong, fmtTime, sessionState } from "@/lib/portal/format";
+import { cohortOf, meetLink, topicOf } from "@/lib/portal/selectors";
+import { usePortal } from "@/lib/portal/store";
+import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput } from "@/lib/portal/format";
 import type { ClassRequest, Resource, Session, Strand } from "@/lib/portal/types";
 import { Btn, Field, Label, Modal, Status, fieldCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
 import { ResourceViewer } from "./resources";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const isDrive = (u: string) => /^https:\/\/(drive|docs)\.google\.com\//.test(u.trim());
-
 /** Teacher: schedule a one-off class. */
 export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name: string }[]; onDone: () => void }) {
   const { addSession, toast } = usePortal();
-  const tomorrow = new Date(Date.now() + 86_400_000);
   const [f, setF] = useState({
     cohortId: cohorts[0]?.id ?? "",
     title: "Economics class",
     strand: "Micro" as Strand,
     unit: "",
-    date: dateInput(tomorrow),
+    date: dateInput(new Date(Date.now() + DAY)),
     time: "18:00",
     duration: 60,
   });
@@ -162,7 +158,7 @@ function RecordingField({ session }: { session: Session }) {
       </div>
       <Btn
         variant="navy"
-        disabled={!isDrive(url) || url.trim() === (session.recordingUrl ?? "")}
+        disabled={!isDriveUrl(url) || url.trim() === (session.recordingUrl ?? "")}
         onClick={async () => {
           if (await setRecording(session.id, url)) toast("Recording saved");
         }}
@@ -172,8 +168,6 @@ function RecordingField({ session }: { session: Session }) {
     </div>
   );
 }
-
-const timeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 /** Teacher: move an upcoming class to a new date / time. */
 function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDone: () => void; onCancel: () => void }) {
@@ -385,7 +379,7 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
 
             {!ended && (
               <div className="flex flex-wrap items-center gap-3">
-                <JoinButton session={s} size="lg" surface="white" />
+                <JoinButton session={s} size="lg" />
                 {teacher && !moving && !cancelling && (
                   <>
                     <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>

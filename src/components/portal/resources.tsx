@@ -24,14 +24,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePortal } from "@/lib/portal/store";
-import { fmtDate } from "@/lib/portal/format";
+import { fmtBytes, fmtDate, isDriveUrl } from "@/lib/portal/format";
 import { fileLink, previewKind, uploadFile } from "@/lib/portal/storage";
 import type { Folder, Resource, ResourceType } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Modal, Table, Td, fieldCls } from "./ui";
 
-export const RESOURCE_TYPES: ResourceType[] = ["Slides", "Notes", "Summary sheet", "Past paper", "Essay structure", "Recording", "File"];
-
-export const TYPE_ICON: Record<ResourceType, LucideIcon> = {
+const TYPE_ICON: Record<ResourceType, LucideIcon> = {
   Slides: Presentation,
   Notes: FileText,
   "Summary sheet": StickyNote,
@@ -40,25 +38,6 @@ export const TYPE_ICON: Record<ResourceType, LucideIcon> = {
   Recording: Play,
   File: FileIcon,
 };
-
-export const TYPE_LABEL: Record<ResourceType, string> = {
-  Slides: "Slides",
-  Notes: "Notes",
-  "Summary sheet": "Summaries",
-  "Past paper": "Past papers",
-  "Essay structure": "Essays",
-  Recording: "Recordings",
-  File: "Files",
-};
-
-export const sizeText = (b?: number) =>
-  b === undefined
-    ? ""
-    : b < 1024 * 1024
-      ? `${Math.max(1, Math.round(b / 1024))} KB`
-      : b < 1024 ** 3
-        ? `${(b / 1024 / 1024).toFixed(1)} MB`
-        : `${(b / 1024 ** 3).toFixed(2)} GB`;
 
 function iconFor(r: Resource): LucideIcon {
   if (r.driveFileId) {
@@ -71,7 +50,7 @@ function iconFor(r: Resource): LucideIcon {
 }
 
 /** A pasted Google Drive share link → embeddable preview URL (older items only). */
-export function drivePreview(url: string) {
+function drivePreview(url: string) {
   const m = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?id=)([\w-]{10,})/);
   return m ? `https://drive.google.com/file/d/${m[1]}/preview` : null;
 }
@@ -133,7 +112,7 @@ export function ResourceViewer({ resource, onClose }: { resource: Resource | nul
                   <FileIcon size={22} />
                 </span>
                 <p className="mt-4 text-[15px] font-semibold text-navy">{resource.title}</p>
-                <p className="mt-1 text-sm text-navy">{sizeText(resource.sizeBytes)}</p>
+                <p className="mt-1 text-sm text-navy">{fmtBytes(resource.sizeBytes)}</p>
               </div>
             )
           ) : legacy ? (
@@ -240,7 +219,6 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
           type: typeFor(here?.name, up.mimeType || file.type),
           strand: null,
           unit: here?.name ?? "",
-          meta: sizeText(file.size),
           driveUrl: "",
           folderId: here?.id,
           driveFileId: up.id,
@@ -393,7 +371,7 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
                     </span>
                   </Td>
                   <Td className="whitespace-nowrap">{r.type}</Td>
-                  <Td className="whitespace-nowrap">{sizeText(r.sizeBytes) || (r.driveUrl ? "Link" : "—")}</Td>
+                  <Td className="whitespace-nowrap">{fmtBytes(r.sizeBytes) || (r.driveUrl ? "Link" : "—")}</Td>
                   <Td className="whitespace-nowrap">{fmtDate(r.addedAt)}</Td>
                   {teacher && (
                     <Td align="right">
@@ -439,7 +417,6 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
               type: typeFor(current?.name, ""),
               strand: null,
               unit: current?.name ?? "",
-              meta: "",
               driveUrl: link,
               folderId: current?.id,
             });
@@ -503,7 +480,7 @@ function LinkForm({ onSave }: { onSave: (title: string, link: string) => Promise
   const [title, setTitle] = useState("");
   const [link, setLink] = useState("");
   const [busy, setBusy] = useState(false);
-  const valid = title.trim() && /^https:\/\/(drive|docs)\.google\.com\//.test(link.trim());
+  const valid = title.trim() && isDriveUrl(link);
   return (
     <div className="space-y-5">
       <Field label="Name">

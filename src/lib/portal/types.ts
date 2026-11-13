@@ -1,8 +1,7 @@
 /**
- * Concept Lab portal — data model as the screens see it.
- * store.tsx loads these from Supabase (row-level security decides what each
- * signed-in user can see) and maps database rows into these shapes.
- * IDs are the database bigint ids as strings.
+ * Concept Lab portal — the data model as the screens see it.
+ * data.ts loads it from Supabase (row-level security decides what each signed-in
+ * user receives). IDs are the database bigint ids as strings.
  */
 
 export type Role = "student" | "teacher";
@@ -14,7 +13,6 @@ export type Cohort = {
   name: string; // one-to-one cohorts are named after the student
   board: string; // "IB Diploma", "FA", "IEO"…
   subject: string; // "Economics", "Economics & Business"
-  term: string;
   /** Standing Google Meet room for this cohort; a session may override it. */
   meetUrl: string;
   /** Visible to teachers (and to the student who already joined). */
@@ -69,7 +67,6 @@ export type Resource = {
   type: ResourceType;
   strand: Strand | null;
   unit: string;
-  meta: string;
   driveUrl: string; // pasted link ("" if none)
   sessionId?: string; // set for a class's slides / recording
   addedAt: string; // ISO
@@ -111,9 +108,8 @@ export type Submission = {
   submittedAt: string; // ISO
   fileName: string;
   fileSize: string; // formatted, e.g. "1.2 MB"
-  filePath?: string; // older uploads: private storage path
-  driveFileId?: string; // newer uploads: stored file id
-  mimeType?: string;
+  filePath?: string; // fallback uploads: private storage path
+  driveFileId?: string; // stored file id
   note?: string;
   status: "submitted" | "marked";
   marks?: number;
@@ -140,8 +136,6 @@ export type Progress = {
   mastery: Mastery[];
 };
 
-export type Auth = { role: Role; userId: string } | null;
-
 export type ClassRequest = {
   id: string;
   sessionId: string;
@@ -153,30 +147,31 @@ export type ClassRequest = {
   createdAt: string; // ISO
 };
 
+/** The signed-in member, or null before they have joined a class. */
+export type Auth = { role: Role; userId: string } | null;
+
 export type DB = {
   cohorts: Cohort[];
   students: Student[];
-  teachers: Teacher[];
   sessions: Session[];
   resources: Resource[];
+  folders: Folder[];
   assignments: Assignment[];
   submissions: Submission[];
   announcements: Announcement[];
   progress: Progress[];
   requests: ClassRequest[];
-  folders: Folder[];
 };
 
 export const EMPTY_DB: DB = {
   cohorts: [],
   students: [],
-  teachers: [],
   sessions: [],
   resources: [],
+  folders: [],
   assignments: [],
   submissions: [],
   announcements: [],
   progress: [],
   requests: [],
-  folders: [],
 };

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fmtTime } from "@/lib/portal/format";
+import { DAY, fmtTime } from "@/lib/portal/format";
 
 export type CalEvent = {
   id: string;
@@ -15,8 +15,6 @@ export type CalEvent = {
   live?: boolean;
   onClick?: () => void;
 };
-
-const DAY = 86_400_000;
 
 /** Monday 00:00 of the week containing `d`. */
 function weekStartOf(d: Date) {

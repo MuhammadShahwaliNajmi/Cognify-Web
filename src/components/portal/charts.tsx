@@ -115,25 +115,6 @@ export function TrendChart({
   );
 }
 
-/** Tiny trend line for cards and table rows. */
-export function Spark({ points, className }: { points: GradePoint[]; className?: string }) {
-  if (points.length < 2) return null;
-  const W = 120;
-  const H = 36;
-  const vals = points.map((p) => p.pct);
-  const lo = Math.min(...vals) - 2;
-  const hi = Math.max(...vals) + 2;
-  const x = (i: number) => 3 + (i * (W - 6)) / Math.max(1, points.length - 1);
-  const y = (v: number) => 3 + ((hi - v) * (H - 6)) / (hi - lo);
-  const d = points.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.pct).toFixed(1)}`).join(" ");
-  return (
-    <svg viewBox={`0 0 ${W} ${H}`} className={className} aria-hidden="true">
-      <path d={d} fill="none" stroke={GOLD} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx={x(points.length - 1)} cy={y(vals[vals.length - 1])} r={3.2} fill={GOLD} />
-    </svg>
-  );
-}
-
 /** Score ring: marks out of a maximum. */
 export function Ring({ value, max, size = 112 }: { value: number; max: number; size?: number }) {
   const reduce = useReducedMotion();

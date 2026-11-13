@@ -2,16 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
-import { fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { DAY, dateInput, fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { AssignmentKind, Strand } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
 function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => void }) {
   const { addAssignment, toast } = useTeacher();
@@ -21,7 +19,7 @@ function NewAssignment({ cohortId, onDone }: { cohortId: string; onDone: () => v
     strand: "Micro" as Strand,
     unit: "",
     brief: "",
-    date: dateInput(new Date(Date.now() + 7 * 86_400_000)),
+    date: dateInput(new Date(Date.now() + 7 * DAY)),
     time: "23:59",
     maxMarks: "20",
   });

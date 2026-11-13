@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { attendancePct, averagePct, cohortOf, useTeacher } from "@/lib/portal/store";
+import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
+import { useTeacher } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";

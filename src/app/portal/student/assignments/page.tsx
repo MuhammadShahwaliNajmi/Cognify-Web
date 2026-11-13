@@ -4,13 +4,13 @@ import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fmtBytes, submissionFor, useStudent } from "@/lib/portal/store";
-import { fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { submissionFor } from "@/lib/portal/selectors";
+import { useStudent } from "@/lib/portal/store";
+import { HOUR, MB, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Assignment, Submission } from "@/lib/portal/types";
 import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { Ring } from "@/components/portal/charts";
 
-const HOUR = 3_600_000;
 type Tab = "todo" | "submitted" | "marked" | "all";
 
 /* ---------- upload form ---------- */
@@ -24,7 +24,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
   const input = useRef<HTMLInputElement>(null);
 
   const pick = (f: File | null) => {
-    if (f && f.size > 25 * 1_048_576) {
+    if (f && f.size > 25 * MB) {
       toast("That file is over 25 MB. Please export a smaller PDF.");
       return;
     }
@@ -126,7 +126,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
 
 /* ---------- detail (inside the modal) ---------- */
 function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
-  const { now, openSubmission, openStored } = useStudent();
+  const { now, openSubmission, openAttachment } = useStudent();
   const [replacing, setReplacing] = useState(false);
   const msLeft = new Date(a.dueAt).getTime() - now;
 
@@ -172,7 +172,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
         {a.attachmentFileId && (
           <button
             type="button"
-            onClick={() => openStored("assignment", a.id)}
+            onClick={() => openAttachment(a.id)}
             className="mt-4 inline-flex items-center gap-2 rounded-full border border-navy/15 bg-white px-3.5 py-2 text-[13px] font-semibold text-navy transition-colors hover:border-gold hover:text-gold focus-gold"
           >
             <Paperclip size={13} />

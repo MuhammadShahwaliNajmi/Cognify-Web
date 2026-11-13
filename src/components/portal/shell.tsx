@@ -4,14 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut, type LucideIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
 import { usePortal } from "@/lib/portal/store";
 import type { Role } from "@/lib/portal/types";
 import { Avatar } from "./ui";
 
-export type NavItem = { href: string; label: string; short?: string; icon?: LucideIcon; badge?: number };
+export type NavItem = { href: string; label: string; badge?: number };
 
 const norm = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 

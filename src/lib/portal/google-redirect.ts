@@ -24,7 +24,7 @@ const randomState = () =>
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-export const redirectUri = () => `${window.location.origin}/portal/`;
+const redirectUri = () => `${window.location.origin}/portal/`;
 
 /** Leave for Google's sign-in page. Returns false if Google isn't configured. */
 export async function startGoogleRedirect(): Promise<boolean> {

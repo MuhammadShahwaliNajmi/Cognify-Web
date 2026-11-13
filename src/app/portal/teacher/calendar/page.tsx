@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
-import { cohortOf, topicOf, useTeacher } from "@/lib/portal/store";
+import { cohortOf, topicOf } from "@/lib/portal/selectors";
+import { useTeacher } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
 import { Btn, Modal, PageHeader, Picker } from "@/components/portal/ui";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
