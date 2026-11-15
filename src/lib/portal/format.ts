@@ -70,6 +70,22 @@ export function fmtBytes(bytes: number | null | undefined) {
 export const dateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 export const timeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
+/** Minutes from a start to an end time ("18:00" → "19:30" = 90); an earlier end means it runs past midnight. */
+export function minutesBetween(start: string, end: string) {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(":").map(Number);
+    return h * 60 + m;
+  };
+  if (!start || !end) return 0;
+  return (toMin(end) - toMin(start) + 1440) % 1440;
+}
+
+/** Shortest and longest class the portal accepts (matches the database). */
+export const CLASS_MIN = 5;
+export const CLASS_MAX = 720;
+export const classLengthOk = (min: number) => min >= CLASS_MIN && min <= CLASS_MAX;
+export const fmtLength = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${min % 60 ? ` ${min % 60}m` : ""}`);
+
 export const initials = (name: string) =>
   name
     .split(" ")

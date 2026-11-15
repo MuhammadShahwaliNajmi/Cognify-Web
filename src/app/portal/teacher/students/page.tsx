@@ -5,7 +5,7 @@ import { Copy, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
-import { fmtDate } from "@/lib/portal/format";
+import { fmtDate, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
@@ -119,20 +119,20 @@ function Profile({ s }: { s: Student }) {
 }
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-type Slot = { weekday: number; start: string; duration: number };
+type Slot = { weekday: number; start: string; end: string };
 
 /** Add a student: their class, join code, weekly timetable and (optionally) their login. */
 function AddStudent({ onClose }: { onClose: () => void }) {
   const { addStudent, toast } = useTeacher();
   const [f, setF] = useState({ name: "", board: "IB", subject: "Economics", email: "", meetUrl: "" });
-  const [slots, setSlots] = useState<Slot[]>([{ weekday: 1, start: "18:00", duration: 60 }]);
+  const [slots, setSlots] = useState<Slot[]>([{ weekday: 1, start: "18:00", end: "19:00" }]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ name: string; code: string; email: string } | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((x) => ({ ...x, [k]: v }));
   const setSlot = (i: number, patch: Partial<Slot>) => setSlots((xs) => xs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const emailOk = !f.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
   const meetOk = !f.meetUrl.trim() || /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(f.meetUrl.trim());
-  const ok = f.name.trim() && emailOk && meetOk && slots.every((x) => x.start);
+  const ok = f.name.trim() && emailOk && meetOk && slots.every((x) => x.start && classLengthOk(minutesBetween(x.start, x.end)));
 
   if (done) {
     return (
@@ -195,14 +195,10 @@ function AddStudent({ onClose }: { onClose: () => void }) {
                   </option>
                 ))}
               </select>
-              <input type="time" value={x.start} onChange={(e) => setSlot(i, { start: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
-              <select value={x.duration} onChange={(e) => setSlot(i, { duration: Number(e.target.value) })} className={cn(fieldCls, "!mt-0 w-28")}>
-                {[45, 60, 75, 90, 120].map((m) => (
-                  <option key={m} value={m}>
-                    {m} min
-                  </option>
-                ))}
-              </select>
+              <input type="time" aria-label="Start" value={x.start} onChange={(e) => setSlot(i, { start: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
+              <span className="text-sm text-navy">to</span>
+              <input type="time" aria-label="End" value={x.end} onChange={(e) => setSlot(i, { end: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
+              <span className="w-16 text-sm text-navy">{classLengthOk(minutesBetween(x.start, x.end)) ? fmtLength(minutesBetween(x.start, x.end)) : "—"}</span>
               <button
                 type="button"
                 aria-label="Remove this class time"
@@ -214,7 +210,7 @@ function AddStudent({ onClose }: { onClose: () => void }) {
             </li>
           ))}
         </ul>
-        <Btn variant="ghost" size="sm" className="mt-2" onClick={() => setSlots((xs) => [...xs, { weekday: 1, start: "18:00", duration: 60 }])}>
+        <Btn variant="ghost" size="sm" className="mt-2" onClick={() => setSlots((xs) => [...xs, { weekday: 1, start: "18:00", end: "19:00" }])}>
           <Plus size={14} /> Add class time
         </Btn>
       </div>
@@ -231,7 +227,7 @@ function AddStudent({ onClose }: { onClose: () => void }) {
             subject: f.subject.trim(),
             email: f.email.trim(),
             meetUrl: f.meetUrl.trim(),
-            slots,
+            slots: slots.map((x) => ({ weekday: x.weekday, start: x.start, duration: minutesBetween(x.start, x.end) })),
           });
           setBusy(false);
           if (res) setDone({ name: f.name.trim(), code: res.joinCode, email: f.email.trim() });

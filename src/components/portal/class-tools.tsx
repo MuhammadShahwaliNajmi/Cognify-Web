@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
 import { cohortOf, meetLink, topicOf } from "@/lib/portal/selectors";
 import { usePortal } from "@/lib/portal/store";
-import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput } from "@/lib/portal/format";
+import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type {ClassRequest, Resource, Session } from "@/lib/portal/types";
 import { Btn, Field, Label, Modal, Status, fieldCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
@@ -19,10 +19,11 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
     unit: "",
     date: dateInput(new Date(Date.now() + DAY)),
     time: "18:00",
-    duration: 60,
+    end: "19:00",
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
-  const ok = f.cohortId && f.title.trim() && f.unit.trim() && f.date && f.time;
+  const length = minutesBetween(f.time, f.end);
+  const ok = f.cohortId && f.title.trim() && f.unit.trim() && f.date && f.time && classLengthOk(length);
 
   return (
     <div className="space-y-5">
@@ -50,16 +51,11 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
         <Field label="Start">
           <input type="time" value={f.time} onChange={(e) => set("time", e.target.value)} className={fieldCls} />
         </Field>
-        <Field label="Length">
-          <select value={f.duration} onChange={(e) => set("duration", Number(e.target.value))} className={fieldCls}>
-            {[45, 60, 75, 90].map((m) => (
-              <option key={m} value={m}>
-                {m} min
-              </option>
-            ))}
-          </select>
+        <Field label={`End${length ? ` · ${fmtLength(length)}` : ""}`}>
+          <input type="time" value={f.end} onChange={(e) => set("end", e.target.value)} className={fieldCls} />
         </Field>
       </div>
+      {!classLengthOk(length) && <p className="-mt-2 text-xs font-medium text-navy">A class can be 5 minutes to 12 hours long.</p>}
       <Btn
         variant="gold"
         size="lg"
@@ -71,7 +67,7 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
             strand: null,
             unit: f.unit.trim(),
             start: new Date(`${f.date}T${f.time}`).toISOString(),
-            durationMin: f.duration,
+            durationMin: length,
           });
           if (!saved) return;
           toast("Class added");
@@ -167,10 +163,11 @@ function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDon
   const start = new Date(session.start);
   const [date, setDate] = useState(dateInput(start));
   const [time, setTime] = useState(timeInput(start));
-  const [duration, setDuration] = useState(session.durationMin);
+  const [end, setEnd] = useState(timeInput(new Date(start.getTime() + session.durationMin * 60_000)));
   const [busy, setBusy] = useState(false);
+  const duration = minutesBetween(time, end);
   const next = new Date(`${date}T${time}`);
-  const valid = date && time && !Number.isNaN(next.getTime()) && next.getTime() + duration * 60_000 > Date.now();
+  const valid = date && time && classLengthOk(duration) && !Number.isNaN(next.getTime()) && next.getTime() + duration * 60_000 > Date.now();
   const same = next.getTime() === start.getTime() && duration === session.durationMin;
 
   return (
@@ -182,14 +179,8 @@ function RescheduleForm({ session, onDone, onCancel }: { session: Session; onDon
         <Field label="Start">
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={fieldCls} />
         </Field>
-        <Field label="Length">
-          <select value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={fieldCls}>
-            {Array.from(new Set([45, 60, 75, 90, session.durationMin])).sort((a, b) => a - b).map((m) => (
-              <option key={m} value={m}>
-                {m} min
-              </option>
-            ))}
-          </select>
+        <Field label={`End${duration ? ` · ${fmtLength(duration)}` : ""}`}>
+          <input type="time" value={end} onChange={(e) => setEnd(e.target.value)} className={fieldCls} />
         </Field>
       </div>
       <div className="mt-4 flex gap-2.5">
