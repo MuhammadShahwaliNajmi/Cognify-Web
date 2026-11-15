@@ -10,7 +10,7 @@ import { Btn, Empty, Field, PageHeader, Rise, fieldCls } from "@/components/port
 
 /** Announcements: post an announcement to everyone or one student, and see what's been sent. */
 export default function TeacherAnnouncements() {
-  const { db, now, addAnnouncement, toast } = useTeacher();
+  const { db, me, now, addAnnouncement, toast } = useTeacher();
   const [to, setTo] = useState("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -18,7 +18,10 @@ export default function TeacherAnnouncements() {
 
   const post = async () => {
     setBusy(true);
-    const ok = await addAnnouncement({ cohortId: to === "all" ? null : to, title: title.trim(), body: body.trim() });
+    // the admin can post to everyone; other teachers post "all" to each of their own students
+    const targets = to !== "all" ? [to] : me.isAdmin ? [null] : db.cohorts.map((c) => c.id);
+    let ok = targets.length > 0;
+    for (const cohortId of targets) ok = (await addAnnouncement({ cohortId, title: title.trim(), body: body.trim() })) && ok;
     setBusy(false);
     if (!ok) return;
     toast("Announcement posted");
@@ -35,7 +38,7 @@ export default function TeacherAnnouncements() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-[1fr_2fr]">
             <Field label="Send to">
               <select value={to} onChange={(e) => setTo(e.target.value)} className={fieldCls}>
-                <option value="all">Everyone</option>
+                <option value="all">{me.isAdmin ? "Everyone" : "All my students"}</option>
                 {db.cohorts.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}

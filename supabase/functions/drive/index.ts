@@ -57,7 +57,7 @@ class HttpError extends Error {
 }
 
 /* ---------------- who is calling ---------------- */
-type Member = { id: number; role: "teacher" | "student"; cohort_id: number | null; full_name: string };
+type Member = { id: number; role: "teacher" | "student"; cohort_id: number | null; full_name: string; is_admin: boolean };
 async function caller(req: Request): Promise<{ member: Member; token: string }> {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) throw new HttpError(401, "Not signed in");
@@ -66,7 +66,7 @@ async function caller(req: Request): Promise<{ member: Member; token: string }> 
   if (error || !email || !data.user?.email_confirmed_at) throw new HttpError(401, "Not signed in");
   const { data: m } = await admin
     .from("members")
-    .select("id, role, cohort_id, full_name")
+    .select("id, role, cohort_id, full_name, is_admin")
     .eq("email", email)
     .eq("active", true)
     .maybeSingle();
@@ -78,6 +78,14 @@ const asUser = (token: string) =>
     auth: { persistSession: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
+
+/** Teachers act only on their own students' classes; the admin on all. */
+async function assertTeaches(member: Member, cohortId: number) {
+  if (member.role !== "teacher") throw new HttpError(403, "Teachers only");
+  if (member.is_admin) return;
+  const { data: c } = await admin.from("cohorts").select("teacher_id").eq("id", cohortId).maybeSingle();
+  if (!c || c.teacher_id !== member.id) throw new HttpError(403, "This student isn't yours");
+}
 
 /* ---------------- Google auth ---------------- */
 let cached: { token: string; exp: number } | null = null;
@@ -250,7 +258,7 @@ async function route(req: Request): Promise<Response> {
   }
 
   if (action === "connect") {
-    if (member.role !== "teacher") throw new HttpError(403, "Teachers only");
+    if (member.role !== "teacher" || !member.is_admin) throw new HttpError(403, "Only the admin can connect storage");
     const state = crypto.randomUUID();
     await admin.from("drive_oauth_states").insert({ state, member_id: member.id });
     const q = new URLSearchParams({
@@ -287,9 +295,9 @@ async function route(req: Request): Promise<Response> {
       parent = await systemFolder(member.cohort_id, "Submissions");
       driveName = `${a.title} — ${name}`;
     } else {
-      if (member.role !== "teacher") throw new HttpError(403, "Teachers only");
-      if (size > 4096 * MB) throw new HttpError(413, "Files must be under 4 GB");
       const cohortId = Number(body.cohortId);
+      await assertTeaches(member, cohortId);
+      if (size > 4096 * MB) throw new HttpError(413, "Files must be under 4 GB");
       if (body.purpose === "assignment") parent = await systemFolder(cohortId, "Assignments");
       else parent = body.folderId ? await portalFolder(Number(body.folderId), cohortId) : await studentFolder(cohortId);
     }
@@ -346,9 +354,9 @@ async function route(req: Request): Promise<Response> {
   }
 
   if (action === "trash") {
-    if (member.role !== "teacher") throw new HttpError(403, "Teachers only");
-    const { data: r } = await admin.from("resources").select("id, drive_file_id").eq("id", body.resourceId).maybeSingle();
+    const { data: r } = await admin.from("resources").select("id, drive_file_id, cohort_id").eq("id", body.resourceId).maybeSingle();
     if (!r) throw new HttpError(404, "File not found");
+    await assertTeaches(member, r.cohort_id);
     if (r.drive_file_id) {
       await drive(`files/${encodeURIComponent(r.drive_file_id)}?fields=id`, { method: "PATCH", body: JSON.stringify({ trashed: true }) }).catch(() => null);
     }

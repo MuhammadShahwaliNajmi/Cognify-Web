@@ -95,7 +95,15 @@ type Store = {
     email?: string;
     meetUrl?: string;
     slots: { weekday: number; start: string; duration: number }[];
+    /** admin only: the teacher the student belongs to (default: whoever adds them) */
+    teacherId?: string;
   }) => Promise<{ joinCode: string } | null>;
+  /** admin: create a teacher account (they sign in with that Google email) */
+  addTeacher: (t: { name: string; email: string; title?: string }) => Promise<boolean>;
+  /** admin: remove a teacher; their students become unassigned (admin only) */
+  removeTeacher: (memberId: string) => Promise<boolean>;
+  /** admin: move a student to another teacher */
+  assignTeacher: (cohortId: string, teacherId: string | null) => Promise<boolean>;
   /** teacher: delete a student and everything in their class */
   removeStudent: (cohortId: string) => Promise<boolean>;
 };
@@ -470,6 +478,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           p_email: st.email || null,
           p_meet_url: st.meetUrl || null,
           p_slots: st.slots,
+          p_teacher: st.teacherId ? num(st.teacherId) : null,
         });
         if (error) {
           toast(`Adding the student failed: ${error.message}`);
@@ -478,6 +487,18 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         await reload();
         return { joinCode: (data as { join_code: string }).join_code };
       },
+      addTeacher: (t) =>
+        run("Adding the teacher", (api) =>
+          api.from("members").insert({
+            email: t.email.trim().toLowerCase(),
+            role: "teacher",
+            full_name: t.name.trim(),
+            title: t.title?.trim() || null,
+          })
+        ),
+      removeTeacher: (memberId) => run("Removing the teacher", (api) => api.from("members").delete().eq("id", num(memberId)).eq("role", "teacher").eq("is_admin", false)),
+      assignTeacher: (cohortId, teacherId) =>
+        run("Changing the teacher", (api) => api.from("cohorts").update({ teacher_id: teacherId ? num(teacherId) : null }).eq("id", num(cohortId))),
       removeStudent: (cohortId) => run("Removing the student", (api) => api.rpc("remove_student", { p_cohort: num(cohortId) })),
       updateStudent: (id, p) =>
         run("Saving", (api) =>

@@ -16,7 +16,7 @@ const RESULT: Record<string, string> = {
 };
 
 function Resources() {
-  const { db, toast } = useTeacher();
+  const { db, me, toast } = useTeacher();
   const router = useRouter();
   const params = useSearchParams();
   const cohorts = [...db.cohorts].sort((a, b) => a.name.localeCompare(b.name));
@@ -48,7 +48,7 @@ function Resources() {
         actions={<Picker label="Student" value={cohort.id} onChange={setCohortId} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />}
       />
 
-      {storage && !storage.connected && (
+      {me.isAdmin && storage && !storage.connected && (
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl bg-navy-deep p-5">
           <div className="flex items-center gap-3">
             <span className="grid h-10 w-10 place-items-center rounded-full bg-gold text-navy-deep">

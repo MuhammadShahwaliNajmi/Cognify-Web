@@ -1,7 +1,7 @@
 /** Small read-only lookups over the portal data, shared by several screens. */
 import type { Cohort, DB, Session } from "./types";
 
-const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "" };
+const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "", teacherId: "" };
 
 export const cohortOf = (db: DB, id: string) => db.cohorts.find((c) => c.id === id) ?? EMPTY_COHORT;
 

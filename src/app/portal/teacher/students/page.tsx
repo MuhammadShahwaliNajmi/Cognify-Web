@@ -123,7 +123,8 @@ type Slot = { weekday: number; start: string; end: string };
 
 /** Add a student: their class, join code, weekly timetable and (optionally) their login. */
 function AddStudent({ onClose }: { onClose: () => void }) {
-  const { addStudent, toast } = useTeacher();
+  const { db, me, addStudent, toast } = useTeacher();
+  const [teacherId, setTeacherId] = useState(me.id);
   const [f, setF] = useState({ name: "", board: "IB", subject: "Economics", email: "", meetUrl: "" });
   const [slots, setSlots] = useState<Slot[]>([{ weekday: 1, start: "18:00", end: "19:00" }]);
   const [busy, setBusy] = useState(false);
@@ -159,6 +160,18 @@ function AddStudent({ onClose }: { onClose: () => void }) {
       <Field label="Student name">
         <input value={f.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
       </Field>
+      {me.isAdmin && db.teachers.length > 1 && (
+        <Field label="Teacher">
+          <select value={teacherId} onChange={(e) => setTeacherId(e.target.value)} className={fieldCls}>
+            {db.teachers.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+                {t.id === me.id ? " (you)" : ""}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Board">
           <input value={f.board} onChange={(e) => set("board", e.target.value)} list="boards" className={fieldCls} />
@@ -227,6 +240,7 @@ function AddStudent({ onClose }: { onClose: () => void }) {
             subject: f.subject.trim(),
             email: f.email.trim(),
             meetUrl: f.meetUrl.trim(),
+            teacherId: me.isAdmin ? teacherId : undefined,
             slots: slots.map((x) => ({ weekday: x.weekday, start: x.start, duration: minutesBetween(x.start, x.end) })),
           });
           setBusy(false);
@@ -236,6 +250,33 @@ function AddStudent({ onClose }: { onClose: () => void }) {
         <UserPlus size={16} />
         {busy ? "Adding…" : "Add student"}
       </Btn>
+    </div>
+  );
+}
+
+/** Admin: which teacher a student belongs to. */
+function TeacherOf({ cohortId }: { cohortId: string }) {
+  const { db, me, assignTeacher, toast } = useTeacher();
+  const cohort = db.cohorts.find((c) => c.id === cohortId);
+  if (!me.isAdmin || !cohort) return null;
+  return (
+    <div className="mt-6 border-t border-navy/10 pt-5">
+      <Field label="Teacher">
+        <select
+          value={cohort.teacherId}
+          onChange={async (e) => {
+            if (await assignTeacher(cohortId, e.target.value || null)) toast("Teacher changed");
+          }}
+          className={fieldCls}
+        >
+          <option value="">Unassigned (admin only)</option>
+          {db.teachers.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </Field>
     </div>
   );
 }
@@ -285,7 +326,8 @@ function RemoveStudent({ cohortId, name, onRemoved }: { cohortId: string; name: 
 }
 
 export default function TeacherStudents() {
-  const { db, now } = useTeacher();
+  const { db, me, now } = useTeacher();
+  const teacherName = (cohortId: string) => db.teachers.find((t) => t.id === db.cohorts.find((c) => c.id === cohortId)?.teacherId)?.name ?? "Unassigned";
   const [openId, setOpenId] = useState<string | null>(null);
   const [setupId, setSetupId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -329,7 +371,10 @@ export default function TeacherStudents() {
                     <span className="block font-medium text-navy">{s.name}</span>
                     <span className="block text-[12px] text-navy">{s.email}</span>
                   </Td>
-                  <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
+                  <Td className="whitespace-nowrap">
+                    {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
+                    {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
+                  </Td>
                   <Td align="right" className="tabular-nums">{attendancePct(db, s.id, s.cohortId, now)}%</Td>
                   <Td align="right" className="tabular-nums">{avg !== null ? `${avg}%` : "–"}</Td>
                   <Td align="right" className="font-semibold text-navy">{s.predicted || "–"}</Td>
@@ -343,7 +388,10 @@ export default function TeacherStudents() {
                   <span className="block font-medium text-navy">{c.name}</span>
                   <span className="block text-[12px] text-navy">Join code {c.joinCode}</span>
                 </Td>
-                <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
+                <Td className="whitespace-nowrap">
+                  {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
+                  {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
+                </Td>
                 <Td colSpan={4} align="right">
                   <Status tone="attention">Not joined yet</Status>
                 </Td>
@@ -357,6 +405,7 @@ export default function TeacherStudents() {
         {open && (
           <>
             <Profile key={open.id} s={open} />
+            <TeacherOf cohortId={open.cohortId} />
             <RemoveStudent cohortId={open.cohortId} name={open.name} onRemoved={() => setOpenId(null)} />
           </>
         )}
@@ -365,6 +414,7 @@ export default function TeacherStudents() {
         {setupId && (
           <>
             <ClassSetup cohortId={setupId} />
+            <TeacherOf cohortId={setupId} />
             <RemoveStudent cohortId={setupId} name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"} onRemoved={() => setSetupId(null)} />
           </>
         )}

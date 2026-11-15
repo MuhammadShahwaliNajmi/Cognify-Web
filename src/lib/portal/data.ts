@@ -21,8 +21,9 @@ type Snapshot = {
     cohort_id: Id | null;
     predicted: string | null;
     target: string | null;
+    is_admin: boolean;
   }[];
-  cohorts: { id: Id; name: string; board: string | null; subject: string | null; meet_url: string | null; join_code: string }[];
+  cohorts: { id: Id; name: string; board: string | null; subject: string | null; meet_url: string | null; join_code: string; teacher_id: Id | null }[];
   sessions: {
     id: Id;
     cohort_id: Id;
@@ -161,13 +162,16 @@ function toPortal(snap: Snapshot): Portal {
   const me: Portal["me"] = !mine
     ? null
     : mine.role === "teacher"
-      ? { id: id(mine.id), name: mine.full_name, email: mine.email, title: mine.title ?? "" }
+      ? { id: id(mine.id), name: mine.full_name, email: mine.email, title: mine.title ?? "", isAdmin: !!mine.is_admin }
       : students.find((s) => s.id === id(mine.id)) ?? null;
 
   return {
     me,
     db: {
       students,
+      teachers: snap.members
+        .filter((m) => m.role === "teacher")
+        .map((m) => ({ id: id(m.id), name: m.full_name, email: m.email, title: m.title ?? "", isAdmin: !!m.is_admin })),
       submissions,
       progress,
       cohorts: snap.cohorts.map((c) => ({
@@ -177,6 +181,7 @@ function toPortal(snap: Snapshot): Portal {
         subject: c.subject ?? "",
         meetUrl: c.meet_url ?? "",
         joinCode: c.join_code,
+        teacherId: id(c.teacher_id),
       })),
       sessions: snap.sessions.map((s) => ({
         id: id(s.id),

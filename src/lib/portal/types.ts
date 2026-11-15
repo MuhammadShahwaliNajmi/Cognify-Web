@@ -17,6 +17,8 @@ export type Cohort = {
   meetUrl: string;
   /** Visible to teachers (and to the student who already joined). */
   joinCode: string;
+  /** the teacher this student belongs to ("" if unassigned → admin only) */
+  teacherId: string;
 };
 
 export type Student = {
@@ -34,6 +36,8 @@ export type Teacher = {
   name: string;
   email: string;
   title: string;
+  /** the admin creates teachers, assigns students and sees everyone */
+  isAdmin: boolean;
 };
 
 export type Session = {
@@ -159,6 +163,8 @@ export type Auth = { role: Role; userId: string } | null;
 export type DB = {
   cohorts: Cohort[];
   students: Student[];
+  /** teacher accounts the signed-in member may see */
+  teachers: Teacher[];
   sessions: Session[];
   resources: Resource[];
   folders: Folder[];
@@ -175,6 +181,7 @@ export type DB = {
 export const EMPTY_DB: DB = {
   cohorts: [],
   students: [],
+  teachers: [],
   sessions: [],
   resources: [],
   folders: [],
