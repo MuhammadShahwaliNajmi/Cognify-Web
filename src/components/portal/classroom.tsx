@@ -9,7 +9,10 @@ import { HOUR, fmtClock, fmtDay, fmtDuration, fmtTime, isMeetUrl, sessionState }
 import type { Session } from "@/lib/portal/types";
 import { Btn, Chip, Field, Modal, fieldCls } from "./ui";
 
-/** Re-renders its caller every second — only mount it inside small leaf components. */
+/** Class status ("opens soon", "live") only changes by the minute; only countdowns tick every second. */
+const STATE_TICK = 15_000;
+
+/** Re-renders its caller every `ms` — only mount it inside small leaf components. */
 export function useTick(ms = 1000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -28,7 +31,7 @@ function Countdown({ to, className }: { to: string; className?: string }) {
 
 /** Live / opens-soon / upcoming / ended status pill for a class. */
 export function SessionStatus({ session, onNavy }: { session: Session; onNavy?: boolean }) {
-  const now = useTick();
+  const now = useTick(STATE_TICK);
   const state = sessionState(session.start, session.durationMin, now);
   if (state === "live") return <Chip tone="gold" dot>Live now</Chip>;
   if (state === "open") return <Chip tone="gold" dot>Room open</Chip>;
@@ -101,7 +104,7 @@ export function JoinButton({
   className?: string;
 }) {
   const { db, auth, markJoined, toast } = usePortal();
-  const now = useTick();
+  const now = useTick(STATE_TICK);
   const [missing, setMissing] = useState(false);
   const state = sessionState(session.start, session.durationMin, now);
   const link = meetLink(db, session);
@@ -114,7 +117,8 @@ export function JoinButton({
     // open Meet straight away (inside the click, so pop-up blockers allow it)
     window.open(link, "_blank", "noopener,noreferrer");
     // attendance only counts from 10 minutes before the start; joining earlier just opens the room
-    if (!teacher && auth && state !== "upcoming") {
+    // (checked against the clock at the moment of the click, not the last tick)
+    if (!teacher && auth && sessionState(session.start, session.durationMin) !== "upcoming") {
       markJoined(session.id, auth.userId).then((ok) => ok && toast("You're marked present. Enjoy the class!"));
     }
   };
@@ -148,7 +152,7 @@ export function JoinButton({
 
 /** The next (or live) class: navy card with the time and the Join button. */
 export function NextClassCard({ session, cohortLabel }: { session: Session; cohortLabel?: string }) {
-  const now = useTick();
+  const now = useTick(STATE_TICK);
   const state = sessionState(session.start, session.durationMin, now);
   const start = new Date(session.start).getTime();
   const end = start + session.durationMin * 60_000;

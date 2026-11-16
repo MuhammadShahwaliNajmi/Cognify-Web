@@ -21,6 +21,9 @@ export type Cohort = {
   teacherId: string;
 };
 
+/** One weekly class time; "start" is HH:MM in Pakistan time. */
+export type Slot = { cohortId: string; weekday: number; start: string; durationMin: number };
+
 export type Student = {
   id: string;
   name: string;
@@ -165,6 +168,9 @@ export type DB = {
   students: Student[];
   /** teacher accounts the signed-in member may see */
   teachers: Teacher[];
+  /** students taken out of the portal but not deleted (teachers only) */
+  archived: Cohort[];
+  timetable: Slot[];
   sessions: Session[];
   resources: Resource[];
   folders: Folder[];
@@ -182,6 +188,8 @@ export const EMPTY_DB: DB = {
   cohorts: [],
   students: [],
   teachers: [],
+  archived: [],
+  timetable: [],
   sessions: [],
   resources: [],
   folders: [],

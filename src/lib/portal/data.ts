@@ -23,7 +23,17 @@ type Snapshot = {
     target: string | null;
     is_admin: boolean;
   }[];
-  cohorts: { id: Id; name: string; board: string | null; subject: string | null; meet_url: string | null; join_code: string; teacher_id: Id | null }[];
+  cohorts: {
+    id: Id;
+    name: string;
+    board: string | null;
+    subject: string | null;
+    meet_url: string | null;
+    join_code: string;
+    teacher_id: Id | null;
+    archived_at: string | null;
+  }[];
+  timetable: { cohort_id: Id; weekday: number; start_time: string; duration_min: number }[];
   sessions: {
     id: Id;
     cohort_id: Id;
@@ -107,7 +117,41 @@ export type Portal = { db: DB; me: Student | Teacher | null };
 const id = (v: Id | null) => (v === null ? "" : String(v));
 const shortDate = (iso: string) => new Date(iso).toLocaleDateString([], { day: "numeric", month: "short" });
 
-function toPortal(snap: Snapshot): Portal {
+/** Archived students stay in the database but out of every screen (except the Archived list). */
+function withoutArchived(snap: Snapshot): Snapshot {
+  const gone = new Set(snap.cohorts.filter((c) => c.archived_at).map((c) => c.id));
+  if (!gone.size) return snap;
+  const live = <T extends { cohort_id: Id | null }>(rows: T[]) => rows.filter((r) => r.cohort_id === null || !gone.has(r.cohort_id));
+  const sessions = live(snap.sessions);
+  const assignments = live(snap.assignments);
+  const sessionIds = new Set(sessions.map((s) => s.id));
+  const assignmentIds = new Set(assignments.map((a) => a.id));
+  return {
+    ...snap,
+    sessions,
+    assignments,
+    resources: live(snap.resources),
+    folders: live(snap.folders),
+    announcements: live(snap.announcements),
+    timetable: live(snap.timetable),
+    requests: snap.requests.filter((r) => sessionIds.has(r.session_id)),
+    submissions: snap.submissions.filter((x) => assignmentIds.has(x.assignment_id)),
+    attempts: snap.attempts.filter((x) => assignmentIds.has(x.assignment_id)),
+    questions: snap.questions.filter((x) => assignmentIds.has(x.assignment_id)),
+  };
+}
+
+function toPortal(all: Snapshot): Portal {
+  const snap = withoutArchived(all);
+  const toCohort = (c: Snapshot["cohorts"][number]) => ({
+    id: id(c.id),
+    name: c.name,
+    board: c.board ?? "",
+    subject: c.subject ?? "",
+    meetUrl: c.meet_url ?? "",
+    joinCode: c.join_code,
+    teacherId: id(c.teacher_id),
+  });
   const students: Student[] = snap.members
     .filter((m) => m.role === "student")
     .map((m) => ({
@@ -174,14 +218,13 @@ function toPortal(snap: Snapshot): Portal {
         .map((m) => ({ id: id(m.id), name: m.full_name, email: m.email, title: m.title ?? "", isAdmin: !!m.is_admin })),
       submissions,
       progress,
-      cohorts: snap.cohorts.map((c) => ({
-        id: id(c.id),
-        name: c.name,
-        board: c.board ?? "",
-        subject: c.subject ?? "",
-        meetUrl: c.meet_url ?? "",
-        joinCode: c.join_code,
-        teacherId: id(c.teacher_id),
+      cohorts: snap.cohorts.filter((c) => !c.archived_at).map(toCohort),
+      archived: snap.cohorts.filter((c) => c.archived_at).map(toCohort),
+      timetable: snap.timetable.map((t) => ({
+        cohortId: id(t.cohort_id),
+        weekday: t.weekday,
+        start: t.start_time.slice(0, 5),
+        durationMin: t.duration_min,
       })),
       sessions: snap.sessions.map((s) => ({
         id: id(s.id),
@@ -232,13 +275,13 @@ function toPortal(snap: Snapshot): Portal {
         attachmentMime: a.attachment_mime ?? undefined,
         timeLimitMin: a.time_limit_min ?? undefined,
       })),
-      attempts: (snap.attempts ?? []).map((t) => ({
+      attempts: snap.attempts.map((t) => ({
         assignmentId: id(t.assignment_id),
         studentId: id(t.member_id),
         startedAt: t.started_at,
         endsAt: t.ends_at,
       })),
-      questions: Object.fromEntries((snap.questions ?? []).map((q) => [id(q.assignment_id), q.body])),
+      questions: Object.fromEntries(snap.questions.map((q) => [id(q.assignment_id), q.body])),
       announcements: snap.announcements.map((a) => ({
         id: id(a.id),
         cohortId: a.cohort_id === null ? null : id(a.cohort_id),

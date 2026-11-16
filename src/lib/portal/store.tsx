@@ -59,6 +59,10 @@ type Store = {
   resolveRequest: (id: string, approve: boolean) => Promise<boolean>;
 
   addAssignment: (a: Omit<Assignment, "id">) => Promise<boolean>;
+  /** change an assignment or assessment (a new deadline restarts its reminders) */
+  updateAssignment: (id: string, p: Pick<Assignment, "title" | "kind" | "unit" | "brief" | "dueAt" | "maxMarks">) => Promise<boolean>;
+  /** delete an assignment or assessment with its hand-ins and marks */
+  deleteAssignment: (id: string) => Promise<boolean>;
   /** open an assignment's question paper in a new tab */
   openAttachment: (assignmentId: string) => Promise<void>;
   /** hand in work: a file, a typed answer (assessments), or both */
@@ -86,6 +90,7 @@ type Store = {
   renameFolder: (id: string, name: string) => Promise<boolean>;
   deleteFolder: (id: string) => Promise<boolean>;
   addAnnouncement: (a: { cohortId: string | null; title: string; body: string }) => Promise<boolean>;
+  deleteAnnouncement: (id: string) => Promise<boolean>;
   updateStudent: (id: string, p: { predicted: string; target: string }) => Promise<boolean>;
   /** teacher: create a student's class (join code, folders, weekly timetable; login if an email is given) */
   addStudent: (s: {
@@ -104,6 +109,10 @@ type Store = {
   removeTeacher: (memberId: string) => Promise<boolean>;
   /** admin: move a student to another teacher */
   assignTeacher: (cohortId: string, teacherId: string | null) => Promise<boolean>;
+  /** teacher: replace a student's weekly class times (upcoming classes follow) */
+  setTimetable: (cohortId: string, slots: { weekday: number; start: string; duration: number }[]) => Promise<boolean>;
+  /** teacher: take a student out of the portal without deleting anything, or bring them back */
+  archiveStudent: (cohortId: string, archive: boolean) => Promise<boolean>;
   /** teacher: delete a student and everything in their class */
   removeStudent: (cohortId: string) => Promise<boolean>;
 };
@@ -395,6 +404,14 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           if (sub.error) return sub;
           return api.from("assessment_attempts").delete().eq("assignment_id", num(assignmentId)).eq("member_id", num(studentId));
         }),
+      updateAssignment: (id, p) =>
+        run("Saving the assignment", (api) =>
+          api
+            .from("assignments")
+            .update({ title: p.title, kind: p.kind, unit: p.unit, brief: p.brief, due_at: p.dueAt, max_marks: p.maxMarks })
+            .eq("id", num(id))
+        ),
+      deleteAssignment: (id) => run("Deleting the assignment", (api) => api.from("assignments").delete().eq("id", num(id))),
       openAttachment: (assignmentId) => open(() => fileLink("assignment", assignmentId)),
       submitWork: async ({ assignmentId, studentId, file, answerText, note, onProgress }) => {
         if (!sb) return false;
@@ -524,6 +541,13 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       removeTeacher: (memberId) => run("Removing the teacher", (api) => api.from("members").delete().eq("id", num(memberId)).eq("role", "teacher").eq("is_admin", false)),
       assignTeacher: (cohortId, teacherId) =>
         run("Changing the teacher", (api) => api.from("cohorts").update({ teacher_id: teacherId ? num(teacherId) : null }).eq("id", num(cohortId))),
+      deleteAnnouncement: (id) => run("Deleting the announcement", (api) => api.from("announcements").delete().eq("id", num(id))),
+      setTimetable: (cohortId, slots) =>
+        run("Saving the timetable", (api) => api.rpc("set_timetable", { p_cohort: num(cohortId), p_slots: slots })),
+      archiveStudent: (cohortId, archive) =>
+        run(archive ? "Archiving the student" : "Restoring the student", (api) =>
+          api.rpc("archive_student", { p_cohort: num(cohortId), p_archive: archive })
+        ),
       removeStudent: (cohortId) => run("Removing the student", (api) => api.rpc("remove_student", { p_cohort: num(cohortId) })),
       updateStudent: (id, p) =>
         run("Saving", (api) =>

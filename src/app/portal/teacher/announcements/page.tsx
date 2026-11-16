@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Megaphone } from "lucide-react";
+import { Megaphone, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
-import { Btn, Empty, Field, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
+import { Btn, Empty, Field, Modal, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
 
 /** Announcements: post an announcement to everyone or one student, and see what's been sent. */
 export default function TeacherAnnouncements() {
-  const { db, me, now, addAnnouncement, toast } = useTeacher();
+  const { db, me, now, addAnnouncement, deleteAnnouncement, toast } = useTeacher();
+  const [removeId, setRemoveId] = useState<string | null>(null);
+  const removing = db.announcements.find((n) => n.id === removeId);
   const [to, setTo] = useState("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -74,7 +76,17 @@ export default function TeacherAnnouncements() {
               <li key={n.id} className="py-4">
                 <div className="flex items-baseline justify-between gap-4">
                   <p className="text-[15px] font-medium tracking-tight text-navy">{n.title}</p>
-                  <span className="shrink-0 text-[13px] font-semibold text-navy">{fmtRelative(n.at, now)}</span>
+                  <span className="flex shrink-0 items-center gap-2 text-[13px] font-semibold text-navy">
+                    {fmtRelative(n.at, now)}
+                    <button
+                      type="button"
+                      aria-label={`Delete ${n.title}`}
+                      onClick={() => setRemoveId(n.id)}
+                      className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </span>
                 </div>
                 <p className="mt-1 text-sm leading-relaxed text-navy">{n.body}</p>
                 <p className="mt-1.5 text-[13px] text-navy">To {n.cohortId ? cohortOf(db, n.cohortId).name : "everyone"}</p>
@@ -83,6 +95,28 @@ export default function TeacherAnnouncements() {
           </ul>
         )}
       </Rise>
+
+      <Modal open={!!removing} onClose={() => setRemoveId(null)} title="Delete this announcement?">
+        {removing && (
+          <div className="space-y-5">
+            <p className="text-[15px] font-medium text-navy">{removing.title}</p>
+            <div className="flex gap-2.5">
+              <Btn
+                variant="navy"
+                onClick={async () => {
+                  if (await deleteAnnouncement(removing.id)) toast("Announcement deleted");
+                  setRemoveId(null);
+                }}
+              >
+                <Trash2 size={14} /> Delete
+              </Btn>
+              <Btn variant="ghost" onClick={() => setRemoveId(null)}>
+                Keep
+              </Btn>
+            </div>
+          </div>
+        )}
+      </Modal>
     </>
   );
 }

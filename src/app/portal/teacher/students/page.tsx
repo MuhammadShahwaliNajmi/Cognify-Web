@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Plus, Trash2, UserPlus, X } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Download, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
+import { exportAttendance, exportGrades } from "@/lib/portal/export";
 import { fmtDate, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
@@ -120,20 +121,98 @@ function Profile({ s }: { s: Student }) {
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 type Slot = { weekday: number; start: string; end: string };
+const NEW_SLOT: Slot = { weekday: 1, start: "18:00", end: "19:00" };
+const slotsOk = (slots: Slot[]) => slots.every((x) => x.start && classLengthOk(minutesBetween(x.start, x.end)));
+const toRpcSlots = (slots: Slot[]) => slots.map((x) => ({ weekday: x.weekday, start: x.start, duration: minutesBetween(x.start, x.end) }));
+/** "18:00" + 90 minutes → "19:30" */
+const endOf = (start: string, minutes: number) => {
+  const [h, m] = start.split(":").map(Number);
+  const t = (h * 60 + m + minutes) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+};
+
+/** The weekly class times of one student: day, start and end for each. */
+function SlotEditor({ slots, onChange }: { slots: Slot[]; onChange: (slots: Slot[]) => void }) {
+  const setSlot = (i: number, patch: Partial<Slot>) => onChange(slots.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+  return (
+    <div>
+      <Label>Weekly classes</Label>
+      <ul className="mt-2 space-y-2">
+        {slots.map((x, i) => (
+          <li key={i} className="flex flex-wrap items-center gap-2">
+            <select value={x.weekday} onChange={(e) => setSlot(i, { weekday: Number(e.target.value) })} className={cn(fieldCls, "!mt-0 w-40")}>
+              {DAYS.map((d, j) => (
+                <option key={d} value={j + 1}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <input type="time" aria-label="Start" value={x.start} onChange={(e) => setSlot(i, { start: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
+            <span className="text-sm text-navy">to</span>
+            <input type="time" aria-label="End" value={x.end} onChange={(e) => setSlot(i, { end: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
+            <span className="w-16 text-sm text-navy">{classLengthOk(minutesBetween(x.start, x.end)) ? fmtLength(minutesBetween(x.start, x.end)) : "—"}</span>
+            <button
+              type="button"
+              aria-label="Remove this class time"
+              onClick={() => onChange(slots.filter((_, j) => j !== i))}
+              className="grid h-9 w-9 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+            >
+              <X size={15} />
+            </button>
+          </li>
+        ))}
+      </ul>
+      <Btn variant="ghost" size="sm" className="mt-2" onClick={() => onChange([...slots, NEW_SLOT])}>
+        <Plus size={14} /> Add class time
+      </Btn>
+    </div>
+  );
+}
+
+/** Change a student's weekly class times; their upcoming classes follow. */
+function Timetable({ cohortId }: { cohortId: string }) {
+  const { db, setTimetable, toast } = useTeacher();
+  const saved: Slot[] = db.timetable
+    .filter((t) => t.cohortId === cohortId)
+    .map((t) => ({ weekday: t.weekday, start: t.start, end: endOf(t.start, t.durationMin) }));
+  const key = (xs: Slot[]) => JSON.stringify([...xs].sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start)));
+  const [slots, setSlots] = useState(saved);
+  const [busy, setBusy] = useState(false);
+  const changed = key(slots) !== key(saved);
+  return (
+    <div className="mt-6 border-t border-navy/10 pt-5">
+      <SlotEditor slots={slots} onChange={setSlots} />
+      {changed && (
+        <Btn
+          variant="navy"
+          className="mt-3"
+          disabled={busy || !slotsOk(slots)}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await setTimetable(cohortId, toRpcSlots(slots));
+            setBusy(false);
+            if (ok) toast("Timetable saved");
+          }}
+        >
+          {busy ? "Saving…" : "Save timetable"}
+        </Btn>
+      )}
+    </div>
+  );
+}
 
 /** Add a student: their class, join code, weekly timetable and (optionally) their login. */
 function AddStudent({ onClose }: { onClose: () => void }) {
   const { db, me, addStudent, toast } = useTeacher();
   const [teacherId, setTeacherId] = useState(me.id);
   const [f, setF] = useState({ name: "", board: "IB", subject: "Economics", email: "", meetUrl: "" });
-  const [slots, setSlots] = useState<Slot[]>([{ weekday: 1, start: "18:00", end: "19:00" }]);
+  const [slots, setSlots] = useState<Slot[]>([NEW_SLOT]);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<{ name: string; code: string; email: string } | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((x) => ({ ...x, [k]: v }));
-  const setSlot = (i: number, patch: Partial<Slot>) => setSlots((xs) => xs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
   const emailOk = !f.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
   const meetOk = !f.meetUrl.trim() || /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(f.meetUrl.trim());
-  const ok = f.name.trim() && emailOk && meetOk && slots.every((x) => x.start && classLengthOk(minutesBetween(x.start, x.end)));
+  const ok = f.name.trim() && emailOk && meetOk && slotsOk(slots);
 
   if (done) {
     return (
@@ -196,37 +275,7 @@ function AddStudent({ onClose }: { onClose: () => void }) {
       {!emailOk && <p className="-mt-2 text-xs font-medium text-navy">Check the email address.</p>}
       {!meetOk && <p className="-mt-2 text-xs font-medium text-navy">A Meet link looks like https://meet.google.com/abc-defg-hij</p>}
 
-      <div>
-        <Label>Weekly classes</Label>
-        <ul className="mt-2 space-y-2">
-          {slots.map((x, i) => (
-            <li key={i} className="flex flex-wrap items-center gap-2">
-              <select value={x.weekday} onChange={(e) => setSlot(i, { weekday: Number(e.target.value) })} className={cn(fieldCls, "!mt-0 w-40")}>
-                {DAYS.map((d, j) => (
-                  <option key={d} value={j + 1}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-              <input type="time" aria-label="Start" value={x.start} onChange={(e) => setSlot(i, { start: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
-              <span className="text-sm text-navy">to</span>
-              <input type="time" aria-label="End" value={x.end} onChange={(e) => setSlot(i, { end: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
-              <span className="w-16 text-sm text-navy">{classLengthOk(minutesBetween(x.start, x.end)) ? fmtLength(minutesBetween(x.start, x.end)) : "—"}</span>
-              <button
-                type="button"
-                aria-label="Remove this class time"
-                onClick={() => setSlots((xs) => xs.filter((_, j) => j !== i))}
-                className="grid h-9 w-9 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
-              >
-                <X size={15} />
-              </button>
-            </li>
-          ))}
-        </ul>
-        <Btn variant="ghost" size="sm" className="mt-2" onClick={() => setSlots((xs) => [...xs, { weekday: 1, start: "18:00", end: "19:00" }])}>
-          <Plus size={14} /> Add class time
-        </Btn>
-      </div>
+      <SlotEditor slots={slots} onChange={setSlots} />
 
       <Btn
         variant="gold"
@@ -241,7 +290,7 @@ function AddStudent({ onClose }: { onClose: () => void }) {
             email: f.email.trim(),
             meetUrl: f.meetUrl.trim(),
             teacherId: me.isAdmin ? teacherId : undefined,
-            slots: slots.map((x) => ({ weekday: x.weekday, start: x.start, duration: minutesBetween(x.start, x.end) })),
+            slots: toRpcSlots(slots),
           });
           setBusy(false);
           if (res) setDone({ name: f.name.trim(), code: res.joinCode, email: f.email.trim() });
@@ -281,24 +330,21 @@ function TeacherOf({ cohortId }: { cohortId: string }) {
   );
 }
 
-/** Remove a student and everything in their class (asks first). */
-function RemoveStudent({ cohortId, name, onRemoved }: { cohortId: string; name: string; onRemoved: () => void }) {
-  const { removeStudent, toast } = useTeacher();
+/** Take a student out of the portal without deleting anything (asks first). */
+function ArchiveStudent({ cohortId, name, onArchived }: { cohortId: string; name: string; onArchived: () => void }) {
+  const { archiveStudent, toast } = useTeacher();
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   return (
     <div className="mt-6 border-t border-navy/10 pt-5">
       {!confirm ? (
         <Btn variant="ghost" size="sm" onClick={() => setConfirm(true)}>
-          <Trash2 size={14} /> Remove student
+          <Archive size={14} /> Archive student
         </Btn>
       ) : (
         <div className="rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
-          <p className="text-[15px] font-semibold text-navy">Remove {name}?</p>
-          <p className="mt-1 text-sm text-navy">
-            This permanently deletes their classes, assignments, assessments, submissions, marks and folders in the portal. Files already in
-            Google Drive stay there.
-          </p>
+          <p className="text-[15px] font-semibold text-navy">Archive {name}?</p>
+          <p className="mt-1 text-sm text-navy">They lose access and their upcoming classes are removed. Nothing is deleted, and you can restore them.</p>
           <div className="mt-3 flex gap-2.5">
             <Btn
               variant="navy"
@@ -306,14 +352,14 @@ function RemoveStudent({ cohortId, name, onRemoved }: { cohortId: string; name: 
               disabled={busy}
               onClick={async () => {
                 setBusy(true);
-                const ok = await removeStudent(cohortId);
+                const ok = await archiveStudent(cohortId, true);
                 setBusy(false);
                 if (!ok) return;
-                toast(`${name} removed`);
-                onRemoved();
+                toast(`${name} archived`);
+                onArchived();
               }}
             >
-              <Trash2 size={14} /> {busy ? "Removing…" : "Remove permanently"}
+              <Archive size={14} /> {busy ? "Archiving…" : "Archive"}
             </Btn>
             <Btn variant="ghost" size="sm" onClick={() => setConfirm(false)}>
               Keep
@@ -325,12 +371,45 @@ function RemoveStudent({ cohortId, name, onRemoved }: { cohortId: string; name: 
   );
 }
 
+/** An archived student: bring them back, or delete them for good. */
+function ArchivedStudent({ cohortId, name, onDone }: { cohortId: string; name: string; onDone: () => void }) {
+  const { archiveStudent, removeStudent, toast } = useTeacher();
+  const [busy, setBusy] = useState(false);
+  const act = async (fn: () => Promise<boolean>, done: string) => {
+    setBusy(true);
+    const ok = await fn();
+    setBusy(false);
+    if (!ok) return;
+    toast(done);
+    onDone();
+  };
+  return (
+    <div className="space-y-6">
+      <Btn variant="gold" disabled={busy} onClick={() => act(() => archiveStudent(cohortId, false), `${name} restored`)}>
+        <ArchiveRestore size={15} /> Restore
+      </Btn>
+      <div className="rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+        <p className="text-[15px] font-semibold text-navy">Delete {name} for good?</p>
+        <p className="mt-1 text-sm text-navy">
+          This permanently deletes their classes, assignments, assessments, submissions, marks and folders in the portal. Files already in
+          Google Drive stay there.
+        </p>
+        <Btn variant="navy" size="sm" className="mt-3" disabled={busy} onClick={() => act(() => removeStudent(cohortId), `${name} deleted`)}>
+          <Trash2 size={14} /> Delete permanently
+        </Btn>
+      </div>
+    </div>
+  );
+}
+
 export default function TeacherStudents() {
   const { db, me, now } = useTeacher();
   const teacherName = (cohortId: string) => db.teachers.find((t) => t.id === db.cohorts.find((c) => c.id === cohortId)?.teacherId)?.name ?? "Unassigned";
   const [openId, setOpenId] = useState<string | null>(null);
   const [setupId, setSetupId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [archivedId, setArchivedId] = useState<string | null>(null);
+  const archivedOpen = db.archived.find((c) => c.id === archivedId);
 
   const students = [...db.students].sort((a, b) => a.name.localeCompare(b.name));
   const open = db.students.find((s) => s.id === openId) ?? null;
@@ -341,9 +420,17 @@ export default function TeacherStudents() {
       <PageHeader
         title="Students"
         actions={
-          <Btn variant="navy" onClick={() => setAdding(true)}>
-            <UserPlus size={15} /> Add student
-          </Btn>
+          <>
+            <Btn variant="outline" onClick={() => exportGrades(db)}>
+              <Download size={15} /> Grades
+            </Btn>
+            <Btn variant="outline" onClick={() => exportAttendance(db, now)}>
+              <Download size={15} /> Attendance
+            </Btn>
+            <Btn variant="navy" onClick={() => setAdding(true)}>
+              <UserPlus size={15} /> Add student
+            </Btn>
+          </>
         }
       />
 
@@ -401,12 +488,27 @@ export default function TeacherStudents() {
         )}
       </Table>
 
+      {db.archived.length > 0 && (
+        <div className="mt-10">
+          <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy">Archived</h2>
+          <Table minWidth={480} head={[{ label: "Student" }, { label: "Course" }]}>
+            {db.archived.map((c) => (
+              <RowLink key={c.id} onClick={() => setArchivedId(c.id)}>
+                <Td className="font-medium text-navy">{c.name}</Td>
+                <Td className="whitespace-nowrap">{[c.board, c.subject].filter(Boolean).join(" · ") || "—"}</Td>
+              </RowLink>
+            ))}
+          </Table>
+        </div>
+      )}
+
       <Modal open={!!open} onClose={() => setOpenId(null)} title={open?.name ?? ""}>
         {open && (
           <>
             <Profile key={open.id} s={open} />
+            <Timetable key={`tt-${open.cohortId}-${db.timetable.length}`} cohortId={open.cohortId} />
             <TeacherOf cohortId={open.cohortId} />
-            <RemoveStudent cohortId={open.cohortId} name={open.name} onRemoved={() => setOpenId(null)} />
+            <ArchiveStudent cohortId={open.cohortId} name={open.name} onArchived={() => setOpenId(null)} />
           </>
         )}
       </Modal>
@@ -414,10 +516,14 @@ export default function TeacherStudents() {
         {setupId && (
           <>
             <ClassSetup cohortId={setupId} />
+            <Timetable key={`tt-${setupId}-${db.timetable.length}`} cohortId={setupId} />
             <TeacherOf cohortId={setupId} />
-            <RemoveStudent cohortId={setupId} name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"} onRemoved={() => setSetupId(null)} />
+            <ArchiveStudent cohortId={setupId} name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"} onArchived={() => setSetupId(null)} />
           </>
         )}
+      </Modal>
+      <Modal open={!!archivedOpen} onClose={() => setArchivedId(null)} eyebrow="Archived" title={archivedOpen?.name ?? ""}>
+        {archivedOpen && <ArchivedStudent cohortId={archivedOpen.id} name={archivedOpen.name} onDone={() => setArchivedId(null)} />}
       </Modal>
       <Modal open={adding} onClose={() => setAdding(false)} wide title="Add a student">
         {adding && <AddStudent onClose={() => setAdding(false)} />}
