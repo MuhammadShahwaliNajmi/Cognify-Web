@@ -43,8 +43,15 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
 
   if (!allowed) {
     return (
-      <div data-portal className="grid min-h-[100dvh] place-items-center bg-white">
-        <LogoMark className="h-12 w-12 animate-pulse-node" />
+      <div data-portal className="grid min-h-[100dvh] place-items-center bg-white px-6">
+        <div className="flex flex-col items-center">
+          <LogoMark className="h-12 w-12 animate-pulse-node" />
+          {toasts.length > 0 && (
+            <p role="status" className="mt-5 text-center text-sm font-medium text-navy">
+              {toasts[toasts.length - 1].text}
+            </p>
+          )}
+        </div>
       </div>
     );
   }

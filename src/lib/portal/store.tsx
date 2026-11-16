@@ -135,15 +135,27 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200);
   }, []);
 
-  const reload = useCallback(async () => {
-    if (!sb) return;
-    const res = await loadPortal(sb);
-    if ("error" in res) return toast(`Couldn't load your data: ${res.error}`);
-    loadedAt.current = Date.now();
-    setPortal(res);
-    setNow(Date.now()); // keep "submitted 2 min ago" labels honest right after a change
-    setStatus(res.me ? "ready" : "needs-join");
-  }, [sb, toast]);
+  /** fetch the snapshot; false if it couldn't be loaded */
+  const reload = useCallback(
+    async (quiet = false) => {
+      if (!sb) return false;
+      const res = await loadPortal(sb);
+      if ("error" in res) {
+        if (!quiet) toast(`Couldn't load your data: ${res.error}`);
+        return false;
+      }
+      loadedAt.current = Date.now();
+      setPortal(res);
+      setNow(Date.now()); // keep "submitted 2 min ago" labels honest right after a change
+      setStatus(res.me ? "ready" : "needs-join");
+      return true;
+    },
+    [sb, toast]
+  );
+
+  // the portal never runs inside another site's frame (clickjacking)
+  const [framed, setFramed] = useState(false);
+  useEffect(() => setFramed(window.top !== window.self), []);
 
   // follow the auth session
   useEffect(() => {
@@ -178,18 +190,32 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
     };
   }, [sb, toast]);
 
-  // load when the signed-in user changes; refresh when the tab comes back into
-  // view, so work other people did meanwhile (a new submission, a mark) shows up
+  // load when the signed-in user changes. A failed first load keeps retrying
+  // (2s, 4s, 8s … up to 30s) so a flaky connection never leaves a dead spinner.
+  // Afterwards, refresh when the tab comes back into view or the connection
+  // returns, so work other people did meanwhile (a submission, a mark) shows up.
   const userId = session?.user.id;
   useEffect(() => {
     if (!userId) return;
-    setStatus("loading");
-    reload();
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && Date.now() - loadedAt.current > STALE_AFTER) reload();
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const first = async (attempt: number) => {
+      if (stopped || (await reload(attempt > 0)) || stopped) return;
+      timer = setTimeout(() => first(attempt + 1), Math.min(30_000, 2000 * 2 ** attempt));
     };
-    document.addEventListener("visibilitychange", onVisible);
-    return () => document.removeEventListener("visibilitychange", onVisible);
+    setStatus("loading");
+    first(0);
+    const refresh = () => {
+      if (document.visibilityState === "visible" && Date.now() - loadedAt.current > STALE_AFTER) reload(true);
+    };
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("online", refresh);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("online", refresh);
+    };
   }, [userId, reload]);
 
   useEffect(() => {
@@ -405,9 +431,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
               ...stored,
               ...(answerText !== undefined ? { answer_text: answerText.trim() || null } : {}),
               note: note?.trim() || null,
-              submitted_at: new Date().toISOString(),
             },
-            { onConflict: "assignment_id,member_id" }
+            { onConflict: "assignment_id,member_id" } // the database stamps the hand-in time
           )
         );
       },
@@ -523,7 +548,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
     [actions, status, session, db, me, now, toasts, toast]
   );
 
-  return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
+  return framed ? null : <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }
 
 export function usePortal() {

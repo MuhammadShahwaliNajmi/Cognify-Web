@@ -71,6 +71,16 @@ function Room({ a }: { a: Assignment }) {
     toast(state === "grace" ? "Submitted" : "Submitted. You can still update it until the time is up.");
   };
 
+  // time's up: hand in whatever is typed or attached, so nobody loses their
+  // work by missing the button (the server accepts it for two more minutes)
+  const autoSent = useRef(false);
+  useEffect(() => {
+    if (state !== "grace" || autoSent.current) return;
+    autoSent.current = true;
+    const typed = answer.trim();
+    if (file || (typed && typed !== (sub?.answerText ?? "").trim())) void submit();
+  });
+
   return (
     <div>
       <Link href="/portal/student/assessments/" className="mb-5 inline-flex items-center gap-2 text-sm font-medium text-navy hover:text-gold">
