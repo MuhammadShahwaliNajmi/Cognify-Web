@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Paperclip, PenLine, Plus, RotateCcw } from "lucide-react";
+import { FileText, Paperclip, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
 import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
-import { DAY, dateInput, fmtDate, fmtDuration, fmtTime } from "@/lib/portal/format";
+import { DAY, dateInput, fmtDate, fmtDuration, fmtTime, timeInput } from "@/lib/portal/format";
 import type {Assignment, Student } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
@@ -22,20 +22,25 @@ const STATE_LABEL: Record<AssessmentState, string> = {
 };
 const tone = (s: AssessmentState) => (s === "marked" ? "done" : s === "submitted" || s === "in-progress" || s === "grace" ? "attention" : "plain");
 
-/* ---------------- create ---------------- */
-function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: string }[]; onDone: () => void }) {
-  const { addAssessment, toast } = useTeacher();
+/* ---------------- create / edit ---------------- */
+function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; name: string }[]; editing?: Assignment; onDone: () => void }) {
+  const { db, addAssessment, updateAssessment, deleteAssignment, toast } = useTeacher();
+  const startBy = editing ? new Date(editing.dueAt) : null;
   const [f, setF] = useState({
-    cohortId: cohorts[0]?.id ?? "",
-    title: "",
-    unit: "",
-    brief: "",
-    questions: "",
-    date: dateInput(new Date(Date.now() + 2 * DAY)),
-    time: "21:00",
-    limit: "60",
-    maxMarks: "20",
+    cohortId: editing?.cohortId ?? cohorts[0]?.id ?? "",
+    title: editing?.title ?? "",
+    unit: editing?.unit ?? "",
+    brief: editing?.brief ?? "",
+    questions: editing ? db.questions[editing.id] ?? "" : "",
+    date: dateInput(startBy ?? new Date(Date.now() + 2 * DAY)),
+    time: startBy ? timeInput(startBy) : "21:00",
+    limit: String(editing?.timeLimitMin ?? 60),
+    maxMarks: String(editing?.maxMarks ?? 20),
   });
+  const [deleting, setDeleting] = useState(false);
+  // a clock that is already running keeps its length; a mark already given keeps its total
+  const started = !!editing && db.attempts.some((t) => t.assignmentId === editing.id);
+  const marked = !!editing && db.submissions.some((x) => x.assignmentId === editing.id && x.status === "marked");
   const [paper, setPaper] = useState<File | null>(null);
   const [progress, setProgress] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,20 +56,22 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
     limit >= 5 &&
     limit <= 600 &&
     marks > 0 &&
-    due.getTime() > Date.now() &&
-    (f.questions.trim() || paper);
+    (editing ? !Number.isNaN(due.getTime()) : due.getTime() > Date.now()) &&
+    (f.questions.trim() || paper || editing?.attachmentFileId);
 
   return (
     <div className="space-y-5">
-      <Field label="Student">
-        <select value={f.cohortId} onChange={(e) => set("cohortId", e.target.value)} className={fieldCls}>
-          {cohorts.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {!editing && (
+        <Field label="Student">
+          <select value={f.cohortId} onChange={(e) => set("cohortId", e.target.value)} className={fieldCls}>
+            {cohorts.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )}
       <Field label="Title">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Unit 2 test: market failure" className={fieldCls} />
       </Field>
@@ -73,7 +80,13 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
           <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Market failure" className={fieldCls} />
         </Field>
         <Field label="Marks">
-          <input value={f.maxMarks} onChange={(e) => set("maxMarks", e.target.value.replace(/\D/g, ""))} inputMode="numeric" className={fieldCls} />
+          <input
+            value={f.maxMarks}
+            onChange={(e) => set("maxMarks", e.target.value.replace(/\D/g, ""))}
+            inputMode="numeric"
+            disabled={marked}
+            className={cn(fieldCls, marked && "opacity-60")}
+          />
         </Field>
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -84,7 +97,13 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
           <input type="time" value={f.time} onChange={(e) => set("time", e.target.value)} className={fieldCls} />
         </Field>
         <Field label="Time limit (minutes)">
-          <input value={f.limit} onChange={(e) => set("limit", e.target.value.replace(/\D/g, ""))} inputMode="numeric" className={fieldCls} />
+          <input
+            value={f.limit}
+            onChange={(e) => set("limit", e.target.value.replace(/\D/g, ""))}
+            inputMode="numeric"
+            disabled={started}
+            className={cn(fieldCls, started && "opacity-60")}
+          />
         </Field>
       </div>
       <Field label="Instructions (visible before starting)">
@@ -93,13 +112,15 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
       <Field label="Questions (hidden until the student starts)">
         <textarea value={f.questions} onChange={(e) => set("questions", e.target.value)} rows={6} className={cn(fieldCls, "resize-y")} />
       </Field>
-      <Field label="Question paper (optional, hidden until the student starts)">
-        <input
-          type="file"
-          onChange={(e) => setPaper(e.target.files?.[0] ?? null)}
-          className="block w-full text-sm text-navy file:mr-3 file:rounded-full file:border-0 file:bg-navy-deep file:px-4 file:py-2 file:text-sm file:font-semibold file:text-gold"
-        />
-      </Field>
+      {!editing && (
+        <Field label="Question paper (optional, hidden until the student starts)">
+          <input
+            type="file"
+            onChange={(e) => setPaper(e.target.files?.[0] ?? null)}
+            className="block w-full text-sm text-navy file:mr-3 file:rounded-full file:border-0 file:bg-navy-deep file:px-4 file:py-2 file:text-sm file:font-semibold file:text-gold"
+          />
+        </Field>
+      )}
       {progress !== null && (
         <div className="-mt-2 h-1.5 overflow-hidden rounded-full bg-navy/10">
           <div className="h-full rounded-full bg-gold" style={{ width: `${Math.max(3, progress * 100)}%` }} />
@@ -111,6 +132,22 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
         disabled={!ok || busy}
         onClick={async () => {
           setBusy(true);
+          if (editing) {
+            const saved = await updateAssessment(editing.id, {
+              title: f.title.trim(),
+              unit: f.unit.trim(),
+              brief: f.brief.trim(),
+              dueAt: due.toISOString(),
+              maxMarks: marks,
+              timeLimitMin: limit,
+              questions: f.questions,
+            });
+            setBusy(false);
+            if (!saved) return;
+            toast("Assessment saved");
+            onDone();
+            return;
+          }
           let attachment: Partial<Pick<Assignment, "attachmentFileId" | "attachmentName" | "attachmentMime">> = {};
           if (paper) {
             try {
@@ -143,9 +180,40 @@ function NewAssessment({ cohorts, onDone }: { cohorts: { id: string; name: strin
           onDone();
         }}
       >
-        <Plus size={16} />
-        {busy ? "Saving…" : "Set assessment"}
+        {!editing && <Plus size={16} />}
+        {busy ? "Saving…" : editing ? "Save changes" : "Set assessment"}
       </Btn>
+
+      {editing &&
+        (deleting ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+            <p className="flex-1 text-[15px] font-semibold text-navy">Delete this assessment, its attempt and answer?</p>
+            <Btn
+              variant="navy"
+              size="sm"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                const ok = await deleteAssignment(editing.id);
+                setBusy(false);
+                if (!ok) return;
+                toast("Assessment deleted");
+                onDone();
+              }}
+            >
+              <Trash2 size={14} /> Delete
+            </Btn>
+            <Btn variant="ghost" size="sm" onClick={() => setDeleting(false)}>
+              Keep
+            </Btn>
+          </div>
+        ) : (
+          <div>
+            <Btn variant="ghost" size="sm" onClick={() => setDeleting(true)}>
+              <Trash2 size={14} /> Delete assessment
+            </Btn>
+          </div>
+        ))}
     </div>
   );
 }
@@ -268,6 +336,8 @@ export default function TeacherAssessments() {
   const [who, setWho] = useState("all");
   const [creating, setCreating] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const editing = db.assignments.find((a) => a.id === editId);
 
   const cohorts = [...db.cohorts].sort((a, b) => a.name.localeCompare(b.name));
   const rows = db.assignments
@@ -300,10 +370,10 @@ export default function TeacherAssessments() {
 
       <Table
         minWidth={720}
-        head={[{ label: "Assessment" }, { label: "Student" }, { label: "Time" }, { label: "Start before" }, { label: "Status" }, { label: "Score", align: "right" }]}
+        head={[{ label: "Assessment" }, { label: "Student" }, { label: "Time" }, { label: "Start before" }, { label: "Status" }, { label: "Score", align: "right" }, { label: " ", align: "right" }]}
       >
         {rows.length === 0 ? (
-          <EmptyRow cols={6}>No assessments yet.</EmptyRow>
+          <EmptyRow cols={7}>No assessments yet.</EmptyRow>
         ) : (
           rows.map(({ a, student, state }) => {
             const sub = student ? submissionFor(db, a.id, student.id) : undefined;
@@ -327,6 +397,20 @@ export default function TeacherAssessments() {
                     <span>– / {a.maxMarks}</span>
                   )}
                 </Td>
+                <Td align="right">
+                  <button
+                    type="button"
+                    aria-label={`Edit ${a.title}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditId(a.id);
+                    }}
+                    onKeyDown={(e) => e.stopPropagation()}
+                    className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                </Td>
               </RowLink>
             );
           })
@@ -334,7 +418,11 @@ export default function TeacherAssessments() {
       </Table>
 
       <Modal open={creating} onClose={() => setCreating(false)} wide title="New assessment">
-        <NewAssessment cohorts={who === "all" ? cohorts : cohorts.filter((c) => c.id === who)} onDone={() => setCreating(false)} />
+        <AssessmentForm cohorts={who === "all" ? cohorts : cohorts.filter((c) => c.id === who)} onDone={() => setCreating(false)} />
+      </Modal>
+
+      <Modal open={!!editing} onClose={() => setEditId(null)} wide eyebrow={editing ? cohortOf(db, editing.cohortId).name : undefined} title="Edit assessment">
+        {editing && <AssessmentForm key={editing.id} cohorts={cohorts} editing={editing} onDone={() => setEditId(null)} />}
       </Modal>
 
       <Modal open={!!open} onClose={() => setOpenId(null)} wide eyebrow={open?.student?.name} title={open?.a.title ?? ""}>

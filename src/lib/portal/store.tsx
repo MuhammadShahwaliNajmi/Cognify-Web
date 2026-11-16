@@ -76,6 +76,11 @@ type Store = {
   }) => Promise<boolean>;
   /** teacher: set a timed assessment (questions stay hidden until each student starts) */
   addAssessment: (a: Omit<Assignment, "id"> & { timeLimitMin: number; questions?: string }) => Promise<boolean>;
+  /** teacher: change a timed assessment (questions are replaced; empty removes them) */
+  updateAssessment: (
+    id: string,
+    p: Pick<Assignment, "title" | "unit" | "brief" | "dueAt" | "maxMarks"> & { timeLimitMin: number; questions: string }
+  ) => Promise<boolean>;
   /** student: start the clock (once) */
   startAssessment: (assignmentId: string) => Promise<boolean>;
   /** teacher: let a student take an assessment again (clears their attempt and answer) */
@@ -395,6 +400,17 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             .single();
           if (error || !a.questions?.trim()) return { error };
           return api.from("assessment_questions").insert({ assignment_id: data.id, body: a.questions.trim() });
+        }),
+      updateAssessment: (id, p) =>
+        run("Saving the assessment", async (api) => {
+          const { error } = await api
+            .from("assignments")
+            .update({ title: p.title, unit: p.unit, brief: p.brief, due_at: p.dueAt, max_marks: p.maxMarks, time_limit_min: p.timeLimitMin })
+            .eq("id", num(id));
+          if (error) return { error };
+          return p.questions.trim()
+            ? api.from("assessment_questions").upsert({ assignment_id: num(id), body: p.questions.trim() })
+            : api.from("assessment_questions").delete().eq("assignment_id", num(id));
         }),
       startAssessment: (assignmentId) =>
         run("Starting the assessment", (api) => api.rpc("start_assessment", { p_assignment: num(assignmentId) })),
