@@ -9,7 +9,7 @@ import type { AssignmentKind, DB, Plan, Progress, ResourceType, Role, Strand, St
 
 type Id = number;
 
-type Snapshot = {
+export type Snapshot = {
   me: Id | null;
   members: {
     id: Id;
@@ -141,7 +141,7 @@ function withoutArchived(snap: Snapshot): Snapshot {
   };
 }
 
-function toPortal(all: Snapshot): Portal {
+export function toPortal(all: Snapshot): Portal {
   const snap = withoutArchived(all);
   const toCohort = (c: Snapshot["cohorts"][number]) => ({
     id: id(c.id),

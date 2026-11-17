@@ -314,7 +314,7 @@ export default function ApplyPage() {
                   <label htmlFor="name" className={labelCls}>
                     Full name
                   </label>
-                  <input id="name" name="name" type="text" required className={fieldCls} placeholder="Adam Smith" />
+                  <input id="name" name="name" type="text" autoComplete="name" required className={fieldCls} placeholder="Adam Smith" />
                 </motion.div>
 
                 <motion.div variants={item} className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -322,13 +322,13 @@ export default function ApplyPage() {
                     <label htmlFor="email" className={labelCls}>
                       Email
                     </label>
-                    <input id="email" name="email" type="email" required className={fieldCls} placeholder="AdamSmith@gmail.com" />
+                    <input id="email" name="email" type="email" autoComplete="email" required className={fieldCls} placeholder="AdamSmith@gmail.com" />
                   </div>
                   <div>
                     <label htmlFor="phone" className={labelCls}>
                       WhatsApp number
                     </label>
-                    <input id="phone" name="phone" type="tel" className={fieldCls} placeholder="+92 XXX XXXXXXX" />
+                    <input id="phone" name="phone" type="tel" autoComplete="tel" className={fieldCls} placeholder="+92 XXX XXXXXXX" />
                   </div>
                 </motion.div>
 

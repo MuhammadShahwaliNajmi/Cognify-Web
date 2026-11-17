@@ -22,11 +22,20 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
   const pathname = norm(usePathname() ?? "");
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const tabsRef = useRef<HTMLElement>(null);
 
   const allowed = ready && auth?.role === role && me;
   useEffect(() => {
     if (ready && !allowed) router.replace("/portal/");
   }, [ready, allowed, router]);
+
+  // on phones the tabs scroll sideways: keep the current one in view
+  const shown = !!allowed;
+  useEffect(() => {
+    const tabs = tabsRef.current;
+    const active = tabs?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (tabs && active) tabs.scrollTo({ left: active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2 });
+  }, [pathname, shown]);
 
   // close the account menu on outside click / Escape
   useEffect(() => {
@@ -119,7 +128,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
           </div>
         </div>
 
-        <nav aria-label="Portal" className="no-scrollbar mx-auto max-w-6xl overflow-x-auto px-3 md:px-6">
+        <nav ref={tabsRef} aria-label="Portal" className="portal-tabs no-scrollbar relative mx-auto max-w-6xl overflow-x-auto px-3 md:px-6">
           <div className="flex gap-1">
             {nav.map((item) => {
               const on = isActive(item.href);

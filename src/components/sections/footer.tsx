@@ -72,10 +72,10 @@ export function Footer() {
           <div className="mt-10 flex flex-col items-center gap-2 text-xs text-navy/40 md:flex-row md:justify-center md:gap-5">
             <p>© {new Date().getFullYear()} Concept Lab. All rights reserved.</p>
             <p className="flex gap-5">
-              <a href="/privacy/" className="transition-colors hover:text-gold">
+              <a href="/privacy/" className="-my-2 py-2 transition-colors hover:text-gold">
                 Privacy Policy
               </a>
-              <a href="/terms/" className="transition-colors hover:text-gold">
+              <a href="/terms/" className="-my-2 py-2 transition-colors hover:text-gold">
                 Terms of Service
               </a>
             </p>

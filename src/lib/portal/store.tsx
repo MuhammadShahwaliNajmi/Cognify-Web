@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Session as AuthSession, SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase/client";
-import { loadPortal, type Portal } from "./data";
+import { loadPortal, toPortal, type Portal } from "./data";
 import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
 import { cohortOf } from "./selectors";
 import { StorageError, fileLink, trashResource, uploadFile } from "./storage";
@@ -173,6 +173,20 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
   // follow the auth session
   useEffect(() => {
+    // local development only: /portal/?demo=teacher (or student) shows the signed-in
+    // screens with made-up data; ?demo=off leaves it. Stripped from production builds.
+    if (process.env.NODE_ENV === "development") {
+      const asked = new URLSearchParams(window.location.search).get("demo");
+      if (asked) sessionStorage.setItem("cl-demo", asked);
+      const role = sessionStorage.getItem("cl-demo");
+      if (role === "teacher" || role === "student") {
+        import("./demo").then((m) => {
+          setPortal(toPortal(m.demoSnapshot(role)));
+          setStatus("ready");
+        });
+        return;
+      }
+    }
     if (!sb) return setStatus("signed-out");
     let cancelled = false;
     // back from the full-page Google sign-in? exchange its ID token for a session

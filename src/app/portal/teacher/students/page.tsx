@@ -139,23 +139,42 @@ function SlotEditor({ slots, onChange }: { slots: Slot[]; onChange: (slots: Slot
       <Label>Weekly classes</Label>
       <ul className="mt-2 space-y-2">
         {slots.map((x, i) => (
-          <li key={i} className="flex flex-wrap items-center gap-2">
-            <select value={x.weekday} onChange={(e) => setSlot(i, { weekday: Number(e.target.value) })} className={cn(fieldCls, "!mt-0 w-40")}>
+          <li key={i} className="grid grid-cols-[1fr_auto_1fr_auto] items-center gap-2 sm:flex sm:flex-wrap">
+            {/* phones: the day and the remove button on one line, the times underneath */}
+            <select
+              value={x.weekday}
+              onChange={(e) => setSlot(i, { weekday: Number(e.target.value) })}
+              className={cn(fieldCls, "order-1 col-span-3 !mt-0 sm:order-none sm:w-40")}
+            >
               {DAYS.map((d, j) => (
                 <option key={d} value={j + 1}>
                   {d}
                 </option>
               ))}
             </select>
-            <input type="time" aria-label="Start" value={x.start} onChange={(e) => setSlot(i, { start: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
-            <span className="text-sm text-navy">to</span>
-            <input type="time" aria-label="End" value={x.end} onChange={(e) => setSlot(i, { end: e.target.value })} className={cn(fieldCls, "!mt-0 w-32")} />
-            <span className="w-16 text-sm text-navy">{classLengthOk(minutesBetween(x.start, x.end)) ? fmtLength(minutesBetween(x.start, x.end)) : "—"}</span>
+            <input
+              type="time"
+              aria-label="Start"
+              value={x.start}
+              onChange={(e) => setSlot(i, { start: e.target.value })}
+              className={cn(fieldCls, "order-3 !mt-0 min-w-0 !px-3 sm:order-none sm:w-36")}
+            />
+            <span className="order-4 text-sm text-navy sm:order-none">to</span>
+            <input
+              type="time"
+              aria-label="End"
+              value={x.end}
+              onChange={(e) => setSlot(i, { end: e.target.value })}
+              className={cn(fieldCls, "order-5 !mt-0 min-w-0 !px-3 sm:order-none sm:w-36")}
+            />
+            <span className="order-6 w-14 text-sm text-navy sm:order-none sm:w-16">
+              {classLengthOk(minutesBetween(x.start, x.end)) ? fmtLength(minutesBetween(x.start, x.end)) : "—"}
+            </span>
             <button
               type="button"
               aria-label="Remove this class time"
               onClick={() => onChange(slots.filter((_, j) => j !== i))}
-              className="grid h-9 w-9 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+              className="order-2 grid h-9 w-9 place-items-center justify-self-end rounded-md text-navy hover:bg-navy/[0.06] focus-gold sm:order-none"
             >
               <X size={15} />
             </button>

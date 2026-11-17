@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
@@ -368,7 +368,8 @@ export function SectionTitle({ children, action }: { children: React.ReactNode; 
   );
 }
 
-/** Data table with clear column headings; scrolls sideways on small screens. */
+/** Data table with clear column headings. On phones each row becomes a small card:
+ *  the first cell is the title and the others read "LABEL  value" (see .portal-table in globals.css). */
 export function Table({
   head,
   children,
@@ -380,9 +381,25 @@ export function Table({
   className?: string;
   minWidth?: number;
 }) {
+  // give every cell its column's heading, for the stacked phone layout
+  const ref = useRef<HTMLTableElement>(null);
+  useEffect(() => {
+    const table = ref.current;
+    if (!table) return;
+    const labels = Array.from(table.querySelectorAll("thead th"), (th) => th.textContent?.trim() ?? "");
+    table.querySelectorAll("tbody > tr").forEach((tr) => {
+      let col = 0;
+      tr.querySelectorAll<HTMLTableCellElement>(":scope > td").forEach((td) => {
+        if (td.colSpan === 1 && labels[col]) td.dataset.label = labels[col];
+        else delete td.dataset.label;
+        col += td.colSpan;
+      });
+    });
+  });
+
   return (
     <div className={cn("overflow-x-auto rounded-xl border border-navy/15", className)}>
-      <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
+      <table ref={ref} className="portal-table w-full border-collapse text-left text-sm" style={{ minWidth }}>
         <thead>
           <tr className="bg-navy-deep">
             {head.map((h) => (

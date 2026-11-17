@@ -50,9 +50,18 @@ body {
 }
 /* Tablets (768–1023, incl. iPad portrait) show the DESKTOP layout — scale the
    root font-size down so the whole rem-based layout shrinks to fit the narrower
-   width and never overflows. */
+   width and never overflows, but no further than still reads comfortably
+   (12.3px at 768, meeting the desktop's 15px at 1024). */
 @media (min-width: 768px) and (max-width: 1023px) {
-  html { font-size: clamp(9.5px, 1.25vw, 14px); }
+  html { font-size: clamp(12px, 1.6vw, 15px); }
+}
+/* A portrait tablet is much taller than the hero's content: let the next
+   section show instead of leaving the lower half of the screen empty. */
+@media (min-width: 768px) and (max-width: 1023px) and (orientation: portrait) {
+  #top,
+  #top > .grid {
+    min-height: 66svh;
+  }
 }
 /* Desktop (>=1024) — scales with the monitor: bigger = bigger, smaller = smaller. */
 @media (min-width: 1024px) {
@@ -226,4 +235,73 @@ body {
 ----------------------------------------------------------------- */
 html:has([data-portal]) {
   font-size: 16px;
+}
+
+/* Tabs scroll sideways on phones and portrait tablets: fade the right edge so it's clear there are more. */
+@media (max-width: 1023px) {
+  .portal-tabs {
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+  }
+}
+
+/* Phones: a data table becomes a list of cards. The first cell is the row's
+   title; every other cell shows its column heading on the left and its value
+   on the right. Nothing scrolls sideways and no action hides off-screen. */
+@media (max-width: 639px) {
+  .portal-table {
+    min-width: 0 !important;
+  }
+  .portal-table thead {
+    display: none;
+  }
+  .portal-table tbody tr {
+    display: block;
+    padding: 0.85rem 1rem;
+  }
+  .portal-table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.2rem 0;
+    text-align: right;
+    white-space: normal;
+  }
+  .portal-table tbody td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--navy);
+  }
+  .portal-table tbody td:first-child {
+    display: block;
+    padding-bottom: 0.4rem;
+    text-align: left;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .portal-table tbody td:first-child::before {
+    content: none;
+  }
+  .portal-table tbody td:empty {
+    display: none;
+  }
+  /* a second line inside a cell (e.g. "Teacher: …") sits under the value */
+  .portal-table tbody td:not(:first-child) {
+    flex-wrap: wrap;
+  }
+  .portal-table tbody td:not(:first-child) > .block {
+    flex-basis: 100%;
+  }
+  /* a cell without a heading holds the row's action: keep it to the right */
+  .portal-table tbody td:not([data-label]):not(:first-child) {
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+  }
 }
