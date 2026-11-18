@@ -7,14 +7,14 @@ import { cn } from "@/lib/utils";
 import {  } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
-import { TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
+import { TypedAnswer, WorkFile, cleanPoint, hasFile } from "@/components/portal/work";
 import type { Submission } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 const navBtn =
   "grid h-9 w-9 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold disabled:opacity-30 focus-gold";
 
-const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
+const lines = (s: string) => s.split("\n").map(cleanPoint).filter(Boolean);
 
 function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void }) {
   const { db, now, markWork, toast } = useTeacher();
@@ -23,8 +23,8 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
   const st = db.students.find((s) => s.id === sub.studentId)!;
   const [marks, setMarks] = useState(sub.marks !== undefined ? String(sub.marks) : "");
   const [feedback, setFeedback] = useState(sub.feedback ?? "");
-  const [strengths, setStrengths] = useState((sub.strengths ?? []).join("\n"));
-  const [improvements, setImprovements] = useState((sub.improvements ?? []).join("\n"));
+  const [strengths, setStrengths] = useState((sub.strengths ?? []).map(cleanPoint).join("\n"));
+  const [improvements, setImprovements] = useState((sub.improvements ?? []).map(cleanPoint).join("\n"));
 
   const n = Number(marks);
   const marksOk = marks.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= a.maxMarks;
@@ -86,13 +86,13 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
         {marks !== "" && !marksOk && <p className="-mt-2 text-xs font-medium text-navy">Enter a mark between 0 and {a.maxMarks}.</p>}
 
         <Field label="Overall feedback">
-          <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={5} placeholder="What level is this, and why?" className={cn(fieldCls, "resize-y")} />
+          <AutoTextarea value={feedback} onChange={(e) => setFeedback(e.target.value)} minRows={5} placeholder="What level is this, and why?" />
         </Field>
-        <Field label="What they did well (one per line)">
-          <textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={3} className={cn(fieldCls, "resize-y")} />
+        <Field label="What they did well">
+          <AutoTextarea value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="One point per line" />
         </Field>
-        <Field label="To gain more marks (one per line)">
-          <textarea value={improvements} onChange={(e) => setImprovements(e.target.value)} rows={3} className={cn(fieldCls, "resize-y")} />
+        <Field label="To gain more marks">
+          <AutoTextarea value={improvements} onChange={(e) => setImprovements(e.target.value)} placeholder="One point per line" />
         </Field>
 
         <div className="sticky bottom-0 -mx-1 bg-white px-1 pb-1 pt-2">

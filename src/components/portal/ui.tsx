@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
@@ -312,6 +312,18 @@ export function Modal({
 
 export const fieldCls =
   "mt-2 w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/40 focus:border-gold focus:ring-4 focus:ring-gold/15";
+/** A text box that grows to show everything typed (no scrolling inside a small box). */
+export function AutoTextarea({ value, minRows = 3, className, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string; minRows?: number }) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} value={value} rows={minRows} className={cn(fieldCls, "resize-none overflow-hidden leading-relaxed", className)} {...rest} />;
+}
+
 export const labelCls = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-navy";
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {

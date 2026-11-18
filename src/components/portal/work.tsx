@@ -21,6 +21,9 @@ async function workLink(sub: Submission, download = false) {
   return data.signedUrl;
 }
 
+/** A feedback point without a typed bullet ("- ", "• ", "1. ") — the page adds its own. */
+export const cleanPoint = (s: string) => s.trim().replace(/^([-–—•*·]|\d+[.)])\s+/, "").trim();
+
 export const hasFile = (sub: Submission) => !!(sub.driveFileId || sub.filePath);
 
 /** The handed-in work, shown right here: PDFs and photos open in place; other files download. */
@@ -148,7 +151,7 @@ export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission;
         <div className="rounded-2xl border border-navy/12 p-5">
           <Label>What you did well</Label>
           <ul className="mt-3 flex flex-col gap-2.5">
-            {sub.strengths.map((s) => (
+            {sub.strengths.map(cleanPoint).filter(Boolean).map((s) => (
               <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
                 <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-gold" />
                 {s}
@@ -162,7 +165,7 @@ export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission;
         <div className="rounded-2xl border-l-[3px] border-gold bg-gold/10 p-5">
           <Label>To gain more marks</Label>
           <ul className="mt-3 flex flex-col gap-2.5">
-            {sub.improvements.map((s) => (
+            {sub.improvements.map(cleanPoint).filter(Boolean).map((s) => (
               <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
                 <TrendingUp size={16} className="mt-0.5 shrink-0 text-navy" />
                 {s}
