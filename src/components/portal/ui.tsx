@@ -233,6 +233,8 @@ export function Modal({
   title,
   eyebrow,
   wide,
+  full,
+  actions,
   children,
 }: {
   open: boolean;
@@ -240,6 +242,10 @@ export function Modal({
   title: string;
   eyebrow?: string;
   wide?: boolean;
+  /** nearly full screen (documents side by side with a form) */
+  full?: boolean;
+  /** extra buttons beside the close button */
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const reduce = useReducedMotion();
@@ -276,7 +282,7 @@ export function Modal({
             transition={spring.snappy}
             className={cn(
               "thin-scroll relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[28px] bg-white p-6 shadow-[0_40px_100px_-30px_rgba(8,16,33,0.6)] md:rounded-[28px] md:p-8",
-              wide ? "md:max-w-3xl" : "md:max-w-xl"
+              full ? "md:h-[94dvh] md:max-h-[94dvh] md:max-w-[min(1440px,96vw)] md:p-6" : wide ? "md:max-w-3xl" : "md:max-w-xl"
             )}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
@@ -284,6 +290,8 @@ export function Modal({
                 {eyebrow && <Label className="font-semibold">{eyebrow}</Label>}
                 <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight text-navy md:text-2xl">{title}</h2>
               </div>
+              <div className="flex shrink-0 items-center gap-2">
+              {actions}
               <button
                 type="button"
                 onClick={onClose}
@@ -292,6 +300,7 @@ export function Modal({
               >
                 <X size={16} />
               </button>
+              </div>
             </div>
             {children}
           </motion.div>

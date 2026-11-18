@@ -99,6 +99,7 @@ export type Snapshot = {
     file_size: number | null;
     file_path: string | null;
     drive_file_id: string | null;
+    mime_type?: string | null;
     answer_text: string | null;
     note: string | null;
     submitted_at: string;
@@ -188,6 +189,7 @@ export function toPortal(all: Snapshot): Portal {
       fileSize: fmtBytes(s.file_size),
       filePath: s.file_path ?? undefined,
       driveFileId: s.drive_file_id ?? undefined,
+      mimeType: s.mime_type ?? undefined,
       answerText: s.answer_text ?? undefined,
       note: s.note ?? undefined,
       status: marked ? "marked" : "submitted",

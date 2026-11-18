@@ -2,14 +2,14 @@
 
 import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, CheckCircle2, Clock, FileText, Paperclip, TrendingUp, UploadCloud, X } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Clock, FileText, Paperclip, UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { submissionFor } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, MB, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Assignment, Submission } from "@/lib/portal/types";
 import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
-import { Ring } from "@/components/portal/charts";
+import { FeedbackPanel, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 type Tab = "todo" | "submitted" | "marked" | "all";
 
@@ -124,9 +124,43 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
   );
 }
 
+/* ---------- returned work: their work beside the feedback ---------- */
+function Returned({ a, sub }: { a: Assignment; sub: Submission }) {
+  const { now, openAttachment } = useStudent();
+  return (
+    <div className="grid grid-cols-1 gap-5 md:h-[calc(94dvh-8.5rem)] md:grid-cols-[minmax(0,1fr)_420px]">
+      {/* feedback first on phones */}
+      <div className="min-h-0 space-y-4 md:order-2 md:overflow-y-auto md:pr-1">
+        <FeedbackPanel a={a} sub={sub} now={now} />
+        <details className="group rounded-2xl bg-navy/[0.04] p-4">
+          <summary className="cursor-pointer list-none text-[13px] font-semibold text-navy">
+            The task · {a.maxMarks} marks <span className="font-normal underline decoration-gold decoration-2 underline-offset-4 group-open:hidden">show</span>
+          </summary>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-navy">{a.brief}</p>
+          {a.attachmentFileId && (
+            <Btn variant="outline" size="sm" className="mt-3" onClick={() => openAttachment(a.id)}>
+              <Paperclip size={13} /> Question paper
+            </Btn>
+          )}
+        </details>
+      </div>
+      <div className="flex min-h-0 flex-col gap-4 md:order-1 md:overflow-y-auto">
+        {hasFile(sub) && <WorkFile sub={sub} fill className={cn(!sub.answerText && "md:flex-1")} />}
+        {sub.answerText && <TypedAnswer text={sub.answerText} title="Your answer" />}
+        {sub.note && <p className="text-[13px] italic leading-relaxed text-navy">Your note: &ldquo;{sub.note}&rdquo;</p>}
+      </div>
+    </div>
+  );
+}
+
 /* ---------- detail (inside the modal) ---------- */
 function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
-  const { now, openSubmission, openAttachment } = useStudent();
+  if (sub?.status === "marked") return <Returned a={a} sub={sub} />;
+  return <Pending a={a} sub={sub} />;
+}
+
+function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
+  const { now, openAttachment } = useStudent();
   const [replacing, setReplacing] = useState(false);
   const msLeft = new Date(a.dueAt).getTime() - now;
 
@@ -190,77 +224,19 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
         )}
       </div>
 
-      {/* marked → results */}
-      {sub?.status === "marked" && (
-        <div className="mt-6">
-          <div className="flex items-center gap-5">
-            <Ring value={sub.marks ?? 0} max={a.maxMarks} />
-            <div>
-              <Label>Examiner feedback</Label>
-              <p className="mt-1 text-2xl font-semibold tracking-tight text-navy">
-                {Math.round(((sub.marks ?? 0) / a.maxMarks) * 100)}%
-              </p>
-              <p className="mt-1 text-[13px] text-navy">Returned {fmtRelative(sub.markedAt!, now)}</p>
-            </div>
-          </div>
-          <p className="mt-5 text-[15px] leading-relaxed text-navy">{sub.feedback}</p>
-
-          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
-            {!!sub.strengths?.length && (
-              <div className="rounded-2xl border border-navy/10 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-navy">What you did well</p>
-                <ul className="mt-3 flex flex-col gap-2.5">
-                  {sub.strengths.map((s) => (
-                    <li key={s} className="flex gap-2.5 text-sm leading-relaxed text-navy">
-                      <CheckCircle2 size={15} className="mt-0.5 shrink-0 text-gold" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {!!sub.improvements?.length && (
-              <div className="rounded-2xl bg-navy-deep p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">To gain more marks</p>
-                <ul className="mt-3 flex flex-col gap-2.5">
-                  {sub.improvements.map((s) => (
-                    <li key={s} className="flex gap-2.5 text-sm leading-relaxed text-white/80">
-                      <TrendingUp size={15} className="mt-0.5 shrink-0 text-gold" />
-                      {s}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* submitted → timeline */}
-      {sub && (
+      {sub && sub.status !== "marked" && (
         <div className="mt-6">
-          <Label>Your submission</Label>
-          <div className="mt-3 flex items-center gap-3 rounded-2xl border border-navy/10 p-3.5">
-            <button
-              type="button"
-              onClick={() => (sub.filePath || sub.driveFileId) && openSubmission(sub)}
-              disabled={!sub.filePath && !sub.driveFileId}
-              className="group flex min-w-0 flex-1 items-center gap-3 text-left focus-gold"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-navy/[0.05] text-navy transition-colors group-hover:bg-gold/20">
-                <FileText size={17} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-navy transition-colors group-hover:text-gold">{sub.fileName}</span>
-                <span className="block text-xs text-navy">{sub.fileSize}{sub.filePath || sub.driveFileId ? " · tap to open" : ""}</span>
-              </span>
-            </button>
-            {sub.status === "submitted" && !replacing && (
+          <div className="flex items-center justify-between gap-3">
+            <Label>Your submission</Label>
+            {!replacing && (
               <Btn variant="ghost" size="sm" onClick={() => setReplacing(true)}>
                 Replace
               </Btn>
             )}
           </div>
+          {!replacing && hasFile(sub) && <WorkFile sub={sub} className="mt-3 [&_iframe]:h-[55vh]" />}
+          {!replacing && sub.answerText && <TypedAnswer text={sub.answerText} title="Your answer" className="mt-3" />}
           {sub.note && <p className="mt-2.5 text-[13px] italic leading-relaxed text-navy">&ldquo;{sub.note}&rdquo;</p>}
 
           {replacing ? (
@@ -401,7 +377,14 @@ function Assignments() {
         </Table>
       </div>
 
-      <Modal open={!!open} onClose={close} wide eyebrow={open ? `${open.a.kind}${open.a.unit ? ` · ${open.a.unit}` : ""}` : undefined} title={open?.a.title ?? ""}>
+      <Modal
+        open={!!open}
+        onClose={close}
+        wide
+        full={open?.sub?.status === "marked"}
+        eyebrow={open ? `${open.a.kind}${open.a.unit ? ` · ${open.a.unit}` : ""}${open.sub?.status === "marked" ? " · returned" : ""}` : undefined}
+        title={open?.a.title ?? ""}
+      >
         {open && <Detail key={open.a.id} a={open.a} sub={open.sub} />}
       </Modal>
     </>

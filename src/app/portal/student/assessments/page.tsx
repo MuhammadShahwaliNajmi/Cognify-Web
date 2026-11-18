@@ -11,6 +11,7 @@ import { fmtBytes, fmtClock, fmtDate, fmtDateLong, fmtRelative, fmtTime, MB } fr
 import type { Assignment } from "@/lib/portal/types";
 import { Btn, EmptyRow, Label, Modal, PageHeader, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { useTick } from "@/components/portal/classroom";
+import { FeedbackPanel, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
   upcoming: "Not started",
@@ -214,22 +215,9 @@ function Room({ a }: { a: Assignment }) {
           {state === "missed" && <p className="text-[15px] text-navy">This assessment closed on {fmtDate(a.dueAt)} at {fmtTime(a.dueAt)} without being started.</p>}
           {state === "time-up" && <p className="text-[15px] text-navy">The time ran out before anything was submitted.</p>}
 
-          {sub?.status === "marked" && (
-            <div className="rounded-2xl bg-navy-deep p-6">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">Score</p>
-              <p className="mt-1 text-[2rem] font-bold leading-none tabular-nums text-white">
-                {sub.marks} <span className="text-white/70">/ {a.maxMarks}</span>
-              </p>
-              {sub.feedback && <p className="mt-4 whitespace-pre-wrap text-[15px] leading-relaxed text-white/90">{sub.feedback}</p>}
-            </div>
-          )}
-          {sub?.answerText && (
-            <div className="rounded-xl border border-navy/15 p-5">
-              <Label>Your answer</Label>
-              <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{sub.answerText}</p>
-            </div>
-          )}
-          {sub?.fileName && <p className="text-sm text-navy">File handed in: {sub.fileName}</p>}
+          {sub?.status === "marked" && <FeedbackPanel a={a} sub={sub} now={now} />}
+          {sub?.answerText && <TypedAnswer text={sub.answerText} title="Your answer" />}
+          {sub && hasFile(sub) && <WorkFile sub={sub} className="[&_iframe]:h-[60vh]" />}
         </div>
       )}
 

@@ -151,6 +151,7 @@ export type Submission = {
   fileSize: string; // formatted, e.g. "1.2 MB"
   filePath?: string; // fallback uploads: private storage path
   driveFileId?: string; // stored file id
+  mimeType?: string;
   answerText?: string; // typed answer (assessments)
   note?: string;
   status: "submitted" | "marked";

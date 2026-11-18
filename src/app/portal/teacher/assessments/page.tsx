@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Paperclip, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Paperclip, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
@@ -10,6 +10,7 @@ import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentSt
 import { DAY, dateInput, fmtDate, fmtDuration, fmtTime, timeInput } from "@/lib/portal/format";
 import type {Assignment, Student } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
   upcoming: "Not started",
@@ -220,7 +221,7 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
 
 /* ---------------- one student's attempt ---------------- */
 function AttemptDetail({ a, student, onClose }: { a: Assignment; student: Student | undefined; onClose: () => void }) {
-  const { db, now, openSubmission, openAttachment, allowRetake, toast } = useTeacher();
+  const { db, now, openAttachment, allowRetake, toast } = useTeacher();
   const router = useRouter();
   const [confirm, setConfirm] = useState(false);
   const attempt = student ? attemptFor(db, a.id, student.id) : undefined;
@@ -276,19 +277,10 @@ function AttemptDetail({ a, student, onClose }: { a: Assignment; student: Studen
         </Btn>
       )}
 
-      {sub?.answerText && (
-        <div className="max-h-72 overflow-y-auto rounded-xl border border-navy/15 p-4">
-          <Label>Typed answer</Label>
-          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-navy">{sub.answerText}</p>
-        </div>
-      )}
+      {sub?.answerText && <TypedAnswer text={sub.answerText} />}
+      {sub && hasFile(sub) && <WorkFile sub={sub} className="[&_iframe]:h-[60vh]" />}
 
       <div className="flex flex-wrap gap-2.5 border-t border-navy/10 pt-5">
-        {sub && (sub.driveFileId || sub.filePath) && (
-          <Btn variant="outline" onClick={() => openSubmission(sub)}>
-            <FileText size={15} /> Open file
-          </Btn>
-        )}
         {sub && (
           <Btn variant="gold" onClick={() => router.push(`/portal/teacher/submissions/?open=${sub.id}`)}>
             <PenLine size={15} /> {sub.status === "marked" ? "Edit mark" : "Mark"}
