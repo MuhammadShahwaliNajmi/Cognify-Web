@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Paperclip, Send, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {  } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
-import { HOUR, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
-import { TypedAnswer, WorkFile, cleanPoint, hasFile } from "@/components/portal/work";
+import { HOUR, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { WorkAndFeedbackFiles, cleanPoint } from "@/components/portal/work";
 import type { Submission } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls, labelCls } from "@/components/portal/ui";
 
 const navBtn =
   "grid h-9 w-9 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold disabled:opacity-30 focus-gold";
@@ -33,14 +33,8 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
 
   return (
     <div className="grid grid-cols-1 gap-5 md:h-[calc(94dvh-8.5rem)] md:grid-cols-[minmax(0,1fr)_400px]">
-      {/* the work, large */}
-      <div className="flex min-h-0 flex-col gap-4 md:overflow-y-auto">
-        {hasFile(sub) && <WorkFile sub={sub} fill className={cn(!sub.answerText && "md:flex-1")} />}
-        {sub.answerText && <TypedAnswer text={sub.answerText} />}
-        {!hasFile(sub) && !sub.answerText && (
-          <p className="rounded-2xl bg-navy/[0.04] p-8 text-center text-[15px] text-navy">No file was attached to this submission.</p>
-        )}
-      </div>
+      {/* the work, large (and any files returned with the feedback) */}
+      <WorkAndFeedbackFiles key={sub.feedbackFiles.map((f) => f.id).join()} sub={sub} className="md:overflow-y-auto" />
 
       {/* the mark */}
       <div className="min-h-0 space-y-5 md:overflow-y-auto md:pr-1">
@@ -95,6 +89,18 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
           <AutoTextarea value={improvements} onChange={(e) => setImprovements(e.target.value)} placeholder="One point per line" />
         </Field>
 
+        <ReturnFiles sub={sub} />
+
+        {sub.status === "marked" && (
+          <div className="rounded-2xl bg-navy/[0.04] p-4">
+            <Label>Student</Label>
+            <p className="mt-1.5 text-sm font-semibold text-navy">
+              {sub.seenAt ? `Read the feedback ${fmtRelative(sub.seenAt, now)}` : "Hasn't read the feedback yet"}
+            </p>
+            {sub.reflection && <p className="mt-2 text-sm italic leading-relaxed text-navy">Their next step: &ldquo;{sub.reflection}&rdquo;</p>}
+          </div>
+        )}
+
         <div className="sticky bottom-0 -mx-1 bg-white px-1 pb-1 pt-2">
           <Btn
             variant="gold"
@@ -116,6 +122,69 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
           {sub.status === "marked" && sub.markedAt && <p className="mt-2 text-center text-xs text-navy">Returned {fmtRelative(sub.markedAt, now)}</p>}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Files returned with the feedback: a marked copy, a model answer, a mark scheme… */
+function ReturnFiles({ sub }: { sub: Submission }) {
+  const { addFeedbackFiles, removeFeedbackFile, toast } = useTeacher();
+  const input = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  const add = async (files: File[]) => {
+    if (!files.length) return;
+    setProgress(0);
+    const ok = await addFeedbackFiles(sub.id, files, setProgress);
+    setProgress(null);
+    if (ok) toast(files.length === 1 ? "File attached" : `${files.length} files attached`);
+  };
+
+  return (
+    <div>
+      <span className={labelCls}>Return files</span>
+      <p className="mt-1 text-[13px] text-navy">A marked copy, model answer or mark scheme. The student sees it with the feedback.</p>
+      {sub.feedbackFiles.length > 0 && (
+        <ul className="mt-2.5 space-y-2">
+          {sub.feedbackFiles.map((f) => (
+            <li key={f.id} className="flex items-center gap-2.5 rounded-xl border border-navy/12 px-3 py-2">
+              <Paperclip size={14} className="shrink-0 text-navy" />
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-navy">{f.name}</span>
+              {f.sizeBytes ? <span className="text-xs text-navy">{fmtBytes(f.sizeBytes)}</span> : null}
+              <button
+                type="button"
+                aria-label={`Remove ${f.name}`}
+                disabled={removing === f.id}
+                onClick={async () => {
+                  setRemoving(f.id);
+                  const ok = await removeFeedbackFile(f.id);
+                  setRemoving(null);
+                  if (ok) toast("File removed");
+                }}
+                className="grid h-7 w-7 place-items-center rounded-full text-navy transition-colors hover:bg-navy/[0.06] focus-gold disabled:opacity-40"
+              >
+                <X size={14} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <input
+        ref={input}
+        type="file"
+        multiple
+        className="sr-only"
+        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic,.xlsx,.pptx"
+        onChange={(e) => {
+          add(Array.from(e.target.files ?? []));
+          e.target.value = "";
+        }}
+      />
+      <Btn variant="outline" size="sm" className="mt-2.5" disabled={progress !== null} onClick={() => input.current?.click()}>
+        <Upload size={14} />
+        {progress !== null ? `Uploading… ${Math.round(progress * 100)}%` : "Attach a file"}
+      </Btn>
     </div>
   );
 }
@@ -200,7 +269,7 @@ function Submissions() {
                   </Td>
                   <Td>
                     {x.status === "marked" ? (
-                      <Status tone="done">Returned</Status>
+                      <Status tone="done">{x.seenAt ? (x.reflection ? "Read · next step set" : "Read") : "Returned · not read"}</Status>
                     ) : left < 0 ? (
                       <Status tone="attention">Late by {fmtDuration(-left)}</Status>
                     ) : left < 6 * HOUR ? (

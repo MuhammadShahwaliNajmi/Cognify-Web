@@ -6,7 +6,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import { loadPortal, toPortal, type Portal } from "./data";
 import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
 import { cohortOf } from "./selectors";
-import { StorageError, fileLink, trashResource, uploadFile } from "./storage";
+import { StorageError, fileLink, trashFeedbackFile, trashResource, uploadFile } from "./storage";
 import type { Assignment, Auth, DB, Resource, SeriesInput, Session, Student, Submission, Teacher } from "./types";
 import { EMPTY_DB } from "./types";
 
@@ -98,6 +98,11 @@ type Store = {
   markWork: (id: string, m: Pick<Submission, "marks" | "feedback" | "strengths" | "improvements">) => Promise<boolean>;
   /** open a handed-in piece of work in a new tab */
   openSubmission: (sub: Submission) => Promise<void>;
+  /** teacher: return files with the feedback (marked copy, model answer…) */
+  addFeedbackFiles: (submissionId: string, files: File[], onProgress?: (p: number) => void) => Promise<boolean>;
+  removeFeedbackFile: (feedbackFileId: string) => Promise<boolean>;
+  /** student: "I've read my feedback" (shows the score), with their own next step */
+  acknowledgeFeedback: (submissionId: string, reflection?: string) => Promise<boolean>;
 
   addResource: (r: Omit<Resource, "id" | "addedAt">) => Promise<boolean>;
   deleteResource: (id: string) => Promise<boolean>;
@@ -528,6 +533,35 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           )
         );
       },
+      addFeedbackFiles: async (submissionId, files, onProgress) => {
+        if (!sb) return false;
+        const total = files.reduce((n, f) => n + f.size, 0) || 1;
+        let done = 0;
+        const rows: { submission_id: number; drive_file_id: string; file_name: string; mime_type: string | null; size_bytes: number }[] = [];
+        for (const file of files) {
+          try {
+            const up = await uploadFile(file, { purpose: "feedback", submissionId }, (p) => onProgress?.((done + p * file.size) / total));
+            rows.push({ submission_id: num(submissionId), drive_file_id: up.id, file_name: file.name.slice(0, 200), mime_type: up.mimeType || file.type || null, size_bytes: file.size });
+            done += file.size;
+          } catch (e) {
+            toast(e instanceof StorageError && e.status === 503 ? "File storage isn't connected yet." : message(e, "Upload failed"));
+            if (!rows.length) return false;
+            break;
+          }
+        }
+        return run("Attaching the files", (api) => api.from("feedback_files").insert(rows));
+      },
+      removeFeedbackFile: (feedbackFileId) =>
+        run("Removing the file", async () => {
+          try {
+            await trashFeedbackFile(feedbackFileId);
+            return { error: null };
+          } catch (e) {
+            return { error: { message: message(e, "Couldn't remove the file") } };
+          }
+        }),
+      acknowledgeFeedback: (submissionId, reflection) =>
+        run("Saving", (api) => api.rpc("acknowledge_feedback", { p_submission: num(submissionId), p_reflection: reflection ?? null })),
       markWork: (id, m) =>
         run("Returning the work", (api) =>
           api.from("feedback").upsert({

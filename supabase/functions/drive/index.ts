@@ -7,7 +7,7 @@
 //   /upload            any       → starts a resumable upload; the browser sends the bytes straight to Google
 //   /link              any       → short-lived signed URL for a file the caller may see (checked with RLS)
 //   GET /file                    → streams the file (signed URL only)
-//   /trash             teacher   → deletes a resource and moves its file to the bin
+//   /trash             teacher   → deletes a resource (or a returned feedback file) and moves its file to the bin
 //
 // Scope is drive.file: the app only ever sees files and folders it created.
 // Secrets: GOOGLE_CLIENT_SECRET (Edge Function secret). Supabase keys come from the platform.
@@ -294,6 +294,17 @@ async function route(req: Request): Promise<Response> {
       }
       parent = await systemFolder(member.cohort_id, "Submissions");
       driveName = `${a.title} — ${name}`;
+    } else if (body.purpose === "feedback") {
+      // a file returned with the feedback (marked copy, model answer…): kept beside the student's work
+      const { data: sub } = await admin.from("submissions").select("id, assignment_id").eq("id", body.submissionId).maybeSingle();
+      const { data: a } = sub
+        ? await admin.from("assignments").select("title, cohort_id").eq("id", sub.assignment_id).single()
+        : { data: null };
+      if (!sub || !a) throw new HttpError(404, "Submission not found");
+      await assertTeaches(member, a.cohort_id);
+      if (size > 200 * MB) throw new HttpError(413, "Files must be under 200 MB");
+      parent = await systemFolder(a.cohort_id, "Submissions");
+      driveName = `Feedback — ${a.title} — ${name}`;
     } else {
       const cohortId = Number(body.cohortId);
       await assertTeaches(member, cohortId);
@@ -322,7 +333,7 @@ async function route(req: Request): Promise<Response> {
   }
 
   if (action === "link") {
-    const kind = body.kind as "resource" | "submission" | "assignment";
+    const kind = body.kind as "resource" | "submission" | "assignment" | "feedback";
     const id = Number(body.id);
     const db = asUser(token); // RLS decides whether the caller may see this file
     let fileId: string | null = null;
@@ -333,6 +344,11 @@ async function route(req: Request): Promise<Response> {
       name = data?.title ?? name;
     } else if (kind === "submission") {
       const { data } = await db.from("submissions").select("drive_file_id, file_name").eq("id", id).maybeSingle();
+      fileId = data?.drive_file_id ?? null;
+      name = data?.file_name ?? name;
+    } else if (kind === "feedback") {
+      // students see these only once the work is returned (RLS)
+      const { data } = await db.from("feedback_files").select("drive_file_id, file_name").eq("id", id).maybeSingle();
       fileId = data?.drive_file_id ?? null;
       name = data?.file_name ?? name;
     } else if (kind === "assignment") {
@@ -351,6 +367,17 @@ async function route(req: Request): Promise<Response> {
     const s = await sign(`${fileId}.${e}.${d}`);
     const q = new URLSearchParams({ f: fileId, e, d, n: name, s });
     return json(req, { url: `${FN_URL}/file?${q}` });
+  }
+
+  if (action === "trash" && body.feedbackFileId) {
+    const { data: f } = await admin.from("feedback_files").select("id, drive_file_id, submission_id").eq("id", body.feedbackFileId).maybeSingle();
+    const { data: sub } = f ? await admin.from("submissions").select("assignment_id").eq("id", f.submission_id).single() : { data: null };
+    const { data: a } = sub ? await admin.from("assignments").select("cohort_id").eq("id", sub.assignment_id).single() : { data: null };
+    if (!f || !a) throw new HttpError(404, "File not found");
+    await assertTeaches(member, a.cohort_id);
+    await drive(`files/${encodeURIComponent(f.drive_file_id)}?fields=id`, { method: "PATCH", body: JSON.stringify({ trashed: true }) }).catch(() => null);
+    await admin.from("feedback_files").delete().eq("id", f.id);
+    return json(req, { ok: true });
   }
 
   if (action === "trash") {

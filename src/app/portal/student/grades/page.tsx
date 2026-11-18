@@ -87,7 +87,9 @@ export default function StudentGrades() {
                       {done ? fmtDate(sub!.markedAt!) : sub ? <Status>Being marked</Status> : <span className="text-navy">Not submitted</span>}
                     </Td>
                     <Td align="right" className="whitespace-nowrap tabular-nums">
-                      {done ? (
+                      {done && !sub!.seenAt ? (
+                        <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">New feedback</span>
+                      ) : done ? (
                         <span className="font-semibold text-navy">
                           {sub!.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
                         </span>
@@ -96,7 +98,7 @@ export default function StudentGrades() {
                       )}
                     </Td>
                     <Td align="right" className="tabular-nums font-semibold text-navy">
-                      {done ? `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%` : <span className="font-normal text-navy">–</span>}
+                      {done && sub!.seenAt ? `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%` : <span className="font-normal text-navy">–</span>}
                     </Td>
                   </RowLink>
                 );

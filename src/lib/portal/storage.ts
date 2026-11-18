@@ -37,7 +37,8 @@ export type Uploaded = { id: string; name: string; mimeType: string; size: numbe
 export type UploadTarget =
   | { purpose: "resource"; cohortId: string; folderId?: string | null }
   | { purpose: "assignment"; cohortId: string }
-  | { purpose: "submission"; assignmentId: string };
+  | { purpose: "submission"; assignmentId: string }
+  | { purpose: "feedback"; submissionId: string };
 
 /** Upload one file; `onProgress` gets 0–1. Resolves with the stored file's id. */
 export async function uploadFile(file: File, target: UploadTarget, onProgress?: (p: number) => void): Promise<Uploaded> {
@@ -46,6 +47,7 @@ export async function uploadFile(file: File, target: UploadTarget, onProgress?: 
     folderId: "folderId" in target && target.folderId ? Number(target.folderId) : undefined,
     cohortId: "cohortId" in target ? Number(target.cohortId) : undefined,
     assignmentId: "assignmentId" in target ? Number(target.assignmentId) : undefined,
+    submissionId: "submissionId" in target ? Number(target.submissionId) : undefined,
     name: file.name,
     mimeType: file.type || "application/octet-stream",
     size: file.size,
@@ -72,8 +74,10 @@ export async function uploadFile(file: File, target: UploadTarget, onProgress?: 
 }
 
 /** Signed link (valid ~1 hour) to view or download a stored file. */
-export const fileLink = (kind: "resource" | "submission" | "assignment", id: string, download = false) =>
+export const fileLink = (kind: "resource" | "submission" | "assignment" | "feedback", id: string, download = false) =>
   call<{ url: string }>("link", { kind, id: Number(id), download }).then((r) => r.url);
+
+export const trashFeedbackFile = (feedbackFileId: string) => call<{ ok: boolean }>("trash", { feedbackFileId: Number(feedbackFileId) });
 
 export const trashResource = (resourceId: string) => call<{ ok: boolean }>("trash", { resourceId: Number(resourceId) });
 

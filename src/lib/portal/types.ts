@@ -160,7 +160,15 @@ export type Submission = {
   strengths?: string[];
   improvements?: string[];
   markedAt?: string;
+  /** when the student confirmed reading the feedback (the score shows after) */
+  seenAt?: string;
+  /** the student's own next step after reading it */
+  reflection?: string;
+  /** files the teacher returned with the feedback (marked copy, model answer…) */
+  feedbackFiles: FeedbackFile[];
 };
+
+export type FeedbackFile = { id: string; name: string; mimeType?: string; sizeBytes?: number };
 
 export type Announcement = {
   id: string;

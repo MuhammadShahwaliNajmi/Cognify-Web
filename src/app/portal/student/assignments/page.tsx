@@ -9,7 +9,7 @@ import { useStudent } from "@/lib/portal/store";
 import { HOUR, MB, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Assignment, Submission } from "@/lib/portal/types";
 import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
-import { FeedbackPanel, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
+import { FeedbackPanel, LastTargets, TypedAnswer, WorkAndFeedbackFiles, WorkFile, hasFile } from "@/components/portal/work";
 
 type Tab = "todo" | "submitted" | "marked" | "all";
 
@@ -145,8 +145,7 @@ function Returned({ a, sub }: { a: Assignment; sub: Submission }) {
         </details>
       </div>
       <div className="flex min-h-0 flex-col gap-4 md:order-1 md:overflow-y-auto">
-        {hasFile(sub) && <WorkFile sub={sub} fill className={cn(!sub.answerText && "md:flex-1")} />}
-        {sub.answerText && <TypedAnswer text={sub.answerText} title="Your answer" />}
+        <WorkAndFeedbackFiles key={sub.feedbackFiles.map((f) => f.id).join()} sub={sub} student className="md:flex-1" />
         {sub.note && <p className="text-[13px] italic leading-relaxed text-navy">Your note: &ldquo;{sub.note}&rdquo;</p>}
       </div>
     </div>
@@ -160,7 +159,13 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
 }
 
 function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
-  const { now, openAttachment } = useStudent();
+  const { db, me, now, openAttachment } = useStudent();
+  // the most recent returned work, to carry its next steps forward
+  const last = db.submissions
+    .filter((x) => x.studentId === me.id && x.status === "marked" && x.assignmentId !== a.id)
+    .sort((x, y) => new Date(y.markedAt!).getTime() - new Date(x.markedAt!).getTime())
+    .map((x) => ({ sub: x, a: db.assignments.find((y) => y.id === x.assignmentId)! }))
+    .find((x) => x.a);
   const [replacing, setReplacing] = useState(false);
   const msLeft = new Date(a.dueAt).getTime() - now;
 
@@ -269,7 +274,12 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
         </div>
       )}
 
-      {/* not submitted → upload */}
+      {/* not submitted → last feedback's next steps, then upload */}
+      {!sub && last && (
+        <div className="mt-6">
+          <LastTargets items={last.sub.improvements ?? []} reflection={last.sub.reflection} title={`From “${last.a.title}”, returned ${fmtDate(last.sub.markedAt!)}`} />
+        </div>
+      )}
       {!sub && (
         <div className="mt-6">
           <Label>Hand in your work</Label>
@@ -349,7 +359,7 @@ function Assignments() {
                   </Td>
                   <Td>
                     {sub?.status === "marked" ? (
-                      <Status tone="done">Graded</Status>
+                      sub.seenAt ? <Status tone="done">Graded</Status> : <Status tone="attention">New feedback</Status>
                     ) : sub ? (
                       <Status>Submitted {fmtRelative(sub.submittedAt, now)}</Status>
                     ) : ms < 0 ? (
@@ -361,7 +371,9 @@ function Assignments() {
                     )}
                   </Td>
                   <Td align="right" className="whitespace-nowrap font-semibold tabular-nums text-navy">
-                    {sub?.status === "marked" ? (
+                    {sub?.status === "marked" && !sub.seenAt ? (
+                      <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">Read feedback</span>
+                    ) : sub?.status === "marked" ? (
                       <>
                         {sub.marks}
                         <span className="font-normal text-navy"> / {a.maxMarks}</span>

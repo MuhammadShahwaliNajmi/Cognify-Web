@@ -109,6 +109,9 @@ export type Snapshot = {
     strengths: string[] | null;
     improvements: string[] | null;
     marked_at: string | null;
+    seen_at?: string | null;
+    reflection?: string | null;
+    feedback_files?: { id: Id; name: string; mime: string | null; size: number | null }[];
   }[];
   announcements: { id: Id; cohort_id: Id | null; title: string; body: string; created_at: string }[];
   mastery: { member_id: Id; unit: string; strand: Strand; score: number; fix: string }[];
@@ -198,6 +201,9 @@ export function toPortal(all: Snapshot): Portal {
       strengths: marked ? s.strengths ?? [] : undefined,
       improvements: marked ? s.improvements ?? [] : undefined,
       markedAt: s.marked_at ?? undefined,
+      seenAt: s.seen_at ?? undefined,
+      reflection: s.reflection ?? undefined,
+      feedbackFiles: (s.feedback_files ?? []).map((f) => ({ id: id(f.id), name: f.name, mimeType: f.mime ?? undefined, sizeBytes: f.size ?? undefined })),
     };
   });
 

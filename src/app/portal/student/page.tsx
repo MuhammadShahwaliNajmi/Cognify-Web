@@ -127,7 +127,7 @@ export default function StudentDashboard() {
                     <li key={x.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                       <span className="truncate text-sm text-navy">{a.title}</span>
                       <span className="shrink-0 text-sm font-bold tabular-nums text-navy">
-                        {x.marks}/{a.maxMarks}
+                        {x.seenAt ? `${x.marks}/${a.maxMarks}` : "New feedback"}
                       </span>
                     </li>
                   );

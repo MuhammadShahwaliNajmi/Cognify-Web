@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, Download, ExternalLink, FileText, TrendingUp } from "lucide-react";
+import { CheckCircle2, Download, ExternalLink, Eye, FileText, Paperclip, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase/client";
 import { fileLink, previewKind } from "@/lib/portal/storage";
 import { usePortal } from "@/lib/portal/store";
-import { fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
-import type { Assignment, Submission } from "@/lib/portal/types";
-import { Btn, Label } from "./ui";
+import { fmtBytes, fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
+import type { Assignment, FeedbackFile, Submission } from "@/lib/portal/types";
+import { AutoTextarea, Btn, Label } from "./ui";
 import { Ring } from "./charts";
+
+/* ------------------------------------------------------------------ */
+/* Files, shown inside the portal                                       */
+/* ------------------------------------------------------------------ */
 
 /** Signed link to a handed-in file (stored file, or the older built-in bucket). */
 async function workLink(sub: Submission, download = false) {
@@ -21,37 +25,40 @@ async function workLink(sub: Submission, download = false) {
   return data.signedUrl;
 }
 
+export const hasFile = (sub: Submission) => !!(sub.driveFileId || sub.filePath);
+
 /** A feedback point without a typed bullet ("- ", "• ", "1. ") — the page adds its own. */
 export const cleanPoint = (s: string) => s.trim().replace(/^([-–—•*·]|\d+[.)])\s+/, "").trim();
 
-export const hasFile = (sub: Submission) => !!(sub.driveFileId || sub.filePath);
+type FileLike = { key: string; name: string; size?: string; mime?: string; link: (download: boolean) => Promise<string> };
 
-/** The handed-in work, shown right here: PDFs and photos open in place; other files download. */
-export function WorkFile({ sub, className, fill }: { sub: Submission; className?: string; fill?: boolean }) {
+/** Any stored file: PDFs and photos open in place; other files download. */
+export function FileView({ file, className, fill }: { file: FileLike; className?: string; fill?: boolean }) {
   const { toast } = usePortal();
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const kind = previewKind(sub.mimeType, sub.fileName);
+  const kind = previewKind(file.mime, file.name);
   const viewable = kind === "pdf" || kind === "image";
 
   useEffect(() => {
     setUrl(null);
     setFailed(false);
-    if (!hasFile(sub) || !viewable) return;
+    if (!viewable) return;
     let live = true;
-    workLink(sub)
+    file
+      .link(false)
       .then((u) => live && setUrl(u))
       .catch(() => live && setFailed(true));
     return () => {
       live = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sub.id, sub.driveFileId, sub.filePath]);
+  }, [file.key]);
 
   const go = async (download: boolean) => {
     const tab = download ? null : window.open("", "_blank");
     try {
-      const u = download ? await workLink(sub, true) : url ?? (await workLink(sub));
+      const u = download ? await file.link(true) : url ?? (await file.link(false));
       if (tab) tab.location.href = u;
       else window.location.href = u;
     } catch (e) {
@@ -60,15 +67,13 @@ export function WorkFile({ sub, className, fill }: { sub: Submission; className?
     }
   };
 
-  if (!hasFile(sub)) return null;
   const frame = fill ? "h-full min-h-[60vh]" : "h-[70vh]";
-
   return (
     <div className={cn("flex flex-col overflow-hidden rounded-2xl border border-navy/12 bg-white", fill && "h-full", className)}>
       <div className="flex flex-wrap items-center gap-2 border-b border-navy/10 bg-navy/[0.03] px-3 py-2">
         <FileText size={15} className="shrink-0 text-navy" />
-        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-navy">{sub.fileName || "Handed-in file"}</span>
-        {sub.fileSize && <span className="text-xs text-navy">{sub.fileSize}</span>}
+        <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-navy">{file.name || "File"}</span>
+        {file.size && <span className="text-xs text-navy">{file.size}</span>}
         {viewable && (
           <Btn variant="ghost" size="sm" onClick={() => go(false)}>
             <ExternalLink size={13} /> New tab
@@ -87,11 +92,11 @@ export function WorkFile({ sub, className, fill }: { sub: Submission; className?
             <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
           </div>
         ) : kind === "pdf" ? (
-          <iframe src={url} title={sub.fileName || "Handed-in work"} className={cn("w-full flex-1 bg-white", frame)} />
+          <iframe src={url} title={file.name} className={cn("w-full flex-1 bg-white", frame)} />
         ) : (
           <div className={cn("overflow-auto bg-navy/[0.03] p-2", frame)}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt={sub.fileName || "Handed-in work"} className="mx-auto max-w-full rounded-lg" />
+            <img src={url} alt={file.name} className="mx-auto max-w-full rounded-lg" />
           </div>
         )
       ) : (
@@ -99,7 +104,7 @@ export function WorkFile({ sub, className, fill }: { sub: Submission; className?
           <span className="grid h-14 w-14 place-items-center rounded-full bg-navy-deep text-gold">
             <FileText size={22} />
           </span>
-          <p className="mt-4 text-[15px] font-semibold text-navy">{sub.fileName}</p>
+          <p className="mt-4 text-[15px] font-semibold text-navy">{file.name}</p>
           <p className="mt-1 text-sm text-navy">This type of file opens in Word or a similar app.</p>
           <Btn variant="navy" className="mt-4" onClick={() => go(true)}>
             <Download size={14} /> Download to open
@@ -108,6 +113,27 @@ export function WorkFile({ sub, className, fill }: { sub: Submission; className?
       )}
     </div>
   );
+}
+
+const workFile = (sub: Submission): FileLike => ({
+  key: `w${sub.id}-${sub.driveFileId ?? sub.filePath}`,
+  name: sub.fileName || "Handed-in work",
+  size: sub.fileSize || undefined,
+  mime: sub.mimeType,
+  link: (d) => workLink(sub, d),
+});
+const feedbackFile = (f: FeedbackFile): FileLike => ({
+  key: `f${f.id}`,
+  name: f.name,
+  size: f.sizeBytes ? fmtBytes(f.sizeBytes) : undefined,
+  mime: f.mimeType,
+  link: (d) => fileLink("feedback", f.id, d),
+});
+
+/** The handed-in work, shown right here. */
+export function WorkFile({ sub, className, fill }: { sub: Submission; className?: string; fill?: boolean }) {
+  if (!hasFile(sub)) return null;
+  return <FileView file={workFile(sub)} className={className} fill={fill} />;
 }
 
 /** A typed answer (timed assessments), as a page. */
@@ -120,25 +146,162 @@ export function TypedAnswer({ text, title = "Typed answer", className }: { text:
   );
 }
 
-/** Returned work: the score and the teacher's feedback, laid out to read. */
-export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission; now: number }) {
+/** Returned files and the handed-in work as tabs over one viewer (the marked copy first). */
+export function WorkAndFeedbackFiles({ sub, student, className }: { sub: Submission; student?: boolean; className?: string }) {
+  const workLabel = student ? "Your work" : "Their work";
+  const tabs = [
+    ...sub.feedbackFiles.map((f, i) => ({
+      id: `f${f.id}`,
+      label: sub.feedbackFiles.length > 1 ? `Feedback file ${i + 1}` : "Marked copy",
+      file: feedbackFile(f),
+    })),
+    ...(hasFile(sub) ? [{ id: "work", label: workLabel, file: workFile(sub) }] : []),
+  ];
+  // students open on the marked copy; teachers on the work they're marking
+  const [on, setOn] = useState(student ? tabs[0]?.id : tabs.find((t) => t.id === "work")?.id ?? tabs[0]?.id);
+  const current = tabs.find((t) => t.id === on) ?? tabs[0];
+
+  return (
+    <div className={cn("flex min-h-0 flex-col gap-3", className)}>
+      {tabs.length > 1 && (
+        <div role="tablist" className="flex flex-wrap gap-2">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              role="tab"
+              aria-selected={current?.id === t.id}
+              onClick={() => setOn(t.id)}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
+                current?.id === t.id ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"
+              )}
+            >
+              {t.id !== "work" && <Paperclip size={12} />}
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {current && <FileView key={current.id} file={current.file} fill className="md:min-h-0 md:flex-1" />}
+      {sub.answerText && <TypedAnswer text={sub.answerText} title={student ? "Your answer" : "Typed answer"} />}
+      {!current && !sub.answerText && (
+        <p className="rounded-2xl bg-navy/[0.04] p-8 text-center text-[15px] text-navy">No file was attached to this submission.</p>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Returned work, for the student                                       */
+/*   Students skip comments when the mark is shown first, so the        */
+/*   comments come first and the score shows once they've read them;    */
+/*   then they set their own next step (feedback → action).              */
+/* ------------------------------------------------------------------ */
+
+function Points({ title, items, icon, tone }: { title: string; items: string[]; icon: "check" | "up"; tone: "plain" | "gold" }) {
+  const list = items.map(cleanPoint).filter(Boolean);
+  if (!list.length) return null;
+  return (
+    <div className={cn("rounded-2xl p-5", tone === "gold" ? "border-l-[3px] border-gold bg-gold/10" : "border border-navy/12")}>
+      <Label>{title}</Label>
+      <ul className="mt-3 flex flex-col gap-2.5">
+        {list.map((s) => (
+          <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
+            {icon === "check" ? <CheckCircle2 size={16} className="mt-1 shrink-0 text-navy" /> : <TrendingUp size={16} className="mt-1 shrink-0 text-navy" />}
+            {s}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ScoreCard({ a, sub, now }: { a: Assignment; sub: Submission; now: number }) {
   const pct = Math.round(((sub.marks ?? 0) / a.maxMarks) * 100);
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-5 rounded-2xl bg-navy-deep p-5">
-        <div className="shrink-0 rounded-full bg-white p-1">
-          <Ring value={sub.marks ?? 0} max={a.maxMarks} size={84} />
-        </div>
-        <div className="min-w-0">
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">Score</p>
-          <p className="mt-1 text-[2rem] font-bold leading-none tabular-nums text-white">
-            {sub.marks} <span className="text-xl font-semibold text-white/75">/ {a.maxMarks}</span>
-          </p>
-          <p className="mt-1.5 text-sm text-white/85">
-            {pct}% · returned {sub.markedAt ? fmtRelative(sub.markedAt, now) : ""}
-          </p>
-        </div>
+    <div className="flex items-center gap-5 rounded-2xl bg-navy-deep p-5">
+      <div className="shrink-0 rounded-full bg-white p-1">
+        <Ring value={sub.marks ?? 0} max={a.maxMarks} size={84} />
       </div>
+      <div className="min-w-0">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">Score</p>
+        <p className="mt-1 text-[2rem] font-bold leading-none tabular-nums text-white">
+          {sub.marks} <span className="text-xl font-semibold text-white/75">/ {a.maxMarks}</span>
+        </p>
+        <p className="mt-1.5 text-sm text-white/85">
+          {pct}% · returned {sub.markedAt ? fmtRelative(sub.markedAt, now) : ""}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NextStep({ sub }: { sub: Submission }) {
+  const { acknowledgeFeedback, toast } = usePortal();
+  const [editing, setEditing] = useState(!sub.reflection);
+  const [text, setText] = useState(sub.reflection ?? "");
+  const [busy, setBusy] = useState(false);
+
+  if (!editing && sub.reflection)
+    return (
+      <div className="rounded-2xl bg-navy/[0.04] p-5">
+        <div className="flex items-center justify-between gap-3">
+          <Label>My next step</Label>
+          <Btn variant="ghost" size="sm" onClick={() => setEditing(true)}>
+            Edit
+          </Btn>
+        </div>
+        <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{sub.reflection}</p>
+      </div>
+    );
+
+  return (
+    <div className="rounded-2xl bg-navy/[0.04] p-5">
+      <Label>My next step</Label>
+      <p className="mt-1.5 text-[15px] font-medium text-navy">What will you do differently in your next piece of work?</p>
+      <AutoTextarea value={text} onChange={(e) => setText(e.target.value.slice(0, 1000))} minRows={2} placeholder="e.g. Use the PED formula with numbers in my next answer" />
+      <div className="mt-3 flex gap-2.5">
+        <Btn
+          variant="navy"
+          size="sm"
+          disabled={!text.trim() || busy}
+          onClick={async () => {
+            setBusy(true);
+            const ok = await acknowledgeFeedback(sub.id, text);
+            setBusy(false);
+            if (!ok) return;
+            toast("Next step saved. Your teacher can see it.");
+            setEditing(false);
+          }}
+        >
+          {busy ? "Saving…" : "Save my next step"}
+        </Btn>
+        {sub.reflection && (
+          <Btn variant="ghost" size="sm" onClick={() => setEditing(false)}>
+            Cancel
+          </Btn>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Returned work for the student: comments → strengths → next steps → score → their own next step. */
+export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission; now: number }) {
+  const { acknowledgeFeedback } = usePortal();
+  const [busy, setBusy] = useState(false);
+  const read = !!sub.seenAt;
+
+  return (
+    <div className="space-y-4">
+      {read ? (
+        <ScoreCard a={a} sub={sub} now={now} />
+      ) : (
+        <p className="rounded-2xl border-l-[3px] border-gold bg-gold/10 px-5 py-3.5 text-[15px] font-semibold text-navy">
+          New feedback. Read it first, then see your score.
+        </p>
+      )}
 
       {sub.feedback && (
         <div className="rounded-2xl border border-navy/12 p-5">
@@ -146,39 +309,62 @@ export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission;
           <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{sub.feedback}</p>
         </div>
       )}
+      <Points title="What you did well" items={sub.strengths ?? []} icon="check" tone="plain" />
+      <Points title="To gain more marks" items={sub.improvements ?? []} icon="up" tone="gold" />
 
-      {!!sub.strengths?.length && (
-        <div className="rounded-2xl border border-navy/12 p-5">
-          <Label>What you did well</Label>
-          <ul className="mt-3 flex flex-col gap-2.5">
-            {sub.strengths.map(cleanPoint).filter(Boolean).map((s) => (
-              <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
-                <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-gold" />
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {sub.feedbackFiles.length > 0 && (
+        <p className="flex items-center gap-2 text-[13px] font-medium text-navy">
+          <Paperclip size={14} className="shrink-0" />
+          {sub.feedbackFiles.length === 1 ? "Your teacher returned a marked copy." : `Your teacher returned ${sub.feedbackFiles.length} files.`} Open it beside your work.
+        </p>
       )}
 
-      {!!sub.improvements?.length && (
-        <div className="rounded-2xl border-l-[3px] border-gold bg-gold/10 p-5">
-          <Label>To gain more marks</Label>
-          <ul className="mt-3 flex flex-col gap-2.5">
-            {sub.improvements.map(cleanPoint).filter(Boolean).map((s) => (
-              <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
-                <TrendingUp size={16} className="mt-0.5 shrink-0 text-navy" />
-                {s}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {!read ? (
+        <Btn
+          variant="navy"
+          size="lg"
+          className="w-full"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            await acknowledgeFeedback(sub.id);
+            setBusy(false);
+          }}
+        >
+          <Eye size={16} />
+          {busy ? "Opening…" : "I've read my feedback · show my score"}
+        </Btn>
+      ) : (
+        <NextStep key={sub.reflection ?? ""} sub={sub} />
       )}
 
       <p className="text-[13px] text-navy">
         Handed in {fmtDate(sub.submittedAt)}, {fmtTime(sub.submittedAt)}
         {sub.markedAt ? ` · returned ${fmtDate(sub.markedAt)}, ${fmtTime(sub.markedAt)}` : ""}
       </p>
+    </div>
+  );
+}
+
+/** The last feedback's next steps, shown when starting new work (feed-forward). */
+export function LastTargets({ items, reflection, title }: { items: string[]; reflection?: string; title: string }) {
+  const list = items.map(cleanPoint).filter(Boolean);
+  if (!list.length && !reflection) return null;
+  return (
+    <div className="rounded-2xl border-l-[3px] border-gold bg-gold/10 p-5">
+      <Label>Remember from your last feedback</Label>
+      <p className="mt-1 text-[13px] text-navy">{title}</p>
+      {list.length > 0 && (
+        <ul className="mt-3 flex flex-col gap-2">
+          {list.map((s) => (
+            <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
+              <TrendingUp size={16} className="mt-1 shrink-0 text-navy" />
+              {s}
+            </li>
+          ))}
+        </ul>
+      )}
+      {reflection && <p className="mt-3 text-[15px] italic leading-relaxed text-navy">Your next step: &ldquo;{reflection}&rdquo;</p>}
     </div>
   );
 }

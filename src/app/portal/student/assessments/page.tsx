@@ -11,7 +11,7 @@ import { fmtBytes, fmtClock, fmtDate, fmtDateLong, fmtRelative, fmtTime, MB } fr
 import type { Assignment } from "@/lib/portal/types";
 import { Btn, EmptyRow, Label, Modal, PageHeader, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { useTick } from "@/components/portal/classroom";
-import { FeedbackPanel, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
+import { FeedbackPanel, WorkAndFeedbackFiles } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
   upcoming: "Not started",
@@ -216,8 +216,7 @@ function Room({ a }: { a: Assignment }) {
           {state === "time-up" && <p className="text-[15px] text-navy">The time ran out before anything was submitted.</p>}
 
           {sub?.status === "marked" && <FeedbackPanel a={a} sub={sub} now={now} />}
-          {sub?.answerText && <TypedAnswer text={sub.answerText} title="Your answer" />}
-          {sub && hasFile(sub) && <WorkFile sub={sub} className="[&_iframe]:h-[60vh]" />}
+          {sub && <WorkAndFeedbackFiles key={sub.feedbackFiles.map((f) => f.id).join()} sub={sub} student className="[&_iframe]:h-[60vh]" />}
         </div>
       )}
 
@@ -295,7 +294,9 @@ function Assessments() {
                 <Status tone={tone(state)}>{STATE_LABEL[state]}</Status>
               </Td>
               <Td align="right" className="whitespace-nowrap tabular-nums">
-                {sub?.status === "marked" ? (
+                {sub?.status === "marked" && !sub.seenAt ? (
+                  <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">New feedback</span>
+                ) : sub?.status === "marked" ? (
                   <span className="font-semibold">
                     {sub.marks} / {a.maxMarks}
                   </span>
