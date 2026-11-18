@@ -20,11 +20,14 @@ export type CalEvent = {
 
 type View = "day" | "week" | "month";
 
-const HOUR_PX = 48;
+/** Teaching hours shown on the grid: 9 AM to midnight (stretches earlier only if something starts before 9). */
+const DAY_FROM = 9;
+const DAY_TO = 24;
+/** Hour height limits; in between, the grid is sized to fit the screen. */
+const MIN_HOUR_PX = 26;
+const MAX_HOUR_PX = 56;
 /** Deadlines take this much room on the grid so they stay readable. */
 const DUE_MIN = 30;
-/** The grid opens scrolled to this hour, or earlier if something starts before it. */
-const OPEN_AT = 8;
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 /** Monday 00:00 of the week containing `d`. */
@@ -54,10 +57,10 @@ const eventsOn = (events: CalEvent[], d: Date) =>
 type Placed = { e: CalEvent; top: number; height: number; col: number; cols: number };
 
 /** Side-by-side columns for things that overlap, like Google Calendar. */
-function layoutDay(events: CalEvent[]): Placed[] {
+function layoutDay(events: CalEvent[], fromMin: number, hourPx: number): Placed[] {
   const items = events
     .map((e) => {
-      const s = minutesIntoDay(new Date(e.start));
+      const s = Math.max(minutesIntoDay(new Date(e.start)), fromMin);
       return { e, s, end: Math.min(Math.max(s + lengthOf(e), s + 15), 24 * 60) };
     })
     .sort((a, b) => a.s - b.s || b.end - a.end);
@@ -70,8 +73,8 @@ function layoutDay(events: CalEvent[]): Placed[] {
     for (const { item, col } of cluster)
       out.push({
         e: item.e,
-        top: (item.s / 60) * HOUR_PX,
-        height: Math.max(((item.end - item.s) / 60) * HOUR_PX - 2, 18),
+        top: ((item.s - fromMin) / 60) * hourPx,
+        height: Math.max(((item.end - item.s) / 60) * hourPx - 2, 16),
         col,
         cols: colEnds.length,
       });
@@ -184,14 +187,14 @@ export function WeekCalendar({ events }: { events: CalEvent[] }) {
 function DayHeading({ d, today, onClick, big }: { d: Date; today: Date; onClick: () => void; big?: boolean }) {
   const isToday = sameDay(d, today);
   return (
-    <button type="button" onClick={onClick} className="group flex w-full flex-col items-center gap-1 py-2 focus-gold">
+    <button type="button" onClick={onClick} className="group flex w-full flex-col items-center gap-0.5 py-1.5 focus-gold">
       <span className={cn("text-[11px] font-semibold uppercase tracking-[0.1em]", "text-navy")}>
         {d.toLocaleDateString([], { weekday: "short" })}
       </span>
       <span
         className={cn(
           "grid place-items-center rounded-full font-semibold tabular-nums transition-colors",
-          big ? "h-11 w-11 text-[22px]" : "h-10 w-10 text-[20px]",
+          big ? "h-10 w-10 text-[20px]" : "h-8 w-8 text-[17px]",
           isToday ? "bg-navy text-white" : "text-navy group-hover:bg-navy/[0.06]"
         )}
       >
@@ -212,32 +215,37 @@ function TimeGrid({
   today: Date;
   onPickDay: (d: Date) => void;
 }) {
-  const scroller = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
   const byDay = days.map((d) => eventsOn(events, d));
-  const starts = byDay.flat().map((e) => minutesIntoDay(new Date(e.start)) / 60);
-  const first = starts.length ? Math.min(...starts) : null;
-  const key = days.map((d) => d.toDateString()).join();
+  const starts = byDay.flat().map((e) => Math.floor(minutesIntoDay(new Date(e.start)) / 60));
+  const fromH = Math.min(DAY_FROM, ...starts);
+  const hours = DAY_TO - fromH;
+  const fromMin = fromH * 60;
 
-  // open at the morning, or wherever the first class is if it would be out of sight
+  // size the hours so 9 AM – midnight fits on screen without scrolling
+  const [hourPx, setHourPx] = useState(36);
   useEffect(() => {
-    const el = scroller.current;
-    if (!el) return;
-    const visibleHours = el.clientHeight / HOUR_PX - 1.5;
-    let at = OPEN_AT;
-    if (first !== null && first < OPEN_AT) at = first - 0.5;
-    else if (first !== null && first + 2 > OPEN_AT + visibleHours) at = first - 1;
-    el.scrollTop = Math.max(0, at) * HOUR_PX;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+    const fit = () => {
+      const el = body.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      const room = window.innerHeight - top - 24;
+      setHourPx(Math.min(MAX_HOUR_PX, Math.max(MIN_HOUR_PX, room / hours)));
+    };
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [hours]);
 
   const cols = `3.5rem repeat(${days.length}, minmax(0, 1fr))`;
-  const nowTop = (minutesIntoDay(today) / 60) * HOUR_PX;
+  const nowMin = minutesIntoDay(today);
+  const nowTop = nowMin >= fromMin ? ((nowMin - fromMin) / 60) * hourPx : null;
   const single = days.length === 1;
 
   return (
     <div className="overflow-hidden rounded-xl border border-navy/12 bg-white">
-      <div ref={scroller} className="max-h-[calc(100vh-16rem)] min-h-[26rem] overflow-y-auto">
-        <div className="sticky top-0 z-30 grid border-b border-navy/12 bg-white" style={{ gridTemplateColumns: cols }}>
+      <div>
+        <div className="grid border-b border-navy/12 bg-white" style={{ gridTemplateColumns: cols }}>
           <div />
           {days.map((d, i) => (
             <div key={i} className={cn(!single && "border-l border-navy/12", single && "flex justify-start pl-2")}>
@@ -248,13 +256,13 @@ function TimeGrid({
           ))}
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: cols }}>
-          <div className="relative" style={{ height: 24 * HOUR_PX }}>
-            {Array.from({ length: 23 }, (_, i) => i + 1).map((h) => (
+        <div ref={body} className="grid" style={{ gridTemplateColumns: cols }}>
+          <div className="relative" style={{ height: hours * hourPx }}>
+            {Array.from({ length: hours }, (_, i) => fromH + i).map((h, i) => (
               <span
                 key={h}
-                className="absolute right-2 -translate-y-1/2 text-[11px] font-medium tabular-nums text-navy"
-                style={{ top: h * HOUR_PX }}
+                className={cn("absolute right-2 text-[11px] font-medium tabular-nums leading-none text-navy", i === 0 ? "top-0.5" : "-translate-y-1/2")}
+                style={i === 0 ? undefined : { top: i * hourPx }}
               >
                 {hourLabel(h)}
               </span>
@@ -268,13 +276,13 @@ function TimeGrid({
                 key={i}
                 className="relative border-l border-navy/12"
                 style={{
-                  height: 24 * HOUR_PX,
+                  height: hours * hourPx,
                   backgroundImage: "linear-gradient(to bottom, rgba(26,39,68,0.09) 1px, transparent 1px)",
-                  backgroundSize: `100% ${HOUR_PX}px`,
+                  backgroundSize: `100% ${hourPx}px`,
                 }}
               >
-                {layoutDay(byDay[i]).map(({ e, top, height, col, cols: n }) => {
-                  const compact = height < 40;
+                {layoutDay(byDay[i], fromMin, hourPx).map(({ e, top, height, col, cols: n }) => {
+                  const compact = height < 38;
                   const cls = e.kind === "class";
                   return (
                     <button
@@ -325,8 +333,8 @@ function TimeGrid({
                   );
                 })}
 
-                {isToday && (
-                  <div className="pointer-events-none absolute inset-x-0 z-20" style={{ top: nowTop }}>
+                {isToday && nowTop !== null && (
+                  <div className="pointer-events-none absolute inset-x-0 z-0" style={{ top: nowTop }}>
                     <div className="relative h-[2px] bg-gold">
                       <span className="absolute -left-[6px] -top-[5px] h-3 w-3 rounded-full bg-gold" />
                     </div>
