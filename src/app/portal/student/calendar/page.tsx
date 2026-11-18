@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { topicOf, workHref } from "@/lib/portal/selectors";
+import { projectSeries } from "@/lib/portal/series";
 import { useStudent } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
+import type { Session } from "@/lib/portal/types";
 import { PageHeader } from "@/components/portal/ui";
 import { NextClassCard } from "@/components/portal/classroom";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
@@ -13,22 +15,27 @@ import { ClassDialog } from "@/components/portal/class-tools";
 export default function StudentCalendar() {
   const { db, me, now } = useStudent();
   const router = useRouter();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [open, setOpen] = useState<Session | null>(null);
 
   const sessions = db.sessions.filter((s) => s.cohortId === me.cohortId);
   const next = sessions.find((s) => sessionState(s.start, s.durationMin, now) !== "ended");
 
-  const events: CalEvent[] = [
-    ...sessions.map((s) => ({
+  const toEvent = useCallback(
+    (s: Session): CalEvent => ({
       id: `s${s.id}`,
       start: s.start,
       durationMin: s.durationMin,
       title: s.title,
       sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Change requested" : topicOf(s) || `${s.durationMin} min`,
-      kind: "class" as const,
+      kind: "class",
       live: sessionState(s.start, s.durationMin, now) === "live",
-      onClick: () => setOpenId(s.id),
-    })),
+      onClick: () => setOpen(s),
+    }),
+    [db.requests, now]
+  );
+
+  const events: CalEvent[] = [
+    ...sessions.map(toEvent),
     ...db.assignments
       .filter((a) => a.cohortId === me.cohortId)
       .map((a) => ({
@@ -40,6 +47,12 @@ export default function StudentCalendar() {
         onClick: () => router.push(workHref(a)),
       })),
   ];
+  // repeating classes run on until stopped: draw the ones beyond what's stored
+  const extra = useCallback(
+    (from: Date, to: Date) => projectSeries(db, from, to).filter((s) => s.cohortId === me.cohortId).map(toEvent),
+    [db, me.cohortId, toEvent]
+  );
+  const shown = useMemo(() => (open && !open.virtual ? sessions.find((s) => s.id === open.id) ?? null : open), [open, sessions]);
 
   return (
     <>
@@ -49,8 +62,8 @@ export default function StudentCalendar() {
           <NextClassCard session={next} />
         </div>
       )}
-      <WeekCalendar events={events} />
-      <ClassDialog session={sessions.find((s) => s.id === openId) ?? null} onClose={() => setOpenId(null)} />
+      <WeekCalendar events={events} extra={extra} />
+      <ClassDialog session={shown} onClose={() => setOpen(null)} />
     </>
   );
 }

@@ -33,7 +33,19 @@ export type Snapshot = {
     teacher_id: Id | null;
     archived_at: string | null;
   }[];
-  timetable: { cohort_id: Id; weekday: number; start_time: string; duration_min: number }[];
+  timetable: {
+    cohort_id: Id;
+    weekday: number;
+    start_time: string;
+    duration_min: number;
+    id?: Id;
+    series_id?: string;
+    title?: string | null;
+    unit?: string | null;
+    starts_on?: string | null;
+    ends_on?: string | null;
+    every_weeks?: number;
+  }[];
   sessions: {
     id: Id;
     cohort_id: Id;
@@ -226,6 +238,13 @@ export function toPortal(all: Snapshot): Portal {
         weekday: t.weekday,
         start: t.start_time.slice(0, 5),
         durationMin: t.duration_min,
+        id: t.id === undefined ? undefined : id(t.id),
+        seriesId: t.series_id,
+        title: t.title ?? null,
+        unit: t.unit ?? null,
+        startsOn: t.starts_on ?? null,
+        endsOn: t.ends_on ?? null,
+        everyWeeks: t.every_weeks ?? 1,
       })),
       sessions: snap.sessions.map((s) => ({
         id: id(s.id),

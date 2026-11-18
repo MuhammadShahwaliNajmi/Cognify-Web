@@ -7,7 +7,7 @@ import { loadPortal, toPortal, type Portal } from "./data";
 import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
 import { cohortOf } from "./selectors";
 import { StorageError, fileLink, trashResource, uploadFile } from "./storage";
-import type { Assignment, Auth, DB, Resource, Session, Student, Submission, Teacher } from "./types";
+import type { Assignment, Auth, DB, Resource, SeriesInput, Session, Student, Submission, Teacher } from "./types";
 import { EMPTY_DB } from "./types";
 
 /**
@@ -48,18 +48,16 @@ type Store = {
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
-  /** a repeating class (like Google Calendar): runs on these weekdays from startDate until stopped */
-  addRepeatingClass: (r: {
-    cohortId: string;
-    title: string;
-    unit: string;
-    startDate: string; // yyyy-mm-dd
-    start: string; // HH:MM
-    durationMin: number;
-    weekdays: number[]; // 1 = Monday … 7 = Sunday
-  }) => Promise<boolean>;
-  /** end a repeating series: its upcoming classes go, past ones stay */
-  stopRepeating: (timetableId: string) => Promise<boolean>;
+  /** a repeating class (like Google Calendar): these weekdays, every N weeks, from startDate until endsOn or stopped */
+  addRepeatingClass: (r: { cohortId: string } & SeriesInput) => Promise<boolean>;
+  /** change a series: every class ("all") or from a day on ("following") */
+  updateSeries: (seriesId: string, scope: "all" | "following", from: string | null, r: SeriesInput) => Promise<boolean>;
+  /** stop a series: all upcoming classes (from = null) or from a day on; past ones stay */
+  endSeries: (seriesId: string, from: string | null) => Promise<boolean>;
+  /** this class only: new name / topic (it stops following the series' name) */
+  editSession: (sessionId: string, p: { title: string; unit: string }) => Promise<boolean>;
+  /** remove a one-off class without telling anyone (used when it becomes a series) */
+  deleteSession: (sessionId: string) => Promise<boolean>;
   /** move an upcoming class (timetable classes are moved as a one-off; the weekly slot stays) */
   rescheduleSession: (sessionId: string, start: string, durationMin: number) => Promise<boolean>;
   /** cancel an upcoming class (it disappears from calendars; a timetable slot won't come back) */
@@ -329,20 +327,39 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       regenerateCode: (cohortId) => run("Creating a new code", (api) => api.rpc("regenerate_join_code", { p_cohort_id: num(cohortId) })),
       addRepeatingClass: (r) =>
         run("Adding the repeating class", (api) =>
-          api.from("timetable").upsert(
-            r.weekdays.map((weekday) => ({
-              cohort_id: num(r.cohortId),
-              weekday,
-              start_time: r.start,
-              duration_min: r.durationMin,
-              title: r.title,
-              unit: r.unit || null,
-              starts_on: r.startDate,
-            })),
-            { onConflict: "cohort_id,weekday,start_time" }
-          )
+          api.rpc("create_series", {
+            p_cohort: num(r.cohortId),
+            p_title: r.title,
+            p_unit: r.unit,
+            p_starts_on: r.startDate,
+            p_start: r.start,
+            p_duration: r.durationMin,
+            p_weekdays: r.weekdays,
+            p_every: r.everyWeeks,
+            p_ends_on: r.endsOn,
+          })
         ),
-      stopRepeating: (timetableId) => run("Stopping the series", (api) => api.rpc("stop_series", { p_timetable: num(timetableId) })),
+      updateSeries: (seriesId, scope, from, r) =>
+        run("Saving the repeating class", (api) =>
+          api.rpc("update_series", {
+            p_series: seriesId,
+            p_scope: scope,
+            p_from: from,
+            p_title: r.title,
+            p_unit: r.unit,
+            p_start: r.start,
+            p_duration: r.durationMin,
+            p_weekdays: r.weekdays,
+            p_every: r.everyWeeks,
+            p_ends_on: r.endsOn,
+          })
+        ),
+      endSeries: (seriesId, from) => run("Cancelling the classes", (api) => api.rpc("end_series", { p_series: seriesId, p_from: from })),
+      editSession: (sessionId, p) =>
+        run("Saving the class", (api) =>
+          api.from("sessions").update({ title: p.title.trim(), unit: p.unit.trim() || null, auto: false }).eq("id", num(sessionId))
+        ),
+      deleteSession: (sessionId) => run("Saving the class", (api) => api.from("sessions").delete().eq("id", num(sessionId))),
       addSession: (s) =>
         run("Scheduling the class", (api) =>
           api.from("sessions").insert({

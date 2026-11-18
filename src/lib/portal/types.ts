@@ -22,7 +22,32 @@ export type Cohort = {
 };
 
 /** One weekly class time; "start" is HH:MM in Pakistan time. */
-export type Slot = { cohortId: string; weekday: number; start: string; durationMin: number };
+export type Slot = {
+  cohortId: string;
+  weekday: number; // 1 = Monday … 7 = Sunday
+  start: string; // HH:MM
+  durationMin: number;
+  /** repeating-class details (rows sharing a seriesId are one series, one row per weekday) */
+  id?: string;
+  seriesId?: string;
+  title?: string | null;
+  unit?: string | null;
+  startsOn?: string | null; // yyyy-mm-dd
+  endsOn?: string | null; // yyyy-mm-dd, last day; null = until stopped
+  everyWeeks?: number;
+};
+
+/** A repeating class's rule, as the forms send it. */
+export type SeriesInput = {
+  title: string;
+  unit: string;
+  startDate: string; // yyyy-mm-dd, the first day
+  start: string; // HH:MM
+  durationMin: number;
+  weekdays: number[]; // 1 = Monday … 7 = Sunday
+  everyWeeks: number;
+  endsOn: string | null; // last day, or null = until stopped
+};
 
 export type Student = {
   id: string;
@@ -54,8 +79,10 @@ export type Session = {
   durationMin: number;
   meetUrl?: string;
   recordingUrl?: string; // Google Drive link once uploaded
-  /** set when the class is part of a repeating series (stop it to end the series) */
+  /** set when the class is part of a repeating series */
   timetableId?: string;
+  /** a class far ahead, drawn from its series' rule (not stored yet) */
+  virtual?: boolean;
   /** memberId → attended */
   attendance: Record<string, boolean>;
 };
