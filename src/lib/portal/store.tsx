@@ -48,6 +48,18 @@ type Store = {
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
+  /** a repeating class (like Google Calendar): runs on these weekdays from startDate until stopped */
+  addRepeatingClass: (r: {
+    cohortId: string;
+    title: string;
+    unit: string;
+    startDate: string; // yyyy-mm-dd
+    start: string; // HH:MM
+    durationMin: number;
+    weekdays: number[]; // 1 = Monday … 7 = Sunday
+  }) => Promise<boolean>;
+  /** end a repeating series: its upcoming classes go, past ones stay */
+  stopRepeating: (timetableId: string) => Promise<boolean>;
   /** move an upcoming class (timetable classes are moved as a one-off; the weekly slot stays) */
   rescheduleSession: (sessionId: string, start: string, durationMin: number) => Promise<boolean>;
   /** cancel an upcoming class (it disappears from calendars; a timetable slot won't come back) */
@@ -315,6 +327,22 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       setCohortMeet: (cohortId, url) =>
         run("Saving the Meet link", (api) => api.from("cohorts").update({ meet_url: url.trim() || null }).eq("id", num(cohortId))),
       regenerateCode: (cohortId) => run("Creating a new code", (api) => api.rpc("regenerate_join_code", { p_cohort_id: num(cohortId) })),
+      addRepeatingClass: (r) =>
+        run("Adding the repeating class", (api) =>
+          api.from("timetable").upsert(
+            r.weekdays.map((weekday) => ({
+              cohort_id: num(r.cohortId),
+              weekday,
+              start_time: r.start,
+              duration_min: r.durationMin,
+              title: r.title,
+              unit: r.unit || null,
+              starts_on: r.startDate,
+            })),
+            { onConflict: "cohort_id,weekday,start_time" }
+          )
+        ),
+      stopRepeating: (timetableId) => run("Stopping the series", (api) => api.rpc("stop_series", { p_timetable: num(timetableId) })),
       addSession: (s) =>
         run("Scheduling the class", (api) =>
           api.from("sessions").insert({

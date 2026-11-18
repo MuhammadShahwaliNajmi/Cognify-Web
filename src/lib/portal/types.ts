@@ -54,6 +54,8 @@ export type Session = {
   durationMin: number;
   meetUrl?: string;
   recordingUrl?: string; // Google Drive link once uploaded
+  /** set when the class is part of a repeating series (stop it to end the series) */
+  timetableId?: string;
   /** memberId → attended */
   attendance: Record<string, boolean>;
 };

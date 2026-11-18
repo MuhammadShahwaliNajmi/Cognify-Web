@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarClock, CalendarPlus, CalendarX, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
+import { CalendarClock, CalendarPlus, CalendarX, Repeat2, Copy, ExternalLink, Pencil, Play, RefreshCw } from "lucide-react";
 import { cohortOf, meetLink, topicOf } from "@/lib/portal/selectors";
 import { usePortal } from "@/lib/portal/store";
 import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
@@ -11,8 +11,13 @@ import { JoinButton, MeetLinkForm, useTick } from "./classroom";
 import { ResourceViewer } from "./resources";
 
 /** Teacher: schedule a one-off class. */
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+type Repeat = "none" | "weekly" | "weekdays" | "daily";
+
 export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name: string }[]; onDone: () => void }) {
-  const { addSession, toast } = usePortal();
+  const { addSession, addRepeatingClass, toast } = usePortal();
+  const [repeat, setRepeat] = useState<Repeat>("none");
+  const [busy, setBusy] = useState(false);
   const [f, setF] = useState({
     cohortId: cohorts[0]?.id ?? "",
     title: "Economics class",
@@ -23,7 +28,11 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
   });
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const length = minutesBetween(f.time, f.end);
-  const ok = f.cohortId && f.title.trim() && f.unit.trim() && f.date && f.time && classLengthOk(length);
+  // ISO weekday of the chosen date: 1 = Monday … 7 = Sunday
+  const isoDay = f.date ? ((new Date(`${f.date}T12:00`).getDay() + 6) % 7) + 1 : 1;
+  const weekdays = repeat === "weekly" ? [isoDay] : repeat === "weekdays" ? [1, 2, 3, 4, 5] : repeat === "daily" ? [1, 2, 3, 4, 5, 6, 7] : [];
+  // a one-off class needs its topic; a repeating one may leave it to each class
+  const ok = f.cohortId && f.title.trim() && (repeat !== "none" || f.unit.trim()) && f.date && f.time && classLengthOk(length) && !busy;
 
   return (
     <div className="space-y-5">
@@ -56,26 +65,48 @@ export function ScheduleForm({ cohorts, onDone }: { cohorts: { id: string; name:
         </Field>
       </div>
       {!classLengthOk(length) && <p className="-mt-2 text-xs font-medium text-navy">A class can be 5 minutes to 12 hours long.</p>}
+      <Field label="Repeat">
+        <select value={repeat} onChange={(e) => setRepeat(e.target.value as Repeat)} className={fieldCls}>
+          <option value="none">Does not repeat</option>
+          <option value="weekly">Every week on {DAY_NAMES[isoDay - 1]}</option>
+          <option value="weekdays">Every weekday (Monday to Friday)</option>
+          <option value="daily">Every day</option>
+        </select>
+      </Field>
+      {repeat !== "none" && <p className="-mt-2 text-[13px] text-navy">Repeats from {fmtDateLong(`${f.date}T12:00`)} until you stop it.</p>}
       <Btn
         variant="gold"
         size="lg"
         disabled={!ok}
         onClick={async () => {
-          const saved = await addSession({
-            cohortId: f.cohortId,
-            title: f.title.trim(),
-            strand: null,
-            unit: f.unit.trim(),
-            start: new Date(`${f.date}T${f.time}`).toISOString(),
-            durationMin: length,
-          });
+          setBusy(true);
+          const saved =
+            repeat === "none"
+              ? await addSession({
+                  cohortId: f.cohortId,
+                  title: f.title.trim(),
+                  strand: null,
+                  unit: f.unit.trim(),
+                  start: new Date(`${f.date}T${f.time}`).toISOString(),
+                  durationMin: length,
+                })
+              : await addRepeatingClass({
+                  cohortId: f.cohortId,
+                  title: f.title.trim(),
+                  unit: f.unit.trim(),
+                  startDate: f.date,
+                  start: f.time,
+                  durationMin: length,
+                  weekdays,
+                });
+          setBusy(false);
           if (!saved) return;
-          toast("Class added");
+          toast(repeat === "none" ? "Class added" : "Repeating class added");
           onDone();
         }}
       >
         <CalendarPlus size={16} />
-        Add class
+        {busy ? "Saving…" : repeat === "none" ? "Add class" : "Add repeating class"}
       </Btn>
     </div>
   );
@@ -316,16 +347,18 @@ function RequestCard({ r, teacher }: { r: ClassRequest; teacher: boolean }) {
 
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
-  const { db, auth, toggleAttendance, cancelSession, toast } = usePortal();
+  const { db, auth, toggleAttendance, cancelSession, stopRepeating, toast } = usePortal();
   const now = useTick(30_000);
   const [viewing, setViewing] = useState<Resource | null>(null);
   const [moving, setMoving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [busy, setBusy] = useState(false);
   const teacher = auth?.role === "teacher";
   const close = () => {
     setMoving(false);
     setCancelling(false);
+    setStopping(false);
     onClose();
   };
   // requests on this class: teachers see pending ones; a student sees their latest one
@@ -357,13 +390,14 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             <div className="flex flex-wrap items-center gap-2">
               {teacher && <Status>{s.title}</Status>}
               {topicOf(s) && <Status>{topicOf(s)}</Status>}
+              {s.timetableId && <Status>Repeats</Status>}
               {state === "live" ? <Status tone="attention">Live now</Status> : ended ? <Status tone="done">Ended</Status> : null}
             </div>
 
             {!ended && (
               <div className="flex flex-wrap items-center gap-3">
                 <JoinButton session={s} size="lg" />
-                {teacher && !moving && !cancelling && (
+                {teacher && !moving && !cancelling && !stopping && (
                   <>
                     <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
                       <CalendarClock size={16} />
@@ -373,6 +407,12 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                       <CalendarX size={16} />
                       Cancel class
                     </Btn>
+                    {s.timetableId && (
+                      <Btn variant="ghost" size="lg" onClick={() => setStopping(true)}>
+                        <Repeat2 size={16} />
+                        Stop repeating
+                      </Btn>
+                    )}
                   </>
                 )}
                 {!teacher && !myPending && !moving && !cancelling && (
@@ -413,6 +453,32 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                   {busy ? "Cancelling…" : "Yes, cancel"}
                 </Btn>
                 <Btn variant="ghost" onClick={() => setCancelling(false)}>
+                  Keep
+                </Btn>
+              </div>
+            )}
+
+            {teacher && stopping && s.timetableId && (
+              <div className="flex flex-wrap items-center gap-3 rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+                <div className="flex-1">
+                  <p className="text-[15px] font-semibold text-navy">Stop repeating this class?</p>
+                  <p className="text-sm text-navy">Upcoming classes in this series are removed. Past ones stay.</p>
+                </div>
+                <Btn
+                  variant="navy"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    const ok = await stopRepeating(s.timetableId!);
+                    setBusy(false);
+                    if (!ok) return;
+                    toast("Series stopped");
+                    close();
+                  }}
+                >
+                  {busy ? "Stopping…" : "Stop repeating"}
+                </Btn>
+                <Btn variant="ghost" onClick={() => setStopping(false)}>
                   Keep
                 </Btn>
               </div>
