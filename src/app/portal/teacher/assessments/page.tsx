@@ -10,7 +10,7 @@ import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentSt
 import { DAY, dateInput, fmtDate, fmtDuration, fmtTime, timeInput } from "@/lib/portal/format";
 import type {Assignment, Student } from "@/lib/portal/types";
 import { Btn, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
-import { TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
+import { QuestionPaperField, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
   upcoming: "Not started",
@@ -113,6 +113,7 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
       <Field label="Questions (hidden until the student starts)">
         <textarea value={f.questions} onChange={(e) => set("questions", e.target.value)} rows={6} className={cn(fieldCls, "resize-y")} />
       </Field>
+      {editing && <QuestionPaperField a={editing} label="Question paper (hidden until the student starts)" />}
       {!editing && (
         <Field label="Question paper (optional, hidden until the student starts)">
           <input

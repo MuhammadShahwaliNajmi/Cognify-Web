@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CheckCircle2, Download, ExternalLink, Eye, FileText, Paperclip, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle2, Download, ExternalLink, Eye, FileText, Paperclip, TrendingUp, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getSupabase } from "@/lib/supabase/client";
-import { fileLink, previewKind } from "@/lib/portal/storage";
+import { fileLink, previewKind, uploadFile } from "@/lib/portal/storage";
 import { usePortal } from "@/lib/portal/store";
 import { fmtBytes, fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
 import type { Assignment, FeedbackFile, Submission } from "@/lib/portal/types";
-import { AutoTextarea, Btn, Label } from "./ui";
+import { AutoTextarea, Btn, Label, labelCls } from "./ui";
 import { Ring } from "./charts";
 
 /* ------------------------------------------------------------------ */
@@ -129,6 +129,78 @@ const feedbackFile = (f: FeedbackFile): FileLike => ({
   mime: f.mimeType,
   link: (d) => fileLink("feedback", f.id, d),
 });
+
+/** The question paper attached to an assignment. */
+export const paperFile = (a: Assignment): FileLike => ({
+  key: `a${a.id}-${a.attachmentFileId}`,
+  name: a.attachmentName || "Question paper",
+  mime: a.attachmentMime,
+  link: (d) => fileLink("assignment", a.id, d),
+});
+
+/** Teacher, editing: see the question paper, replace it or remove it (or add one). */
+export function QuestionPaperField({ a, label = "Question paper" }: { a: Assignment; label?: string }) {
+  const { setQuestionPaper, toast } = usePortal();
+  const input = useRef<HTMLInputElement>(null);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const pick = async (file: File | undefined) => {
+    if (!file) return;
+    setProgress(0);
+    try {
+      const up = await uploadFile(file, { purpose: "assignment", cohortId: a.cohortId }, setProgress);
+      const ok = await setQuestionPaper(a.id, { fileId: up.id, name: file.name, mime: up.mimeType || file.type });
+      if (ok) toast(a.attachmentFileId ? "Question paper replaced" : "Question paper attached");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Upload failed");
+    }
+    setProgress(null);
+  };
+
+  return (
+    <div>
+      <span className={labelCls}>{label}</span>
+      <input ref={input} type="file" className="sr-only" onChange={(e) => (pick(e.target.files?.[0]), (e.target.value = ""))} />
+      {a.attachmentFileId ? (
+        <>
+          <FileView file={paperFile(a)} className="mt-2 [&_iframe]:h-[45vh] [&_img]:max-h-[45vh]" />
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            <Btn variant="outline" size="sm" disabled={progress !== null || busy} onClick={() => input.current?.click()}>
+              <Upload size={14} />
+              {progress !== null ? `Uploading… ${Math.round(progress * 100)}%` : "Replace file"}
+            </Btn>
+            <Btn
+              variant="ghost"
+              size="sm"
+              disabled={progress !== null || busy}
+              onClick={async () => {
+                setBusy(true);
+                const ok = await setQuestionPaper(a.id, null);
+                setBusy(false);
+                if (ok) toast("Question paper removed");
+              }}
+            >
+              <X size={14} /> Remove
+            </Btn>
+          </div>
+        </>
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          {a.attachmentUrl && (
+            <a href={a.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
+              Linked paper
+            </a>
+          )}
+          <Btn variant="outline" size="sm" disabled={progress !== null} onClick={() => input.current?.click()}>
+            <Upload size={14} />
+            {progress !== null ? `Uploading… ${Math.round(progress * 100)}%` : "Attach a file"}
+          </Btn>
+        </div>
+      )}
+    </div>
+  );
+}
 
 /** The handed-in work, shown right here. */
 export function WorkFile({ sub, className, fill }: { sub: Submission; className?: string; fill?: boolean }) {

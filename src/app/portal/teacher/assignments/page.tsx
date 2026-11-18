@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
 import type { Assignment, AssignmentKind } from "@/lib/portal/types";
+import { QuestionPaperField } from "@/components/portal/work";
 import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 
 /** Set a new assignment, or change / delete an existing one. */
@@ -71,6 +72,7 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
           <input type="time" value={f.time} onChange={(e) => set("time", e.target.value)} className={fieldCls} />
         </Field>
       </div>
+      {editing && <QuestionPaperField a={editing} />}
       {!editing && (
         <Field label="Question paper (optional)">
           <input
@@ -229,7 +231,12 @@ export default function TeacherAssignments() {
               const due = new Date(a.dueAt).getTime() - now;
               const cells = (
                 <>
-                  <Td className="font-medium text-navy">{a.title}</Td>
+                  <Td className="font-medium text-navy">
+                    <span className="inline-flex items-center gap-1.5">
+                      {a.title}
+                      {(a.attachmentFileId || a.attachmentUrl) && <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />}
+                    </span>
+                  </Td>
                   <Td className="whitespace-nowrap">{a.kind}</Td>
                   <Td className="whitespace-nowrap">
                     {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}

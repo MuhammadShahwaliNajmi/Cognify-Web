@@ -71,6 +71,8 @@ type Store = {
   addAssignment: (a: Omit<Assignment, "id">) => Promise<boolean>;
   /** change an assignment or assessment (a new deadline restarts its reminders) */
   updateAssignment: (id: string, p: Pick<Assignment, "title" | "kind" | "unit" | "brief" | "dueAt" | "maxMarks">) => Promise<boolean>;
+  /** attach, replace (file) or remove (null) an assignment's question paper */
+  setQuestionPaper: (id: string, file: { fileId: string; name: string; mime: string } | null) => Promise<boolean>;
   /** delete an assignment or assessment with its hand-ins and marks */
   deleteAssignment: (id: string) => Promise<boolean>;
   /** open an assignment's question paper in a new tab */
@@ -489,6 +491,17 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           api
             .from("assignments")
             .update({ title: p.title, kind: p.kind, unit: p.unit, brief: p.brief, due_at: p.dueAt, max_marks: p.maxMarks })
+            .eq("id", num(id))
+        ),
+      setQuestionPaper: (id, file) =>
+        run(file ? "Attaching the question paper" : "Removing the question paper", (api) =>
+          api
+            .from("assignments")
+            .update(
+              file
+                ? { attachment_file_id: file.fileId, attachment_name: file.name, attachment_mime: file.mime, attachment_url: null }
+                : { attachment_file_id: null, attachment_name: null, attachment_mime: null, attachment_url: null }
+            )
             .eq("id", num(id))
         ),
       deleteAssignment: (id) => run("Deleting the assignment", (api) => api.from("assignments").delete().eq("id", num(id))),
