@@ -22,6 +22,7 @@ export default function StudentCalendar() {
     ...sessions.map((s) => ({
       id: `s${s.id}`,
       start: s.start,
+      durationMin: s.durationMin,
       title: s.title,
       sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Change requested" : topicOf(s) || `${s.durationMin} min`,
       kind: "class" as const,

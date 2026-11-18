@@ -24,6 +24,7 @@ export default function TeacherCalendar() {
     ...db.sessions.filter(mine).map((s) => ({
       id: `s${s.id}`,
       start: s.start,
+      durationMin: s.durationMin,
       title: cohortOf(db, s.cohortId).name,
       sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Request pending" : topicOf(s) || s.title,
       kind: "class" as const,
