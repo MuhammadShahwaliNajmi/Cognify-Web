@@ -8,8 +8,22 @@ import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
 import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
 import { DAY, dateInput, fmtDate, fmtDuration, fmtTime, timeInput } from "@/lib/portal/format";
-import type {Assignment, Student } from "@/lib/portal/types";
-import { Btn, EmptyRow, Field, Label, Modal, PageHeader, Picker, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import type { Assignment, Student } from "@/lib/portal/types";
+import {
+  Btn,
+  EmptyRow,
+  Field,
+  Label,
+  Modal,
+  MultiPick,
+  PageHeader,
+  Picker,
+  RowLink,
+  Status,
+  Table,
+  Td,
+  fieldCls,
+} from "@/components/portal/ui";
 import { QuestionPaperField, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
@@ -21,10 +35,22 @@ const STATE_LABEL: Record<AssessmentState, string> = {
   missed: "Missed",
   "time-up": "No answer",
 };
-const tone = (s: AssessmentState) => (s === "marked" ? "done" : s === "submitted" || s === "in-progress" || s === "grace" ? "attention" : "plain");
+const tone = (s: AssessmentState) =>
+  s === "marked" ? "done" : s === "submitted" || s === "in-progress" || s === "grace" ? "attention" : "plain";
 
 /* ---------------- create / edit ---------------- */
-function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; name: string }[]; editing?: Assignment; onDone: () => void }) {
+function AssessmentForm({
+  cohorts,
+  initial,
+  editing,
+  onDone,
+}: {
+  cohorts: { id: string; name: string }[];
+  /** the student picked on the page (pre-selected for a new assessment) */
+  initial?: string;
+  editing?: Assignment;
+  onDone: () => void;
+}) {
   const { db, addAssessment, updateAssessment, deleteAssignment, toast } = useTeacher();
   const startBy = editing ? new Date(editing.dueAt) : null;
   const [f, setF] = useState({
@@ -32,13 +58,15 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
     title: editing?.title ?? "",
     unit: editing?.unit ?? "",
     brief: editing?.brief ?? "",
-    questions: editing ? db.questions[editing.id] ?? "" : "",
+    questions: editing ? (db.questions[editing.id] ?? "") : "",
     date: dateInput(startBy ?? new Date(Date.now() + 2 * DAY)),
     time: startBy ? timeInput(startBy) : "21:00",
     limit: String(editing?.timeLimitMin ?? 60),
     maxMarks: String(editing?.maxMarks ?? 20),
   });
   const [deleting, setDeleting] = useState(false);
+  // a new assessment can go to several students at once
+  const [forIds, setForIds] = useState<string[]>(initial ? [initial] : cohorts[0] ? [cohorts[0].id] : []);
   // a clock that is already running keeps its length; a mark already given keeps its total
   const started = !!editing && db.attempts.some((t) => t.assignmentId === editing.id);
   const marked = !!editing && db.submissions.some((x) => x.assignmentId === editing.id && x.status === "marked");
@@ -51,7 +79,7 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
   const marks = Number(f.maxMarks);
   const due = new Date(`${f.date}T${f.time}`);
   const ok =
-    f.cohortId &&
+    (editing ? f.cohortId : forIds.length > 0) &&
     f.title.trim() &&
     f.unit.trim() &&
     limit >= 5 &&
@@ -63,18 +91,15 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
   return (
     <div className="space-y-5">
       {!editing && (
-        <Field label="Student">
-          <select value={f.cohortId} onChange={(e) => set("cohortId", e.target.value)} className={fieldCls}>
-            {cohorts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <MultiPick label="Set for" value={forIds} onChange={setForIds} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />
       )}
       <Field label="Title">
-        <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Unit 2 test: market failure" className={fieldCls} />
+        <input
+          value={f.title}
+          onChange={(e) => set("title", e.target.value)}
+          placeholder="Unit 2 test: market failure"
+          className={fieldCls}
+        />
       </Field>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Topic">
@@ -108,7 +133,13 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
         </Field>
       </div>
       <Field label="Instructions (visible before starting)">
-        <textarea value={f.brief} onChange={(e) => set("brief", e.target.value)} rows={3} placeholder="Answer all questions. Show your working." className={cn(fieldCls, "resize-none")} />
+        <textarea
+          value={f.brief}
+          onChange={(e) => set("brief", e.target.value)}
+          rows={3}
+          placeholder="Answer all questions. Show your working."
+          className={cn(fieldCls, "resize-none")}
+        />
       </Field>
       <Field label="Questions (hidden until the student starts)">
         <textarea value={f.questions} onChange={(e) => set("questions", e.target.value)} rows={6} className={cn(fieldCls, "resize-y")} />
@@ -154,7 +185,8 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
           if (paper) {
             try {
               setProgress(0);
-              const up = await uploadFile(paper, { purpose: "assignment", cohortId: f.cohortId }, setProgress);
+              // one upload; every student's copy points to the same file
+              const up = await uploadFile(paper, { purpose: "assignment", cohortId: forIds[0] }, setProgress);
               attachment = { attachmentFileId: up.id, attachmentName: paper.name, attachmentMime: up.mimeType || paper.type };
             } catch (e) {
               setBusy(false);
@@ -163,22 +195,25 @@ function AssessmentForm({ cohorts, editing, onDone }: { cohorts: { id: string; n
               return;
             }
           }
-          const saved = await addAssessment({
-            cohortId: f.cohortId,
-            title: f.title.trim(),
-            kind: "Assessment",
-            strand: null,
-            unit: f.unit.trim(),
-            brief: f.brief.trim(),
-            dueAt: due.toISOString(),
-            maxMarks: marks,
-            timeLimitMin: limit,
-            questions: f.questions,
-            ...attachment,
-          });
+          let saved = true;
+          for (const cohortId of forIds)
+            saved =
+              (await addAssessment({
+                cohortId,
+                title: f.title.trim(),
+                kind: "Assessment",
+                strand: null,
+                unit: f.unit.trim(),
+                brief: f.brief.trim(),
+                dueAt: due.toISOString(),
+                maxMarks: marks,
+                timeLimitMin: limit,
+                questions: f.questions,
+                ...attachment,
+              })) && saved;
           setBusy(false);
           if (!saved) return;
-          toast("Assessment set");
+          toast(forIds.length > 1 ? `Assessment set for ${forIds.length} students` : "Assessment set");
           onDone();
         }}
       >
@@ -251,7 +286,9 @@ function AttemptDetail({ a, student, onClose }: { a: Assignment; student: Studen
           </div>
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">Submitted</dt>
-            <dd className="mt-1 text-sm font-semibold text-navy">{sub ? `${fmtTime(sub.submittedAt)}${late ? " (grace period)" : ""}` : "—"}</dd>
+            <dd className="mt-1 text-sm font-semibold text-navy">
+              {sub ? `${fmtTime(sub.submittedAt)}${late ? " (grace period)" : ""}` : "—"}
+            </dd>
           </div>
           <div>
             <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">Time used</dt>
@@ -363,7 +400,15 @@ export default function TeacherAssessments() {
 
       <Table
         minWidth={720}
-        head={[{ label: "Assessment" }, { label: "Student" }, { label: "Time" }, { label: "Start before" }, { label: "Status" }, { label: "Score", align: "right" }, { label: " ", align: "right" }]}
+        head={[
+          { label: "Assessment" },
+          { label: "Student" },
+          { label: "Time" },
+          { label: "Start before" },
+          { label: "Status" },
+          { label: "Score", align: "right" },
+          { label: " ", align: "right" },
+        ]}
       >
         {rows.length === 0 ? (
           <EmptyRow cols={7}>No assessments yet.</EmptyRow>
@@ -411,10 +456,16 @@ export default function TeacherAssessments() {
       </Table>
 
       <Modal open={creating} onClose={() => setCreating(false)} wide title="New assessment">
-        <AssessmentForm cohorts={who === "all" ? cohorts : cohorts.filter((c) => c.id === who)} onDone={() => setCreating(false)} />
+        <AssessmentForm cohorts={cohorts} initial={who === "all" ? undefined : who} onDone={() => setCreating(false)} />
       </Modal>
 
-      <Modal open={!!editing} onClose={() => setEditId(null)} wide eyebrow={editing ? cohortOf(db, editing.cohortId).name : undefined} title="Edit assessment">
+      <Modal
+        open={!!editing}
+        onClose={() => setEditId(null)}
+        wide
+        eyebrow={editing ? cohortOf(db, editing.cohortId).name : undefined}
+        title="Edit assessment"
+      >
         {editing && <AssessmentForm key={editing.id} cohorts={cohorts} editing={editing} onDone={() => setEditId(null)} />}
       </Modal>
 

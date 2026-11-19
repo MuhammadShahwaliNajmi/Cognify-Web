@@ -1,8 +1,9 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { assessmentState, attendancePct, workHref } from "@/lib/portal/selectors";
+import { assessmentState, attendancePct, meetLink, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
@@ -10,8 +11,25 @@ import { NextClassCard } from "@/components/portal/classroom";
 
 
 export default function StudentDashboard() {
-  const { db, me, now } = useStudent();
+  const { db, me, now, markJoined, toast } = useStudent();
   const router = useRouter();
+
+  // the reminder email's "Join class" button: /portal/student/?join=<class> → register, then Google Meet
+  const joining = useRef(false);
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("join");
+    if (!id || joining.current) return;
+    joining.current = true;
+    router.replace("/portal/student/", { scroll: false });
+    const s = db.sessions.find((x) => x.id === id);
+    if (!s) return toast("That class isn't on your calendar any more.");
+    const state = sessionState(s.start, s.durationMin);
+    if (state === "ended") return toast("That class has finished.");
+    const link = meetLink(db, s);
+    if (!link) return toast("Your teacher hasn't added the Meet link yet.");
+    if (state === "upcoming") return toast(`The class opens at ${fmtTime(new Date(new Date(s.start).getTime() - 10 * 60_000).toISOString())}. Press Join class then.`);
+    markJoined(s.id, me.id).finally(() => window.location.assign(link));
+  }, [db, me.id, markJoined, router, toast]);
 
   const next = db.sessions.find((s) => s.cohortId === me.cohortId && sessionState(s.start, s.durationMin, now) !== "ended");
   const mine = db.submissions.filter((x) => x.studentId === me.id);
@@ -27,8 +45,10 @@ export default function StudentDashboard() {
   const graded = mine
     .filter((x) => x.status === "marked")
     .sort((a, b) => new Date(b.markedAt!).getTime() - new Date(a.markedAt!).getTime());
-  const max = graded.reduce((n, x) => n + (db.assignments.find((a) => a.id === x.assignmentId)?.maxMarks ?? 0), 0);
-  const got = graded.reduce((n, x) => n + (x.marks ?? 0), 0);
+  // scores count once the feedback has been read (comments first)
+  const read = graded.filter((x) => x.seenAt);
+  const max = read.reduce((n, x) => n + (db.assignments.find((a) => a.id === x.assignmentId)?.maxMarks ?? 0), 0);
+  const got = read.reduce((n, x) => n + (x.marks ?? 0), 0);
 
   const hour = new Date(now).getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";

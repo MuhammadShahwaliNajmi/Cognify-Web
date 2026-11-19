@@ -653,7 +653,7 @@ function RequestCard({ r, teacher }: { r: ClassRequest; teacher: boolean }) {
 
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
-  const { db, auth, toggleAttendance, cancelSession, endSeries, toast } = usePortal();
+  const { db, auth, setAttendance, cancelSession, endSeries, toast } = usePortal();
   const now = useTick(30_000);
   const [viewing, setViewing] = useState<Resource | null>(null);
   const [moving, setMoving] = useState(false);
@@ -792,23 +792,32 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
 
             {ended && !teacher && me && (
               <p className="text-[15px] text-navy">
-                Attendance: {s.attendance[me.id] ? <Status tone="done">Present</Status> : <Status>Absent</Status>}
+                Attendance:{" "}
+                {s.attendance[me.id] ? <Status tone="done">Present</Status> : s.attendance[me.id] === false ? <Status>Absent</Status> : <Status>Not recorded yet</Status>}
               </p>
             )}
 
-            {ended && teacher && (
+            {(ended || state === "live") && teacher && !virtual && (
               <div>
-                <Label>Attendance</Label>
+                <Label>Register</Label>
                 <ul className="mt-2 space-y-2">
                   {students.length === 0 && <li className="text-sm text-navy">No student has joined this class yet.</li>}
                   {students.map((st) => {
-                    const here = !!s.attendance[st.id];
+                    const mark = s.attendance[st.id];
                     return (
-                      <li key={st.id} className="flex items-center justify-between gap-3">
-                        <span className="text-[15px] font-medium text-navy">{st.name}</span>
-                        <Btn variant={here ? "navy" : "outline"} size="sm" onClick={() => toggleAttendance(s.id, st.id)} aria-pressed={here}>
-                          {here ? "Present" : "Absent"}
-                        </Btn>
+                      <li key={st.id} className="flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-[15px] font-medium text-navy">
+                          {st.name}
+                          {mark === undefined && <span className="ml-2 text-[13px] font-semibold">· not taken</span>}
+                        </span>
+                        <div className="flex gap-2">
+                          <Btn variant={mark === true ? "navy" : "outline"} size="sm" aria-pressed={mark === true} onClick={() => mark !== true && setAttendance(s.id, st.id, true)}>
+                            Present
+                          </Btn>
+                          <Btn variant={mark === false ? "navy" : "outline"} size="sm" aria-pressed={mark === false} onClick={() => mark !== false && setAttendance(s.id, st.id, false)}>
+                            Absent
+                          </Btn>
+                        </div>
                       </li>
                     );
                   })}

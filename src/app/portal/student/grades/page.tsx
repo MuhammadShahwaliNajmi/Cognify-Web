@@ -36,8 +36,11 @@ export default function StudentGrades() {
     .map((a) => ({ a, sub: submissionFor(db, a.id, me.id) }))
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const graded = items.filter((r) => r.sub?.status === "marked");
-  const got = graded.reduce((n, r) => n + (r.sub!.marks ?? 0), 0);
-  const max = graded.reduce((n, r) => n + r.a.maxMarks, 0);
+  // scores count once the feedback has been read (comments first)
+  const read = graded.filter((r) => r.sub!.seenAt);
+  const got = read.reduce((n, r) => n + (r.sub!.marks ?? 0), 0);
+  const max = read.reduce((n, r) => n + r.a.maxMarks, 0);
+  const unread = graded.length - read.length;
 
   return (
     <>
@@ -46,7 +49,7 @@ export default function StudentGrades() {
       <div className="grid grid-cols-2 gap-6 rounded-xl border border-navy/12 p-5 sm:grid-cols-4">
         <Figure label="Predicted grade" value={me.predicted || "–"} sub={me.predicted ? "set by your teacher" : "after your first graded work"} />
         <Figure label="Target" value={me.target || "–"} />
-        <Figure label="Overall" value={max ? `${Math.round((got / max) * 100)}%` : "–"} sub={`${graded.length} graded`} />
+        <Figure label="Overall" value={max ? `${Math.round((got / max) * 100)}%` : "–"} sub={unread ? `${unread} new feedback to read` : `${graded.length} graded`} />
         <Figure label="Attendance" value={`${attendancePct(db, me.id, me.cohortId, now)}%`} />
       </div>
       {targetPct !== undefined && latest !== null && (
@@ -116,7 +119,7 @@ export default function StudentGrades() {
         {tab === "topics" && (
           <Table minWidth={520} head={[{ label: "Topic" }, { label: "Score" }, { label: "What to work on" }]}>
             {mastery.length === 0 ? (
-              <EmptyRow cols={3}>Your teacher adds your strongest and weakest topics here as your work is marked.</EmptyRow>
+              <EmptyRow cols={3}>Topics appear here once your work is marked and you have read the feedback.</EmptyRow>
             ) : (
               mastery.map((m, i) => (
                 <tr key={m.unit}>

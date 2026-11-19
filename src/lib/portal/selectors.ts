@@ -17,9 +17,15 @@ export const topicOf = (s: { unit: string | null }) => s.unit ?? "";
 export const submissionFor = (db: DB, assignmentId: string, studentId: string) =>
   db.submissions.find((x) => x.assignmentId === assignmentId && x.studentId === studentId);
 
-/** Share of finished classes the student joined (100 before the first class). */
+/** A finished class whose register nobody has taken yet (no one joined, the teacher hasn't marked it). */
+export const registerMissing = (s: Session, now: number) =>
+  new Date(s.start).getTime() + s.durationMin * 60_000 < now && Object.keys(s.attendance).length === 0;
+
+/** Share of finished classes (with a register) the student was present at (100 before the first one). */
 export function attendancePct(db: DB, studentId: string, cohortId: string, now: number) {
-  const past = db.sessions.filter((s) => s.cohortId === cohortId && new Date(s.start).getTime() + s.durationMin * 60_000 < now);
+  const past = db.sessions.filter(
+    (s) => s.cohortId === cohortId && new Date(s.start).getTime() + s.durationMin * 60_000 < now && Object.keys(s.attendance).length > 0
+  );
   if (!past.length) return 100;
   return Math.round((past.filter((s) => s.attendance[studentId]).length / past.length) * 100);
 }

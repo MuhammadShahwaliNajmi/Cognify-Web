@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { submissionFor } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, MB, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { isPhoto, photosToPdf } from "@/lib/portal/photos-pdf";
 import type { Assignment, Submission } from "@/lib/portal/types";
 import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { FeedbackPanel, LastTargets, TypedAnswer, WorkAndFeedbackFiles, WorkFile, hasFile } from "@/components/portal/work";
@@ -23,11 +24,34 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
   const [progress, setProgress] = useState(0);
   const input = useRef<HTMLInputElement>(null);
 
-  const pick = (f: File | null) => {
-    if (f && f.size > 25 * MB) {
+  const [pages, setPages] = useState(0); // photos combined into the PDF
+  const [preparing, setPreparing] = useState(false);
+  const pick = async (list: FileList | null) => {
+    const files = Array.from(list ?? []);
+    if (!files.length) return;
+    let f = files[0];
+    if (files.length > 1) {
+      // several photos of handwritten pages → one PDF, in page order
+      if (!files.every(isPhoto)) {
+        toast("To hand in several files, choose photos only, or combine them into one PDF.");
+        return;
+      }
+      setPreparing(true);
+      try {
+        const ordered = files.sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
+        f = await photosToPdf(ordered, `${a.title.replace(/[^\w\- ]+/g, "").trim().slice(0, 80) || "Work"}.pdf`);
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Couldn't combine the photos.");
+        return;
+      } finally {
+        setPreparing(false);
+      }
+    }
+    if (f.size > 25 * MB) {
       toast("That file is over 25 MB. Please export a smaller PDF.");
       return;
     }
+    setPages(files.length > 1 ? files.length : 0);
     setFile(f);
   };
 
@@ -48,8 +72,12 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
         ref={input}
         type="file"
         accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic"
+        multiple
         className="sr-only"
-        onChange={(e) => pick(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          pick(e.target.files);
+          e.target.value = "";
+        }}
       />
       {file ? (
         <div className="flex items-center gap-3 rounded-2xl border border-gold bg-gold/10 p-4">
@@ -58,11 +86,17 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
           </span>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-navy">{file.name}</p>
-            <p className="text-xs text-navy">{fmtBytes(file.size)} · ready to submit</p>
+            <p className="text-xs text-navy">
+              {pages ? `${pages} photos in one PDF · ` : ""}
+              {fmtBytes(file.size)} · ready to submit
+            </p>
           </div>
           <button
             type="button"
-            onClick={() => setFile(null)}
+            onClick={() => {
+              setFile(null);
+              setPages(0);
+            }}
             aria-label="Remove file"
             className="grid h-8 w-8 place-items-center rounded-full text-navy transition-colors hover:text-navy focus-gold"
           >
@@ -81,7 +115,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
           onDrop={(e) => {
             e.preventDefault();
             setOver(false);
-            pick(e.dataTransfer.files?.[0] ?? null);
+            pick(e.dataTransfer.files);
           }}
           className={cn(
             "flex w-full flex-col items-center rounded-2xl border-2 border-dashed px-6 py-9 text-center transition-colors focus-gold",
@@ -92,9 +126,9 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
             <UploadCloud size={20} />
           </span>
           <span className="mt-3.5 text-[15px] font-semibold tracking-tight text-navy">
-            {replacing ? "Choose a replacement file" : "Choose your file, or drop it here"}
+            {preparing ? "Putting your photos together…" : replacing ? "Choose a replacement file" : "Choose your file, or drop it here"}
           </span>
-          <span className="mt-1 text-[13px] text-navy">PDF, Word, or clear photos of handwritten work</span>
+          <span className="mt-1 text-[13px] text-navy">PDF, Word, or photos of handwritten work (pick all the pages at once)</span>
         </button>
       )}
 
@@ -110,7 +144,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
         </Field>
       </div>
       <div className="mt-5 flex items-center gap-3">
-        <Btn variant="gold" size="lg" disabled={!file || busy} onClick={submit}>
+        <Btn variant="gold" size="lg" disabled={!file || busy || preparing} onClick={submit}>
           <ArrowUpRight size={17} />
           {busy ? `Uploading… ${Math.round(progress * 100)}%` : replacing ? "Replace submission" : "Submit work"}
         </Btn>

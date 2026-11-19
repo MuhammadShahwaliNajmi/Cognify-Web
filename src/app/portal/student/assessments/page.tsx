@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useStudent } from "@/lib/portal/store";
 import { GRACE_MS, assessmentState, attemptFor, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
 import { fmtBytes, fmtClock, fmtDate, fmtDateLong, fmtRelative, fmtTime, MB } from "@/lib/portal/format";
+import { isPhoto, photosToPdf } from "@/lib/portal/photos-pdf";
 import type { Assignment } from "@/lib/portal/types";
 import { Btn, EmptyRow, Label, Modal, PageHeader, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { useTick } from "@/components/portal/classroom";
@@ -163,12 +164,24 @@ function Room({ a }: { a: Assignment }) {
                 ref={input}
                 type="file"
                 accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.heic"
+                multiple
                 className="sr-only"
-                onChange={(e) => {
-                  const f = e.target.files?.[0] ?? null;
+                onChange={async (e) => {
+                  const files = Array.from(e.target.files ?? []);
+                  e.target.value = "";
+                  let f: File | null = files[0] ?? null;
+                  if (files.length > 1) {
+                    // several photos of handwritten pages → one PDF
+                    if (!files.every(isPhoto)) return toast("To upload several files, choose photos only, or combine them into one PDF.");
+                    try {
+                      const ordered = files.sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
+                      f = await photosToPdf(ordered, `${a.title.replace(/[^\w\- ]+/g, "").trim().slice(0, 80) || "Answers"}.pdf`);
+                    } catch (err) {
+                      return toast(err instanceof Error ? err.message : "Couldn't combine the photos.");
+                    }
+                  }
                   if (f && f.size > 50 * MB) return toast("That file is over 50 MB.");
                   setFile(f);
-                  e.target.value = "";
                 }}
               />
               {file ? (

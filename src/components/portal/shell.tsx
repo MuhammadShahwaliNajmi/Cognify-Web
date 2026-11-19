@@ -26,8 +26,13 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
 
   const allowed = ready && auth?.role === role && me;
   useEffect(() => {
-    if (ready && !allowed) router.replace("/portal/");
-  }, [ready, allowed, router]);
+    if (!ready || allowed) return;
+    // remember where they were going (e.g. an email's "Open assignment") for after sign-in
+    try {
+      if (!auth) sessionStorage.setItem("cl-next", window.location.pathname + window.location.search);
+    } catch {}
+    router.replace("/portal/");
+  }, [ready, allowed, auth, router]);
 
   // on phones the tabs scroll sideways: keep the current one in view
   const shown = !!allowed;

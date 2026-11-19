@@ -55,7 +55,7 @@ export function exportAttendance(db: DB, now: number) {
   for (const s of [...db.students].sort((a, b) => a.name.localeCompare(b.name))) {
     for (const c of db.sessions) {
       if (c.cohortId !== s.cohortId || new Date(c.start).getTime() + c.durationMin * 60_000 > now) continue;
-      rows.push([s.name, day(c.start), time(c.start), c.title, c.attendance[s.id] ? "Present" : "Absent"]);
+      rows.push([s.name, day(c.start), time(c.start), c.title, c.attendance[s.id] ? "Present" : Object.keys(c.attendance).length ? "Absent" : "Not taken"]);
     }
   }
   download("concept-lab-attendance", rows);

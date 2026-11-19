@@ -207,20 +207,52 @@ export function toPortal(all: Snapshot): Portal {
     };
   });
 
+  // a student sees a score only after reading the feedback (comments first), so their own
+  // trend and topic scores leave out work they haven't opened yet
+  const viewer = snap.members.find((m) => m.id === snap.me);
+  const counts = (x: Submission) => !!x.markedAt && (viewer?.role !== "student" || !!x.seenAt);
+
   // predicted-grade trend: one point per marked piece of work, oldest first
   const maxMarks = new Map(snap.assignments.map((a) => [id(a.id), a.max_marks]));
+  const unitOf = new Map(snap.assignments.map((a) => [id(a.id), { unit: a.unit, strand: a.strand }]));
+  /** topic scores from marked work (average % per topic, latest "next step" as what to work on);
+   *  a teacher's own entry for a topic replaces it */
+  const topics = (studentId: string, own: Progress["mastery"]) => {
+    const by = new Map<string, { strand: Strand; pcts: number[]; fix: string; at: number }>();
+    for (const x of submissions) {
+      if (x.studentId !== studentId || !counts(x)) continue;
+      const u = unitOf.get(x.assignmentId);
+      const max = maxMarks.get(x.assignmentId);
+      const unit = u?.unit?.trim();
+      if (!unit || !max) continue;
+      const t = by.get(unit) ?? { strand: u?.strand ?? "Micro", pcts: [], fix: "", at: 0 };
+      t.pcts.push(((x.marks ?? 0) / max) * 100);
+      const at = new Date(x.markedAt!).getTime();
+      if (at >= t.at) {
+        t.at = at;
+        t.fix = x.improvements?.[0] ?? t.fix;
+      }
+      by.set(unit, t);
+    }
+    const mine = new Set(own.map((m) => m.unit.toLowerCase()));
+    const derived = Array.from(by.entries())
+      .filter(([unit]) => !mine.has(unit.toLowerCase()))
+      .map(([unit, t]) => ({ unit, strand: t.strand, score: Math.round(t.pcts.reduce((a, b) => a + b, 0) / t.pcts.length), fix: t.fix }));
+    return [...own, ...derived];
+  };
   const progress: Progress[] = students.map((st) => ({
     studentId: st.id,
     history: submissions
-      .filter((x) => x.studentId === st.id && x.markedAt)
+      .filter((x) => x.studentId === st.id && counts(x))
       .sort((a, b) => new Date(a.markedAt!).getTime() - new Date(b.markedAt!).getTime())
       .map((x) => {
         const max = maxMarks.get(x.assignmentId);
         return { label: shortDate(x.markedAt!), pct: max ? Math.round(((x.marks ?? 0) / max) * 100) : 0 };
       }),
-    mastery: snap.mastery
-      .filter((m) => id(m.member_id) === st.id)
-      .map((m) => ({ unit: m.unit, strand: m.strand, score: m.score, fix: m.fix })),
+    mastery: topics(
+      st.id,
+      snap.mastery.filter((m) => id(m.member_id) === st.id).map((m) => ({ unit: m.unit, strand: m.strand, score: m.score, fix: m.fix }))
+    ),
   }));
 
   const mine = snap.members.find((m) => m.id === snap.me);

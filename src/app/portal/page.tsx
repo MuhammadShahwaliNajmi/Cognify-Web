@@ -79,7 +79,15 @@ export default function PortalSignIn() {
   useEffect(() => setReturning(window.location.hash.includes("id_token=")), []);
 
   useEffect(() => {
-    if (status === "ready" && auth) router.replace(auth.role === "student" ? "/portal/student/" : "/portal/teacher/");
+    if (status !== "ready" || !auth) return;
+    // came from a link (an email button) before signing in? go back there
+    const home = auth.role === "student" ? "/portal/student/" : "/portal/teacher/";
+    let next: string | null = null;
+    try {
+      next = sessionStorage.getItem("cl-next");
+      sessionStorage.removeItem("cl-next");
+    } catch {}
+    router.replace(next && next.startsWith(home) ? next : home);
   }, [status, auth, router]);
 
   return (

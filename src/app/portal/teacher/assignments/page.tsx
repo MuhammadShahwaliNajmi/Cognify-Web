@@ -9,7 +9,21 @@ import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
 import type { Assignment, AssignmentKind } from "@/lib/portal/types";
 import { QuestionPaperField } from "@/components/portal/work";
-import { Btn, EmptyRow, Field, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import {
+  Btn,
+  EmptyRow,
+  Field,
+  Modal,
+  MultiPick,
+  PageHeader,
+  Picker,
+  RowLink,
+  Segmented,
+  Status,
+  Table,
+  Td,
+  fieldCls,
+} from "@/components/portal/ui";
 
 /** Set a new assignment, or change / delete an existing one. */
 function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editing?: Assignment; onDone: () => void }) {
@@ -25,6 +39,8 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
     maxMarks: String(editing?.maxMarks ?? 20),
   });
   const [deleting, setDeleting] = useState(false);
+  // a new assignment can go to several students at once
+  const [forIds, setForIds] = useState<string[]>([cohortId]);
   // once work has been marked out of this total, the total stays
   const marked = !!editing && db.submissions.some((x) => x.assignmentId === editing.id && x.status === "marked");
   const [paper, setPaper] = useState<File | null>(null);
@@ -32,12 +48,20 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
   const marks = Number(f.maxMarks);
-  const ok = f.title.trim() && f.unit.trim() && f.brief.trim() && marks > 0;
+  const ok = f.title.trim() && f.unit.trim() && f.brief.trim() && marks > 0 && (editing || forIds.length > 0);
 
   return (
     <div className="space-y-5">
+      {!editing && db.cohorts.length > 1 && (
+        <MultiPick label="Set for" value={forIds} onChange={setForIds} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+      )}
       <Field label="Title">
-        <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Evaluate the case for a minimum wage" className={fieldCls} />
+        <input
+          value={f.title}
+          onChange={(e) => set("title", e.target.value)}
+          placeholder="Evaluate the case for a minimum wage"
+          className={fieldCls}
+        />
       </Field>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Type">
@@ -108,12 +132,21 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
             onDone();
             return;
           }
-          let attachment: { attachmentFileId?: string; attachmentName?: string; attachmentMime?: string } = {};
+          let attachment: {
+            attachmentFileId?: string;
+            attachmentName?: string;
+            attachmentMime?: string;
+          } = {};
           if (paper) {
             try {
               setProgress(0);
-              const up = await uploadFile(paper, { purpose: "assignment", cohortId }, setProgress);
-              attachment = { attachmentFileId: up.id, attachmentName: paper.name, attachmentMime: up.mimeType || paper.type };
+              // one upload; every student's copy points to the same file
+              const up = await uploadFile(paper, { purpose: "assignment", cohortId: forIds[0] }, setProgress);
+              attachment = {
+                attachmentFileId: up.id,
+                attachmentName: paper.name,
+                attachmentMime: up.mimeType || paper.type,
+              };
             } catch (e) {
               setBusy(false);
               setProgress(null);
@@ -121,20 +154,23 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
               return;
             }
           }
-          const saved = await addAssignment({
-            cohortId,
-            title: f.title.trim(),
-            kind: f.kind,
-            strand: null,
-            unit: f.unit.trim(),
-            brief: f.brief.trim(),
-            dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
-            maxMarks: marks,
-            ...attachment,
-          });
+          let saved = true;
+          for (const id of forIds)
+            saved =
+              (await addAssignment({
+                cohortId: id,
+                title: f.title.trim(),
+                kind: f.kind,
+                strand: null,
+                unit: f.unit.trim(),
+                brief: f.brief.trim(),
+                dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
+                maxMarks: marks,
+                ...attachment,
+              })) && saved;
           setBusy(false);
           if (!saved) return;
-          toast("Assignment set");
+          toast(forIds.length > 1 ? `Assignment set for ${forIds.length} students` : "Assignment set");
           onDone();
         }}
       >
@@ -208,7 +244,12 @@ export default function TeacherAssignments() {
       />
 
       <div className="mb-5">
-        <Picker label="Student" value={cohort.id} onChange={setCohortId} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+        <Picker
+          label="Student"
+          value={cohort.id}
+          onChange={setCohortId}
+          options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))}
+        />
       </div>
 
       <Segmented
@@ -222,7 +263,16 @@ export default function TeacherAssignments() {
       />
 
       <div className="mt-4">
-        <Table head={[{ label: "Assignment" }, { label: "Type" }, { label: "Due" }, { label: "Submission" }, { label: "Score", align: "right" }, { label: " ", align: "right" }]}>
+        <Table
+          head={[
+            { label: "Assignment" },
+            { label: "Type" },
+            { label: "Due" },
+            { label: "Submission" },
+            { label: "Score", align: "right" },
+            { label: " ", align: "right" },
+          ]}
+        >
           {list.length === 0 ? (
             <EmptyRow cols={6}>{tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing here yet."}</EmptyRow>
           ) : (
@@ -234,7 +284,9 @@ export default function TeacherAssignments() {
                   <Td className="font-medium text-navy">
                     <span className="inline-flex items-center gap-1.5">
                       {a.title}
-                      {(a.attachmentFileId || a.attachmentUrl) && <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />}
+                      {(a.attachmentFileId || a.attachmentUrl) && (
+                        <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
+                      )}
                     </span>
                   </Td>
                   <Td className="whitespace-nowrap">{a.kind}</Td>
@@ -282,14 +334,16 @@ export default function TeacherAssignments() {
                   {cells}
                 </RowLink>
               ) : (
-                <tr key={a.id}>{cells}</tr>
+                <RowLink key={a.id} onClick={() => setEditId(a.id)}>
+                  {cells}
+                </RowLink>
               );
             })
           )}
         </Table>
       </div>
 
-      <Modal open={creating} onClose={() => setCreating(false)} eyebrow={cohort.name} title="New assignment">
+      <Modal open={creating} onClose={() => setCreating(false)} title="New assignment">
         <AssignmentForm cohortId={cohort.id} onDone={() => setCreating(false)} />
       </Modal>
       <Modal open={!!editing} onClose={() => setEditId(null)} eyebrow={cohort.name} title="Edit assignment">

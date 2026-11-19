@@ -226,6 +226,54 @@ export function Picker<T extends string>({
   );
 }
 
+/** Pick several (e.g. which students get an assignment): toggle chips. */
+export function MultiPick({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+  options: { value: string; label: string }[];
+}) {
+  const all = value.length === options.length;
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">{label}</span>
+        <button
+          type="button"
+          onClick={() => onChange(all ? [] : options.map((o) => o.value))}
+          className="text-[13px] font-semibold text-navy underline decoration-gold decoration-2 underline-offset-4 focus-gold"
+        >
+          {all ? "Clear" : "Select all"}
+        </button>
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2">
+        {options.map((o) => {
+          const on = value.includes(o.value);
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => onChange(on ? value.filter((v) => v !== o.value) : [...value, o.value])}
+              className={cn(
+                "rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
+                on ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"
+              )}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /** Dialog: bottom sheet on phones, centred panel on larger screens. */
 export function Modal({
   open,

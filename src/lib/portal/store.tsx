@@ -44,6 +44,8 @@ type Store = {
 
   markJoined: (sessionId: string, studentId: string) => Promise<boolean>;
   toggleAttendance: (sessionId: string, studentId: string) => Promise<boolean>;
+  /** teacher: take the register for a student (present or absent) */
+  setAttendance: (sessionId: string, studentId: string, present: boolean) => Promise<boolean>;
   setCohortMeet: (cohortId: string, url: string) => Promise<boolean>;
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
@@ -329,6 +331,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present: !here })
         );
       },
+      setAttendance: (sessionId, studentId, present) =>
+        run("Updating the register", (api) => api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present })),
       setCohortMeet: (cohortId, url) =>
         run("Saving the Meet link", (api) => api.from("cohorts").update({ meet_url: url.trim() || null }).eq("id", num(cohortId))),
       regenerateCode: (cohortId) => run("Creating a new code", (api) => api.rpc("regenerate_join_code", { p_cohort_id: num(cohortId) })),

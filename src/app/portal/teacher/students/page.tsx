@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Copy, Download, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { exportAttendance, exportGrades } from "@/lib/portal/export";
-import { fmtDate, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
+import { fmtDate, fmtTime, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
-import { ClassSetup } from "@/components/portal/class-tools";
+import { ClassSetup, ScheduleForm } from "@/components/portal/class-tools";
+import { describeRule } from "@/lib/portal/series";
 
 /** Predicted and target grade — set by the teacher, shown to the student. */
 function GradeForm({ s }: { s: Student }) {
@@ -48,6 +50,7 @@ function GradeForm({ s }: { s: Student }) {
 
 function Profile({ s }: { s: Student }) {
   const { db, now } = useTeacher();
+  const router = useRouter();
   const progress = db.progress.find((p) => p.studentId === s.id);
   const work = db.assignments
     .filter((a) => a.cohortId === s.cohortId)
@@ -91,7 +94,11 @@ function Profile({ s }: { s: Student }) {
         <Label>Work this term</Label>
         <ul className="mt-2">
           {work.map(({ a, sub }) => (
-            <li key={a.id} className="flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0">
+            <li
+              key={a.id}
+              onClick={sub ? () => router.push(`/portal/teacher/submissions/?open=${sub.id}`) : undefined}
+              className={cn("flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0", sub && "cursor-pointer hover:bg-navy/[0.03]")}
+            >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium tracking-tight text-navy">{a.title}</p>
                 <p className="text-xs text-navy">
@@ -188,32 +195,89 @@ function SlotEditor({ slots, onChange }: { slots: Slot[]; onChange: (slots: Slot
   );
 }
 
-/** Change a student's weekly class times; their upcoming classes follow. */
-function Timetable({ cohortId }: { cohortId: string }) {
-  const { db, setTimetable, toast } = useTeacher();
-  const saved: Slot[] = db.timetable
-    .filter((t) => t.cohortId === cohortId)
-    .map((t) => ({ weekday: t.weekday, start: t.start, end: endOf(t.start, t.durationMin) }));
-  const key = (xs: Slot[]) => JSON.stringify([...xs].sort((a, b) => a.weekday - b.weekday || a.start.localeCompare(b.start)));
-  const [slots, setSlots] = useState(saved);
+/** "18:00" → "6:00 PM" (the viewer's own clock style) */
+const clock = (hm: string) => fmtTime(`2000-01-01T${hm}`);
+
+/** A student's repeating classes (the calendar's series): see them, stop one, or add a class. */
+function RepeatingClasses({ cohortId }: { cohortId: string }) {
+  const { db, endSeries, toast } = useTeacher();
+  const [adding, setAdding] = useState(false);
+  const [stopping, setStopping] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const changed = key(slots) !== key(saved);
+  const rows = db.timetable.filter((t) => t.cohortId === cohortId);
+  const series = Array.from(new Set(rows.map((t) => t.seriesId ?? t.id ?? ""))).map((key) => {
+    const mine = rows.filter((t) => (t.seriesId ?? t.id ?? "") === key);
+    const t = mine[0];
+    return {
+      key,
+      seriesId: t.seriesId,
+      title: t.title || "Class",
+      unit: t.unit || "",
+      time: `${clock(t.start)} – ${clock(endOf(t.start, t.durationMin))}`,
+      rule: describeRule({ weekdays: mine.map((x) => x.weekday), everyWeeks: t.everyWeeks ?? 1, endsOn: t.endsOn ?? null }),
+    };
+  });
+  const cohort = cohortOf(db, cohortId);
+
   return (
     <div className="mt-6 border-t border-navy/10 pt-5">
-      <SlotEditor slots={slots} onChange={setSlots} />
-      {changed && (
-        <Btn
-          variant="navy"
-          className="mt-3"
-          disabled={busy || !slotsOk(slots)}
-          onClick={async () => {
-            setBusy(true);
-            const ok = await setTimetable(cohortId, toRpcSlots(slots));
-            setBusy(false);
-            if (ok) toast("Timetable saved");
-          }}
-        >
-          {busy ? "Saving…" : "Save timetable"}
+      <Label>Repeating classes</Label>
+      <ul className="mt-2">
+        {series.length === 0 && <li className="py-2 text-sm text-navy">None yet.</li>}
+        {series.map((x) => (
+          <li key={x.key} className="border-t border-navy/10 py-3 first:border-t-0">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-navy">
+                  {x.title}
+                  {x.unit && <span className="font-normal"> · {x.unit}</span>}
+                </p>
+                <p className="text-[13px] text-navy">
+                  {x.rule} · {x.time}
+                </p>
+              </div>
+              {x.seriesId && stopping !== x.key && (
+                <Btn variant="ghost" size="sm" onClick={() => setStopping(x.key)}>
+                  <X size={14} /> Stop
+                </Btn>
+              )}
+            </div>
+            {stopping === x.key && x.seriesId && (
+              <div className="mt-3 flex flex-wrap items-center gap-2.5 rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-3">
+                <p className="flex-1 text-sm font-semibold text-navy">Cancel all upcoming classes in this series?</p>
+                <Btn
+                  variant="navy"
+                  size="sm"
+                  disabled={busy}
+                  onClick={async () => {
+                    setBusy(true);
+                    const ok = await endSeries(x.seriesId!, null);
+                    setBusy(false);
+                    if (!ok) return;
+                    setStopping(null);
+                    toast("Repeating class stopped");
+                  }}
+                >
+                  {busy ? "Stopping…" : "Stop classes"}
+                </Btn>
+                <Btn variant="ghost" size="sm" onClick={() => setStopping(null)}>
+                  Keep
+                </Btn>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      {adding ? (
+        <div className="mt-3 rounded-2xl border border-navy/10 p-4">
+          <ScheduleForm cohorts={[{ id: cohort.id, name: cohort.name }]} onDone={() => setAdding(false)} />
+          <Btn variant="ghost" size="sm" className="mt-3" onClick={() => setAdding(false)}>
+            Close
+          </Btn>
+        </div>
+      ) : (
+        <Btn variant="outline" size="sm" className="mt-2" onClick={() => setAdding(true)}>
+          <Plus size={14} /> Add class
         </Btn>
       )}
     </div>
@@ -525,7 +589,7 @@ export default function TeacherStudents() {
         {open && (
           <>
             <Profile key={open.id} s={open} />
-            <Timetable key={`tt-${open.cohortId}-${db.timetable.length}`} cohortId={open.cohortId} />
+            <RepeatingClasses cohortId={open.cohortId} />
             <TeacherOf cohortId={open.cohortId} />
             <ArchiveStudent cohortId={open.cohortId} name={open.name} onArchived={() => setOpenId(null)} />
           </>
@@ -535,7 +599,7 @@ export default function TeacherStudents() {
         {setupId && (
           <>
             <ClassSetup cohortId={setupId} />
-            <Timetable key={`tt-${setupId}-${db.timetable.length}`} cohortId={setupId} />
+            <RepeatingClasses cohortId={setupId} />
             <TeacherOf cohortId={setupId} />
             <ArchiveStudent cohortId={setupId} name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"} onArchived={() => setSetupId(null)} />
           </>

@@ -6,13 +6,26 @@ import { cn } from "@/lib/utils";
 import { cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
+import type { Announcement } from "@/lib/portal/types";
 import { Btn, Empty, Field, Modal, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
 
 /** Announcements: post an announcement to everyone or one student, and see what's been sent. */
 export default function TeacherAnnouncements() {
   const { db, me, now, addAnnouncement, deleteAnnouncement, toast } = useTeacher();
   const [removeId, setRemoveId] = useState<string | null>(null);
-  const removing = db.announcements.find((n) => n.id === removeId);
+  // "All my students" posts one copy per student: show (and delete) them as one
+  const sent: (Announcement & { ids: string[]; to: string[] })[] = [];
+  for (const n of db.announcements) {
+    const same = sent.find(
+      (g) => g.title === n.title && g.body === n.body && Math.abs(new Date(g.at).getTime() - new Date(n.at).getTime()) < 120_000
+    );
+    const to = n.cohortId ? cohortOf(db, n.cohortId).name : "everyone";
+    if (same) {
+      same.ids.push(n.id);
+      same.to.push(to);
+    } else sent.push({ ...n, ids: [n.id], to: [to] });
+  }
+  const removing = sent.find((n) => n.id === removeId);
   const [to, setTo] = useState("all");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -68,11 +81,11 @@ export default function TeacherAnnouncements() {
 
       <Rise i={1} className="mt-10">
         <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy">Sent</h2>
-        {db.announcements.length === 0 ? (
+        {sent.length === 0 ? (
           <Empty icon={<Megaphone size={20} />} title="No announcements yet" text="Anything you post appears here and on your students' portals." />
         ) : (
           <ul className="divide-y divide-navy/10">
-            {db.announcements.map((n) => (
+            {sent.map((n) => (
               <li key={n.id} className="py-4">
                 <div className="flex items-baseline justify-between gap-4">
                   <p className="text-[15px] font-medium tracking-tight text-navy">{n.title}</p>
@@ -88,8 +101,8 @@ export default function TeacherAnnouncements() {
                     </button>
                   </span>
                 </div>
-                <p className="mt-1 text-sm leading-relaxed text-navy">{n.body}</p>
-                <p className="mt-1.5 text-[13px] text-navy">To {n.cohortId ? cohortOf(db, n.cohortId).name : "everyone"}</p>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-navy">{n.body}</p>
+                <p className="mt-1.5 text-[13px] text-navy">To {n.to.length > 3 ? `${n.to.length} students` : n.to.join(", ")}</p>
               </li>
             ))}
           </ul>
@@ -104,7 +117,9 @@ export default function TeacherAnnouncements() {
               <Btn
                 variant="navy"
                 onClick={async () => {
-                  if (await deleteAnnouncement(removing.id)) toast("Announcement deleted");
+                  let ok = true;
+                  for (const id of removing.ids) ok = (await deleteAnnouncement(id)) && ok;
+                  if (ok) toast("Announcement deleted");
                   setRemoveId(null);
                 }}
               >
