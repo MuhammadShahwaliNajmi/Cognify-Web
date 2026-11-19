@@ -128,7 +128,9 @@ type Store = {
     teacherId?: string;
   }) => Promise<{ joinCode: string } | null>;
   /** admin: create a teacher account (they sign in with that Google email) */
-  addTeacher: (t: { name: string; email: string; title?: string }) => Promise<boolean>;
+  addTeacher: (t: { name: string; email: string; title?: string; admin?: boolean }) => Promise<boolean>;
+  /** admin: make a teacher an admin, or take it away (the portal always keeps one) */
+  setAdmin: (memberId: string, admin: boolean) => Promise<boolean>;
   /** admin: remove a teacher; their students become unassigned (admin only) */
   removeTeacher: (memberId: string) => Promise<boolean>;
   /** admin: move a student to another teacher */
@@ -662,8 +664,11 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             role: "teacher",
             full_name: t.name.trim(),
             title: t.title?.trim() || null,
+            is_admin: !!t.admin,
           })
         ),
+      setAdmin: (memberId, admin) =>
+        run(admin ? "Making them an admin" : "Removing admin access", (api) => api.rpc("set_admin", { p_member: num(memberId), p_admin: admin })),
       removeTeacher: (memberId) => run("Removing the teacher", (api) => api.from("members").delete().eq("id", num(memberId)).eq("role", "teacher").eq("is_admin", false)),
       assignTeacher: (cohortId, teacherId) =>
         run("Changing the teacher", (api) => api.from("cohorts").update({ teacher_id: teacherId ? num(teacherId) : null }).eq("id", num(cohortId))),
