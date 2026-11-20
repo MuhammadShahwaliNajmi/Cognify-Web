@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Copy, Download, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
+import { ProgressReport } from "@/components/portal/report";
 import { exportAttendance, exportGrades } from "@/lib/portal/export";
 import { fmtDate, fmtTime, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
@@ -76,6 +77,7 @@ function Profile({ s }: { s: Student }) {
         <Stat label="Average" value={averagePct(db, s.id) !== null ? `${averagePct(db, s.id)}%` : "–"} />
       </div>
       <GradeForm key={`${s.predicted}|${s.target}`} s={s} />
+      <ProgressReport key={s.id} s={s} />
 
       {progress && (
         <div className="mt-6">
@@ -489,6 +491,13 @@ export default function TeacherStudents() {
   const { db, me, now } = useTeacher();
   const teacherName = (cohortId: string) => db.teachers.find((t) => t.id === db.cohorts.find((c) => c.id === cohortId)?.teacherId)?.name ?? "Unassigned";
   const [openId, setOpenId] = useState<string | null>(null);
+  // /portal/teacher/students/?open=<student id> opens that profile (links from the dashboard)
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("open");
+    if (!id) return;
+    setOpenId(id);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, []);
   const [setupId, setSetupId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [archivedId, setArchivedId] = useState<string | null>(null);

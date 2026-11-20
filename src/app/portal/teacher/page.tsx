@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { cohortOf, registerMissing, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
+import { needsAttention } from "@/lib/portal/insights";
 import { Btn, EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 import { ClassDialog } from "@/components/portal/class-tools";
@@ -33,6 +34,7 @@ export default function TeacherDashboard() {
   }).length;
   // one copy is posted per student; show each announcement once
   const notices = db.announcements.filter((n, i, all) => all.findIndex((m) => m.title === n.title && m.body === n.body) === i).slice(0, 3);
+  const attention = needsAttention(db, now);
   const requests = db.requests.filter((r) => r.status === "pending" && db.sessions.some((s) => s.id === r.sessionId));
   // finished classes in the last 30 days with no register yet (one row per student)
   const registers = db.sessions
@@ -114,6 +116,25 @@ export default function TeacherDashboard() {
                     </RowLink>
                   );
                 })}
+              </Table>
+            </section>
+          )}
+
+          {attention.length > 0 && (
+            <section>
+              <SectionTitle>Needs attention</SectionTitle>
+              <Table minWidth={520} head={[{ label: "Student" }, { label: "Why" }, { label: "", align: "right" }]}>
+                {attention.slice(0, 8).map(({ st, flags }) => (
+                  <tr key={st.id}>
+                    <Td className="font-medium">{st.name}</Td>
+                    <Td>{flags.map((f) => f.text).join(" · ")}</Td>
+                    <Td align="right">
+                      <Btn variant="outline" size="sm" href={`/portal/teacher/students/?open=${st.id}`}>
+                        Open
+                      </Btn>
+                    </Td>
+                  </tr>
+                ))}
               </Table>
             </section>
           )}
