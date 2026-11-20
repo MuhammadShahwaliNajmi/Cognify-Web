@@ -9,6 +9,7 @@ import { useTeacher } from "@/lib/portal/store";
 import { dateInput, sessionState, timeInput } from "@/lib/portal/format";
 import type { Session } from "@/lib/portal/types";
 import { Btn, Modal, PageHeader, Picker } from "@/components/portal/ui";
+import { CalendarSync } from "@/components/portal/calendar-sync";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
 import { ClassDialog, MoveSeriesDialog, ScheduleForm, type NewClassAt } from "@/components/portal/class-tools";
 
@@ -71,6 +72,7 @@ export default function TeacherCalendar() {
         title="Calendar"
         actions={
           <>
+            <CalendarSync />
             <Picker
               label="Student"
               value={who}

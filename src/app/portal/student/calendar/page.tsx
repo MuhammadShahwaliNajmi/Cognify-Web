@@ -8,6 +8,7 @@ import { useStudent } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
 import type { Session } from "@/lib/portal/types";
 import { PageHeader } from "@/components/portal/ui";
+import { CalendarSync } from "@/components/portal/calendar-sync";
 import { NextClassCard } from "@/components/portal/classroom";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
 import { ClassDialog } from "@/components/portal/class-tools";
@@ -56,7 +57,7 @@ export default function StudentCalendar() {
 
   return (
     <>
-      <PageHeader title="Calendar" />
+      <PageHeader title="Calendar" actions={<CalendarSync />} />
       {next && (
         <div className="mb-8">
           <NextClassCard session={next} />
