@@ -128,14 +128,12 @@ export function Navbar() {
           <a
             href="/get-app/"
             aria-label="Get the Concept Lab app"
-            className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-gold/70 bg-white py-2 pl-2 pr-3 text-[0.8125rem] font-semibold tracking-tight text-navy shadow-[0_8px_24px_-14px_rgba(212,178,84,0.9)] transition-colors duration-300 hover:border-gold hover:bg-gold hover:text-navy-deep focus-gold lg:pr-4"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gold py-1.5 pl-1.5 pr-4 text-[0.8125rem] font-semibold tracking-tight text-navy-deep shadow-[0_8px_20px_-12px_rgba(212,178,84,0.9)] transition-transform duration-200 hover:-translate-y-0.5 focus-gold"
           >
-            <span className="relative grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold transition-colors duration-300 group-hover:bg-navy-deep">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold">
               <Smartphone size={13} />
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-gold ring-2 ring-white" />
             </span>
-            <span className="hidden lg:inline">Get the app</span>
-            <span className="lg:hidden">App</span>
+            App
           </a>
           <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
