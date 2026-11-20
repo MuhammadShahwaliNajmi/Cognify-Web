@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { ShieldCheck, ShieldOff, Trash2, UserPlus } from "lucide-react";
 import { useTeacher } from "@/lib/portal/store";
 import type { Teacher } from "@/lib/portal/types";
-import { Btn, EmptyRow, Field, Modal, PageHeader, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { Btn, EmptyRow, Field, Modal, PageHeader, SectionTitle, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import { teachingOverview } from "@/lib/portal/insights";
 
 function AddTeacher({ onDone }: { onDone: () => void }) {
   const { addTeacher, toast } = useTeacher();
@@ -81,6 +82,8 @@ export default function TeacherAccounts() {
           </Btn>
         }
       />
+      <Overview />
+
       <Table
         minWidth={640}
         head={[{ label: "Teacher" }, { label: "Subject" }, { label: "Students" }, { label: "Role" }, { label: " ", align: "right" }]}
@@ -197,5 +200,40 @@ export default function TeacherAccounts() {
         )}
       </Modal>
     </>
+  );
+}
+
+/** The last 30 days of teaching: in total, then per teacher. */
+function Overview() {
+  const { db, now } = useTeacher();
+  const o = teachingOverview(db, now, 30);
+  const pct = (v: number | null) => (v === null ? "–" : `${v}%`);
+  return (
+    <section className="mb-10">
+      <SectionTitle>Last 30 days</SectionTitle>
+      <div className="grid grid-cols-2 gap-4 rounded-2xl bg-navy/[0.04] p-5 md:grid-cols-5">
+        <Stat label="Students" value={o.total.students} />
+        <Stat label="Classes taught" value={o.total.classes} />
+        <Stat label="Teaching hours" value={o.total.hours} />
+        <Stat label="Attendance" value={pct(o.total.attendancePct)} />
+        <Stat label="To mark" value={o.total.toMark} />
+      </div>
+      {o.teachers.length > 1 && (
+        <div className="mt-4">
+          <Table minWidth={560} head={[{ label: "Teacher" }, { label: "Students" }, { label: "Classes" }, { label: "Hours" }, { label: "Attendance" }, { label: "To mark" }]}>
+            {o.teachers.map((t) => (
+              <tr key={t.teacher.id}>
+                <Td className="font-medium">{t.teacher.name}</Td>
+                <Td>{t.students}</Td>
+                <Td>{t.classes}</Td>
+                <Td>{t.hours}</Td>
+                <Td>{pct(t.attendancePct)}</Td>
+                <Td>{t.toMark}</Td>
+              </tr>
+            ))}
+          </Table>
+        </div>
+      )}
+    </section>
   );
 }

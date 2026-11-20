@@ -121,3 +121,36 @@ export function onTimeStreak(db: DB, studentId: string, cohortId: string, now: n
   }
   return n;
 }
+
+export type TeachingRow = { students: number; classes: number; hours: number; attendancePct: number | null; toMark: number };
+
+/** Admins: the last `days` of teaching, in total and per teacher (finished classes only). */
+export function teachingOverview(db: DB, now: number, days = 30) {
+  const from = now - days * DAY;
+  const row = (cohortIds: string[]): TeachingRow => {
+    const set = new Set(cohortIds);
+    const done = db.sessions.filter((s) => set.has(s.cohortId) && ended(s, now) && new Date(s.start).getTime() >= from);
+    let present = 0;
+    let marks = 0;
+    for (const s of done) {
+      const st = db.students.filter((x) => x.cohortId === s.cohortId);
+      for (const x of st) {
+        if (s.attendance[x.id] === undefined) continue;
+        marks++;
+        if (s.attendance[x.id]) present++;
+      }
+    }
+    const toMark = db.submissions.filter((x) => x.status === "submitted" && set.has(db.assignments.find((a) => a.id === x.assignmentId)?.cohortId ?? "")).length;
+    return {
+      students: db.students.filter((x) => set.has(x.cohortId)).length,
+      classes: done.length,
+      hours: Math.round((done.reduce((n, s) => n + s.durationMin, 0) / 60) * 10) / 10,
+      attendancePct: marks ? Math.round((present / marks) * 100) : null,
+      toMark,
+    };
+  };
+  return {
+    total: row(db.cohorts.map((c) => c.id)),
+    teachers: db.teachers.map((t) => ({ teacher: t, ...row(db.cohorts.filter((c) => c.teacherId === t.id).map((c) => c.id)) })),
+  };
+}
