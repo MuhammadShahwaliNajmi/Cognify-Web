@@ -8,6 +8,8 @@ import { useStudent } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { NextClassCard } from "@/components/portal/classroom";
+import { BusyWeek } from "@/components/portal/busy-week";
+import { onTimeStreak } from "@/lib/portal/insights";
 
 
 export default function StudentDashboard() {
@@ -59,7 +61,7 @@ export default function StudentDashboard() {
         date={fmtDateLong(new Date(now).toISOString())}
         title={`${greeting}, ${me.name.split(" ")[0]}`}
         figures={[
-          { label: "Predicted grade", value: me.predicted || "–" },
+          { label: "On-time streak", value: onTimeStreak(db, me.id, me.cohortId, now) },
           { label: "Overall score", value: max ? `${Math.round((got / max) * 100)}%` : "–" },
           { label: "Attendance", value: `${attendancePct(db, me.id, me.cohortId, now)}%` },
           { label: "To hand in", value: deadlines.length },
@@ -74,6 +76,11 @@ export default function StudentDashboard() {
               <NextClassCard session={next} />
             </section>
           )}
+
+          <section>
+            <SectionTitle>This week</SectionTitle>
+            <BusyWeek db={db} cohortId={me.cohortId} deadlines={deadlines} now={now} />
+          </section>
 
           <section>
             <SectionTitle

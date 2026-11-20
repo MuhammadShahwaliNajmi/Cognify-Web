@@ -109,3 +109,15 @@ export function progressReport(db: DB, st: Student, now: number, opts: { days?: 
   lines.push("", `${opts.teacher ? `${opts.teacher}, ` : ""}Concept Lab Education · cognifypk.com`);
   return lines.join("\n").replace(/\n{3,}/g, "\n\n");
 }
+
+/** Pieces of work in a row handed in on time (most recent deadlines first; stops at the first miss). */
+export function onTimeStreak(db: DB, studentId: string, cohortId: string, now: number) {
+  const past = db.assignments.filter((a) => a.cohortId === cohortId && new Date(a.dueAt).getTime() < now).sort((a, b) => b.dueAt.localeCompare(a.dueAt));
+  let n = 0;
+  for (const a of past) {
+    const sub = submissionFor(db, a.id, studentId);
+    if (!sub || new Date(sub.submittedAt).getTime() > new Date(a.dueAt).getTime() + 2 * 60_000) break;
+    n++;
+  }
+  return n;
+}
