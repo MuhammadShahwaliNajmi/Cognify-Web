@@ -153,7 +153,7 @@ export default function PortalSignIn() {
       )}
 
       <a
-        href="/app/"
+        href="/get-app/"
         className="mt-6 inline-flex items-center gap-2 rounded-full border border-gold px-5 py-2.5 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-navy-deep"
       >
         <Smartphone size={16} />

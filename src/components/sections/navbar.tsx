@@ -131,9 +131,9 @@ export function Navbar() {
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
           </Link>
-          {/* the Concept Lab app (installable from the browser) — a separate page, so a plain link */}
+          {/* how to install the Concept Lab app */}
           <a
-            href="/app/"
+            href="/get-app/"
             aria-label="Get the app"
             title="Get the app"
             className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/15 bg-white px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors duration-300 hover:border-gold hover:text-gold focus-gold xl:px-5"
@@ -217,7 +217,7 @@ export function Navbar() {
                   transition={{ delay: 0.04 * (LINKS.length + 2), ...spring.snappy }}
                 >
                   <a
-                    href="/app/"
+                    href="/get-app/"
                     onClick={() => setOpen(false)}
                     className="flex w-full items-center gap-2 rounded-full border border-white/40 bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-white transition-colors duration-200 hover:border-gold hover:text-gold"
                   >
