@@ -13,6 +13,7 @@ import type { Assignment } from "@/lib/portal/types";
 import { Btn, EmptyRow, Label, Modal, PageHeader, RowLink, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { useTick } from "@/components/portal/classroom";
 import { FeedbackPanel, WorkAndFeedbackFiles } from "@/components/portal/work";
+import { WorkThread } from "@/components/portal/thread";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
   upcoming: "Not started",
@@ -230,6 +231,7 @@ function Room({ a }: { a: Assignment }) {
 
           {sub?.status === "marked" && <FeedbackPanel a={a} sub={sub} now={now} />}
           {sub && <WorkAndFeedbackFiles key={sub.feedbackFiles.map((f) => f.id).join()} sub={sub} student className="[&_iframe]:h-[60vh]" />}
+          <WorkThread assignmentId={a.id} studentId={me.id} />
         </div>
       )}
 

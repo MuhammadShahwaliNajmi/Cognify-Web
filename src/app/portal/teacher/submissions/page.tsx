@@ -10,6 +10,7 @@ import { HOUR, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/li
 import { WorkAndFeedbackFiles, cleanPoint } from "@/components/portal/work";
 import type { Submission } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls, labelCls } from "@/components/portal/ui";
+import { CommentBank, WorkThread } from "@/components/portal/thread";
 
 const navBtn =
   "grid h-9 w-9 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold disabled:opacity-30 focus-gold";
@@ -81,15 +82,20 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
 
         <Field label="Overall feedback">
           <AutoTextarea value={feedback} onChange={(e) => setFeedback(e.target.value)} minRows={5} placeholder="What level is this, and why?" />
+          <CommentBank value={feedback} onInsert={(t) => setFeedback((v) => (v.trim() ? `${v.trim()} ${t}` : t))} />
         </Field>
         <Field label="What they did well">
           <AutoTextarea value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="One point per line" />
+          <CommentBank value={strengths} onInsert={(t) => setStrengths((v) => (v.trim() ? `${v.trim()}\n${t}` : t))} />
         </Field>
         <Field label="To gain more marks">
           <AutoTextarea value={improvements} onChange={(e) => setImprovements(e.target.value)} placeholder="One point per line" />
+          <CommentBank value={improvements} onInsert={(t) => setImprovements((v) => (v.trim() ? `${v.trim()}\n${t}` : t))} />
         </Field>
 
         <ReturnFiles sub={sub} />
+
+        <WorkThread assignmentId={a.id} studentId={sub.studentId} />
 
         {sub.status === "marked" && (
           <div className="rounded-2xl bg-navy/[0.04] p-4">

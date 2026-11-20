@@ -11,6 +11,7 @@ import { isPhoto, photosToPdf } from "@/lib/portal/photos-pdf";
 import type { Assignment, Submission } from "@/lib/portal/types";
 import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
 import { FeedbackPanel, LastTargets, TypedAnswer, WorkAndFeedbackFiles, WorkFile, hasFile } from "@/components/portal/work";
+import { WorkThread } from "@/components/portal/thread";
 
 type Tab = "todo" | "submitted" | "marked" | "all";
 
@@ -188,8 +189,13 @@ function Returned({ a, sub }: { a: Assignment; sub: Submission }) {
 
 /* ---------- detail (inside the modal) ---------- */
 function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
-  if (sub?.status === "marked") return <Returned a={a} sub={sub} />;
-  return <Pending a={a} sub={sub} />;
+  const { me } = useStudent();
+  return (
+    <>
+      {sub?.status === "marked" ? <Returned a={a} sub={sub} /> : <Pending a={a} sub={sub} />}
+      <WorkThread assignmentId={a.id} studentId={me.id} className="mt-6" />
+    </>
+  );
 }
 
 function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
