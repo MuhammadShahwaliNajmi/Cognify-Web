@@ -7,6 +7,7 @@ import { cohortOf, registerMissing, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { needsAttention } from "@/lib/portal/insights";
+import { CommentsToAnswer } from "@/components/portal/comments-to-answer";
 import { Btn, EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 import { ClassDialog } from "@/components/portal/class-tools";
@@ -119,6 +120,8 @@ export default function TeacherDashboard() {
               </Table>
             </section>
           )}
+
+          <CommentsToAnswer />
 
           {attention.length > 0 && (
             <section>
