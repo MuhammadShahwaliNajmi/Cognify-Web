@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useEffect, useState } from "react";
-import { LogIn, Menu, X } from "lucide-react";
+import { LogIn, Menu, Smartphone, X } from "lucide-react";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
@@ -131,6 +131,16 @@ export function Navbar() {
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
           </Link>
+          {/* the Concept Lab app (installable from the browser) — a separate page, so a plain link */}
+          <a
+            href="/app/"
+            aria-label="Get the app"
+            title="Get the app"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/15 bg-white px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors duration-300 hover:border-gold hover:text-gold focus-gold xl:px-5"
+          >
+            <Smartphone size={14} />
+            <span className="hidden xl:inline">App</span>
+          </a>
           <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
@@ -200,6 +210,19 @@ export function Navbar() {
                   >
                     <LogIn size={13} /> Portal
                   </Link>
+                </motion.li>
+                <motion.li
+                  initial={{ opacity: 0, x: -12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.04 * (LINKS.length + 2), ...spring.snappy }}
+                >
+                  <a
+                    href="/app/"
+                    onClick={() => setOpen(false)}
+                    className="flex w-full items-center gap-2 rounded-full border border-white/40 bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-white transition-colors duration-200 hover:border-gold hover:text-gold"
+                  >
+                    <Smartphone size={13} /> Get the app
+                  </a>
                 </motion.li>
               </ul>
 
