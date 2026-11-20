@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Session as AuthSession, SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "@/lib/supabase/client";
 import { loadPortal, toPortal, type Portal } from "./data";
-import { startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
+import { forwardToApp, startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
 import { cohortOf } from "./selectors";
 import { StorageError, fileLink, trashFeedbackFile, trashResource, uploadFile } from "./storage";
 import type { Assignment, Auth, DB, Resource, SeriesInput, Session, Student, Submission, Teacher } from "./types";
@@ -209,6 +209,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       }
     }
     if (!sb) return setStatus("signed-out");
+    // signing in for the phone app: hand Google's answer back to the app and stop here
+    if (forwardToApp()) return;
     let cancelled = false;
     // back from the full-page Google sign-in? exchange its ID token for a session
     const back = takeGoogleRedirect();

@@ -7,6 +7,8 @@ export const metadata = { title: "Page not found · Concept Lab" };
 export default function NotFound() {
   return (
     <main className="relative grid min-h-[100svh] place-items-center overflow-hidden px-6">
+      {/* inside the app (cognifypk.com/app/…): reopen the app instead of showing a 404 */}
+      <script dangerouslySetInnerHTML={{ __html: `if(location.pathname.indexOf("/app/")===0)location.replace("/app/"+location.hash)` }} />
       <div className="aura" aria-hidden="true" />
       <div className="relative z-10 flex flex-col items-center text-center">
         <Link href="/" aria-label="Concept Lab home">
