@@ -8,7 +8,7 @@ import { DAY_LONG, DAY_SHORT, describeRule, isoDayOf, lastDayAfter, ruleOf, ymd,
 import { usePortal } from "@/lib/portal/store";
 import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { ClassRequest, Resource, Session } from "@/lib/portal/types";
-import { Btn, Field, Label, Modal, Status, fieldCls, labelCls } from "./ui";
+import { AutoTextarea, Btn, Field, Label, Modal, Status, fieldCls, labelCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
 import { ResourceViewer } from "./resources";
 
@@ -426,6 +426,29 @@ export function ClassSetup({ cohortId }: { cohortId: string }) {
   );
 }
 
+/** Teacher: what the class covered and what to do next (the student is told the first time). */
+function NotesField({ session }: { session: Session }) {
+  const { setLessonNotes, toast } = usePortal();
+  const [notes, setNotes] = useState(session.notes ?? "");
+  return (
+    <div>
+      <Field label="Lesson notes">
+        <AutoTextarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={4000} placeholder="What we covered, and what to do before next class" />
+      </Field>
+      <Btn
+        variant="navy"
+        className="mt-2.5"
+        disabled={notes.trim() === (session.notes ?? "").trim()}
+        onClick={async () => {
+          if (await setLessonNotes(session.id, notes)) toast(session.notes ? "Notes updated" : "Notes saved · the student has been told");
+        }}
+      >
+        Save notes
+      </Btn>
+    </div>
+  );
+}
+
 function RecordingField({ session }: { session: Session }) {
   const { setRecording, toast } = usePortal();
   const [url, setUrl] = useState(session.recordingUrl ?? "");
@@ -839,6 +862,13 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
               </div>
             )}
 
+            {ended && teacher && !virtual && <NotesField key={`notes-${s.id}`} session={s} />}
+            {!teacher && s.notes && (
+              <div className="rounded-2xl border-l-[3px] border-gold bg-gold/10 p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Lesson notes</p>
+                <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{s.notes}</p>
+              </div>
+            )}
             {ended && teacher && <RecordingField key={s.id} session={s} />}
           </div>
         )}

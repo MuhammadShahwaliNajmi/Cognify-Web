@@ -57,6 +57,7 @@ export type Snapshot = {
     duration_min: number;
     meet_url: string | null;
     recording_url: string | null;
+    notes?: string | null;
     timetable_id?: Id | null;
     attendance: Record<string, boolean>;
   }[];
@@ -298,6 +299,7 @@ export function toPortal(all: Snapshot): Portal {
         durationMin: s.duration_min,
         meetUrl: s.meet_url ?? undefined,
         recordingUrl: s.recording_url ?? undefined,
+        notes: s.notes ?? undefined,
         timetableId: s.timetable_id === null || s.timetable_id === undefined ? undefined : id(s.timetable_id),
         attendance: s.attendance,
       })),

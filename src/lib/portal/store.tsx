@@ -52,6 +52,8 @@ type Store = {
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
+  /** teacher: lesson notes for a class (the student is told the first time) */
+  setLessonNotes: (sessionId: string, notes: string) => Promise<boolean>;
   /** a repeating class (like Google Calendar): these weekdays, every N weeks, from startDate until endsOn or stopped */
   addRepeatingClass: (r: { cohortId: string } & SeriesInput) => Promise<boolean>;
   /** change a series: every class ("all") or from a day on ("following") */
@@ -395,6 +397,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Rescheduling", (api) => api.rpc("reschedule_session", { p_session: num(sessionId), p_start: start, p_duration: durationMin })),
       cancelSession: (sessionId) =>
         run("Cancelling the class", (api) => api.from("sessions").update({ cancelled: true }).eq("id", num(sessionId))),
+      setLessonNotes: (sessionId, notes) =>
+        run("Saving the notes", (api) => api.from("sessions").update({ notes: notes.trim() || null }).eq("id", num(sessionId))),
       setRecording: async (sessionId, url) => {
         const ses = db.sessions.find((s) => s.id === sessionId);
         if (!sb || !ses) return false;

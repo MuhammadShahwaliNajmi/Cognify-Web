@@ -81,6 +81,8 @@ export type Session = {
   durationMin: number;
   meetUrl?: string;
   recordingUrl?: string; // Google Drive link once uploaded
+  /** the teacher's lesson notes after the class (what was covered, what to do next) */
+  notes?: string;
   /** set when the class is part of a repeating series */
   timetableId?: string;
   /** a class far ahead, drawn from its series' rule (not stored yet) */
