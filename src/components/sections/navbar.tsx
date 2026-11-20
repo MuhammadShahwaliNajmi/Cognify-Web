@@ -79,9 +79,7 @@ export function Navbar() {
       <nav
         className={cn(
           "flex w-full items-center justify-between px-6 transition-all duration-500 lg:px-10",
-          scrolled
-            ? "border-b border-navy/12 bg-white/85 py-3 backdrop-blur-xl"
-            : "border-b border-transparent bg-transparent py-5"
+          scrolled ? "border-b border-navy/12 bg-white/85 py-3 backdrop-blur-xl" : "border-b border-transparent bg-transparent py-5",
         )}
       >
         <a href="#top" aria-label="Concept Lab home" className="flex items-center">
@@ -108,12 +106,7 @@ export function Navbar() {
                     transition={{ type: "spring", stiffness: 420, damping: 34 }}
                   />
                 )}
-                <span
-                  className={cn(
-                    "relative z-10 transition-colors duration-200",
-                    hovered === i ? "text-navy-deep" : "text-white"
-                  )}
-                >
+                <span className={cn("relative z-10 transition-colors duration-200", hovered === i ? "text-navy-deep" : "text-white")}>
                   {l.label}
                 </span>
               </a>
@@ -131,29 +124,45 @@ export function Navbar() {
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
           </Link>
-          {/* how to install the Concept Lab app */}
+          {/* the Concept Lab app: how to install it */}
           <a
             href="/get-app/"
-            aria-label="Get the app"
-            title="Get the app"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-navy/15 bg-white px-3 py-2.5 text-[0.8125rem] font-semibold tracking-tight text-navy transition-colors duration-300 hover:border-gold hover:text-gold focus-gold xl:px-5"
+            aria-label="Get the Concept Lab app"
+            className="group inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-gold/70 bg-white py-2 pl-2 pr-3 text-[0.8125rem] font-semibold tracking-tight text-navy shadow-[0_8px_24px_-14px_rgba(212,178,84,0.9)] transition-colors duration-300 hover:border-gold hover:bg-gold hover:text-navy-deep focus-gold lg:pr-4"
           >
-            <Smartphone size={14} />
-            <span className="hidden xl:inline">App</span>
+            <span className="relative grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold transition-colors duration-300 group-hover:bg-navy-deep">
+              <Smartphone size={13} />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-gold ring-2 ring-white" />
+            </span>
+            <span className="hidden lg:inline">Get the app</span>
+            <span className="lg:hidden">App</span>
           </a>
           <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
         </div>
 
-        <button
-          aria-label="Toggle menu"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="grid h-9 w-9 place-items-center rounded-full text-navy md:hidden focus-gold"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        {/* phones: the app, one tap from the top bar */}
+        <div className="flex items-center gap-2 md:hidden">
+          <a
+            href="/get-app/"
+            aria-label="Get the Concept Lab app"
+            className="inline-flex items-center gap-1.5 rounded-full bg-gold py-1.5 pl-1.5 pr-3 text-[13px] font-semibold tracking-tight text-navy-deep shadow-[0_8px_20px_-12px_rgba(212,178,84,0.9)] active:scale-[0.97]"
+          >
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold">
+              <Smartphone size={13} />
+            </span>
+            App
+          </a>
+          <button
+            aria-label="Toggle menu"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+            className="grid h-9 w-9 place-items-center rounded-full text-navy md:hidden focus-gold"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </nav>
 
       <AnimatePresence>
