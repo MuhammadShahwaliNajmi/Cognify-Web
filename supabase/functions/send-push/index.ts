@@ -15,6 +15,8 @@ type Push = { id: number; title: string; body: string; url: string | null; devic
 function appUrl(url: string | null) {
   const go = (path: string) => `/app/?go=${encodeURIComponent(path)}`;
   if (!url) return "/app/";
+  // links that already point into the app (e.g. a comment thread) open as they are
+  if (url.startsWith("https://cognifypk.com/app/")) return url.slice("https://cognifypk.com".length);
   const id = url.match(/[?&](?:join|open)=(\d+)/)?.[1];
   if (/\/portal\/student\/\?join=/.test(url) && id) return go(`/class/${id}`);
   if (/\/portal\/student\/(assignments|assessments)\//.test(url) && id) return go(`/work/${id}`);
