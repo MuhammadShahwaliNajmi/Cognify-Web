@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
+import { CopyPlus, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
@@ -26,17 +26,19 @@ import {
 } from "@/components/portal/ui";
 
 /** Set a new assignment, or change / delete an existing one. */
-function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editing?: Assignment; onDone: () => void }) {
+function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { cohortId: string; editing?: Assignment; copyFrom?: Assignment; onDone: () => void; onSetAgain?: (a: Assignment) => void }) {
   const { db, addAssignment, updateAssignment, deleteAssignment, toast } = useTeacher();
   const due = editing ? new Date(editing.dueAt) : null;
+  // "Set again" starts from another piece of work (same paper), with a new date
+  const src = editing ?? copyFrom;
   const [f, setF] = useState({
-    title: editing?.title ?? "",
-    kind: editing?.kind ?? ("Essay" as AssignmentKind),
-    unit: editing?.unit ?? "",
-    brief: editing?.brief ?? "",
+    title: src?.title ?? "",
+    kind: src?.kind ?? ("Essay" as AssignmentKind),
+    unit: src?.unit ?? "",
+    brief: src?.brief ?? "",
     date: dateInput(due ?? new Date(Date.now() + 7 * DAY)),
     time: due ? timeInput(due) : "23:59",
-    maxMarks: String(editing?.maxMarks ?? 20),
+    maxMarks: String(src?.maxMarks ?? 20),
   });
   const [deleting, setDeleting] = useState(false);
   // a new assignment can go to several students at once
@@ -99,6 +101,9 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
       {editing && <QuestionPaperField a={editing} />}
       {!editing && (
         <Field label="Question paper (optional)">
+          {copyFrom?.attachmentFileId && !paper && (
+            <p className="mb-2 text-[13px] font-semibold text-navy">Uses the same paper: {copyFrom.attachmentName || "question paper"}. Choose a file to replace it.</p>
+          )}
           <input
             type="file"
             onChange={(e) => setPaper(e.target.files?.[0] ?? null)}
@@ -136,7 +141,9 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
             attachmentFileId?: string;
             attachmentName?: string;
             attachmentMime?: string;
-          } = {};
+          } = copyFrom?.attachmentFileId
+            ? { attachmentFileId: copyFrom.attachmentFileId, attachmentName: copyFrom.attachmentName, attachmentMime: copyFrom.attachmentMime }
+            : {};
           if (paper) {
             try {
               setProgress(0);
@@ -202,7 +209,12 @@ function AssignmentForm({ cohortId, editing, onDone }: { cohortId: string; editi
             </Btn>
           </div>
         ) : (
-          <div>
+          <div className="flex flex-wrap gap-2">
+            {onSetAgain && editing && (
+              <Btn variant="outline" size="sm" onClick={() => onSetAgain(editing)}>
+                <CopyPlus size={14} /> Set again
+              </Btn>
+            )}
             <Btn variant="ghost" size="sm" onClick={() => setDeleting(true)}>
               <Trash2 size={14} /> Delete assignment
             </Btn>
@@ -219,6 +231,7 @@ export default function TeacherAssignments() {
   const [tab, setTab] = useState<"open" | "closed" | "all">("open");
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [copyFrom, setCopyFrom] = useState<Assignment | null>(null);
   const editing = db.assignments.find((a) => a.id === editId);
 
   const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
@@ -346,8 +359,22 @@ export default function TeacherAssignments() {
       <Modal open={creating} onClose={() => setCreating(false)} title="New assignment">
         <AssignmentForm cohortId={cohort.id} onDone={() => setCreating(false)} />
       </Modal>
+      <Modal open={!!copyFrom} onClose={() => setCopyFrom(null)} title="Set again">
+        {copyFrom && <AssignmentForm key={`copy-${copyFrom.id}`} cohortId={cohort.id} copyFrom={copyFrom} onDone={() => setCopyFrom(null)} />}
+      </Modal>
       <Modal open={!!editing} onClose={() => setEditId(null)} eyebrow={cohort.name} title="Edit assignment">
-        {editing && <AssignmentForm key={editing.id} cohortId={cohort.id} editing={editing} onDone={() => setEditId(null)} />}
+        {editing && (
+          <AssignmentForm
+            key={editing.id}
+            cohortId={cohort.id}
+            editing={editing}
+            onDone={() => setEditId(null)}
+            onSetAgain={(a) => {
+              setEditId(null);
+              setCopyFrom(a);
+            }}
+          />
+        )}
       </Modal>
     </>
   );
