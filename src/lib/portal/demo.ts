@@ -26,7 +26,7 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
     { id: 13, email: "hania.qureshi@example.com", role: "student", full_name: "Hania Qureshi", title: null, plan: "Elite", cohort_id: 103, predicted: "", target: "", is_admin: false },
   ];
   const cohorts: Snapshot["cohorts"] = [
-    { id: 101, name: "Zara Malik", board: "IB Diploma", subject: "Economics", meet_url: "https://meet.google.com/abc-defg-hij", join_code: "K7QM-2XPD", teacher_id: 1, archived_at: null },
+    { id: 101, name: "Zara Malik", board: "IB Diploma", subject: "Economics", meet_url: "https://meet.google.com/abc-defg-hij", join_code: "K7QM-2XPD", teacher_id: 1, archived_at: null, exam_on: "2027-05-04" },
     { id: 102, name: "Omar Sheikh", board: "A Level", subject: "Economics & Business", meet_url: "https://meet.google.com/klm-nopq-rst", join_code: "T4WN-8HBC", teacher_id: 2, archived_at: null },
     { id: 103, name: "Hania Qureshi", board: "IGCSE", subject: "Business", meet_url: null, join_code: "R9FZ-3JKV", teacher_id: 1, archived_at: null },
     { id: 104, name: "Daniyal Farooq", board: "O Level", subject: "Economics", meet_url: null, join_code: "M2CY-6GTE", teacher_id: 1, archived_at: null },

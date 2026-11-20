@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { assessmentState, attendancePct, meetLink, workHref } from "@/lib/portal/selectors";
+import { assessmentState, attendancePct, cohortOf, daysToExam, meetLink, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
@@ -52,6 +52,12 @@ export default function StudentDashboard() {
   const max = read.reduce((n, x) => n + (db.assignments.find((a) => a.id === x.assignmentId)?.maxMarks ?? 0), 0);
   const got = read.reduce((n, x) => n + (x.marks ?? 0), 0);
 
+  const examIn = daysToExam(cohortOf(db, me.cohortId), now);
+  // files added to The Vault in the last week
+  const fresh = db.resources
+    .filter((r) => r.cohortId === me.cohortId && now - new Date(r.addedAt).getTime() < 7 * 86_400_000)
+    .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
+    .slice(0, 4);
   const hour = new Date(now).getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
@@ -61,7 +67,9 @@ export default function StudentDashboard() {
         date={fmtDateLong(new Date(now).toISOString())}
         title={`${greeting}, ${me.name.split(" ")[0]}`}
         figures={[
-          { label: "On-time streak", value: onTimeStreak(db, me.id, me.cohortId, now) },
+          examIn !== null
+            ? { label: "Days to exams", value: examIn }
+            : { label: "On-time streak", value: onTimeStreak(db, me.id, me.cohortId, now) },
           { label: "Overall score", value: max ? `${Math.round((got / max) * 100)}%` : "–" },
           { label: "Attendance", value: `${attendancePct(db, me.id, me.cohortId, now)}%` },
           { label: "To hand in", value: deadlines.length },
@@ -126,6 +134,20 @@ export default function StudentDashboard() {
         </div>
 
         <aside className="space-y-6">
+          {fresh.length > 0 && (
+            <Panel title="New in The Vault" link={{ href: "/portal/student/resources/", label: "Open" }}>
+              <ul className="space-y-2.5">
+                {fresh.map((r) => (
+                  <li key={r.id} className="text-[14px] text-navy">
+                    <span className="block font-semibold">{r.title}</span>
+                    <span className="text-[12px]">
+                      {r.type} · {fmtRelative(r.addedAt, now)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
           <Panel title="Announcements" link={{ href: "/portal/student/announcements/", label: "View all" }}>
             {notices.length === 0 ? (
               <p className="text-sm text-navy">Nothing new.</p>

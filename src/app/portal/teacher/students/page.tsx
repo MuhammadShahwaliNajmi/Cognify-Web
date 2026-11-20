@@ -15,6 +15,35 @@ import { TrendChart } from "@/components/portal/charts";
 import { ClassSetup, ScheduleForm } from "@/components/portal/class-tools";
 import { describeRule } from "@/lib/portal/series";
 
+/** The student's exam date: their home screen counts down to it. */
+function ExamDateForm({ cohortId }: { cohortId: string }) {
+  const { db, setExamDate, toast } = useTeacher();
+  const saved = db.cohorts.find((c) => c.id === cohortId)?.examOn ?? "";
+  const [date, setDate] = useState(saved);
+  const [busy, setBusy] = useState(false);
+  return (
+    <div className="mt-3 flex flex-wrap items-end gap-3">
+      <label className="w-44">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Exam date</span>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
+      </label>
+      <Btn
+        variant="navy"
+        disabled={date === saved || busy}
+        onClick={async () => {
+          setBusy(true);
+          const ok = await setExamDate(cohortId, date);
+          setBusy(false);
+          if (ok) toast(date ? "Exam date saved" : "Exam date removed");
+        }}
+        className="mb-0.5"
+      >
+        {busy ? "Saving…" : "Save date"}
+      </Btn>
+    </div>
+  );
+}
+
 /** Predicted and target grade — set by the teacher, shown to the student. */
 function GradeForm({ s }: { s: Student }) {
   const { updateStudent, toast } = useTeacher();
@@ -77,6 +106,7 @@ function Profile({ s }: { s: Student }) {
         <Stat label="Average" value={averagePct(db, s.id) !== null ? `${averagePct(db, s.id)}%` : "–"} />
       </div>
       <GradeForm key={`${s.predicted}|${s.target}`} s={s} />
+      <ExamDateForm key={`exam-${s.cohortId}`} cohortId={s.cohortId} />
       <ProgressReport key={s.id} s={s} />
 
       {progress && (

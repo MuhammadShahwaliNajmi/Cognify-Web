@@ -47,6 +47,8 @@ type Store = {
   /** teacher: take the register for a student (present or absent) */
   setAttendance: (sessionId: string, studentId: string, present: boolean) => Promise<boolean>;
   setCohortMeet: (cohortId: string, url: string) => Promise<boolean>;
+  /** teacher: the student's exam date (yyyy-mm-dd), or "" to clear it */
+  setExamDate: (cohortId: string, date: string) => Promise<boolean>;
   regenerateCode: (cohortId: string) => Promise<boolean>;
   addSession: (s: Omit<Session, "id" | "attendance">) => Promise<boolean>;
   setRecording: (sessionId: string, url: string) => Promise<boolean>;
@@ -339,6 +341,8 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Updating the register", (api) => api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present })),
       setCohortMeet: (cohortId, url) =>
         run("Saving the Meet link", (api) => api.from("cohorts").update({ meet_url: url.trim() || null }).eq("id", num(cohortId))),
+      setExamDate: (cohortId, date) =>
+        run("Saving the exam date", (api) => api.from("cohorts").update({ exam_on: date || null }).eq("id", num(cohortId))),
       regenerateCode: (cohortId) => run("Creating a new code", (api) => api.rpc("regenerate_join_code", { p_cohort_id: num(cohortId) })),
       addRepeatingClass: (r) =>
         run("Adding the repeating class", (api) =>

@@ -1,7 +1,7 @@
 /** Small read-only lookups over the portal data, shared by several screens. */
 import type { Cohort, DB, Session } from "./types";
 
-const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "", teacherId: "" };
+const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "", teacherId: "", examOn: "" };
 
 export const cohortOf = (db: DB, id: string) => db.cohorts.find((c) => c.id === id) ?? EMPTY_COHORT;
 
@@ -69,4 +69,14 @@ export function assessmentState(db: DB, a: { id: string; dueAt: string }, studen
   }
   if (sub) return "submitted";
   return now <= new Date(a.dueAt).getTime() ? "upcoming" : "missed";
+}
+
+/** Whole days from today to the exam date (0 = today), or null when no date / it has passed. */
+export function daysToExam(c: Cohort, now: number) {
+  if (!c.examOn) return null;
+  const exam = new Date(`${c.examOn}T00:00:00`);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const d = Math.round((exam.getTime() - today.getTime()) / 86_400_000);
+  return d >= 0 ? d : null;
 }

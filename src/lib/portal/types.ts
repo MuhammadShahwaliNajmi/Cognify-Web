@@ -19,6 +19,8 @@ export type Cohort = {
   joinCode: string;
   /** the teacher this student belongs to ("" if unassigned → admin only) */
   teacherId: string;
+  /** the student's exam date (yyyy-mm-dd), "" if not set: the home screen counts down to it */
+  examOn: string;
 };
 
 /** One weekly class time; "start" is HH:MM in Pakistan time. */

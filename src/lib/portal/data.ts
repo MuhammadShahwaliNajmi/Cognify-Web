@@ -32,6 +32,7 @@ export type Snapshot = {
     join_code: string;
     teacher_id: Id | null;
     archived_at: string | null;
+    exam_on?: string | null;
   }[];
   timetable: {
     cohort_id: Id;
@@ -168,6 +169,7 @@ export function toPortal(all: Snapshot): Portal {
     meetUrl: c.meet_url ?? "",
     joinCode: c.join_code,
     teacherId: id(c.teacher_id),
+    examOn: c.exam_on ?? "",
   });
   const students: Student[] = snap.members
     .filter((m) => m.role === "student")
