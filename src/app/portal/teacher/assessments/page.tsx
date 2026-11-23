@@ -93,7 +93,7 @@ function AssessmentForm({
   return (
     <div className="space-y-5">
       {!editing && (
-        <MultiPick label="Set for" value={forIds} onChange={setForIds} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+        <MultiPick single label="Student" value={forIds} onChange={setForIds} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />
       )}
       <Field label="Title">
         <input

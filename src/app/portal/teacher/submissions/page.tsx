@@ -98,13 +98,10 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
 
         <WorkThread assignmentId={a.id} studentId={sub.studentId} />
 
-        {sub.status === "marked" && (
+        {sub.status === "marked" && sub.reflection && (
           <div className="rounded-2xl bg-navy/[0.04] p-4">
-            <Label>Student</Label>
-            <p className="mt-1.5 text-sm font-semibold text-navy">
-              {sub.seenAt ? `Read the feedback ${fmtRelative(sub.seenAt, now)}` : "Hasn't read the feedback yet"}
-            </p>
-            {sub.reflection && <p className="mt-2 text-sm italic leading-relaxed text-navy">Their next step: &ldquo;{sub.reflection}&rdquo;</p>}
+            <Label>Their next step</Label>
+            <p className="mt-1.5 text-sm italic leading-relaxed text-navy">&ldquo;{sub.reflection}&rdquo;</p>
           </div>
         )}
 
@@ -281,7 +278,7 @@ function Submissions() {
                   </Td>
                   <Td>
                     {x.status === "marked" ? (
-                      <Status tone="done">{x.seenAt ? (x.reflection ? "Read · next step set" : "Read") : "Returned · not read"}</Status>
+                      <Status tone="done">Returned</Status>
                     ) : left < 0 ? (
                       <Status tone="attention">Late by {fmtDuration(-left)}</Status>
                     ) : left < 6 * HOUR ? (

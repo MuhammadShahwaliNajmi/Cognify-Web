@@ -56,7 +56,7 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
   return (
     <div className="space-y-5">
       {!editing && db.cohorts.length > 1 && (
-        <MultiPick label="Set for" value={forIds} onChange={setForIds} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+        <MultiPick single label="Student" value={forIds} onChange={setForIds} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
       )}
       <Field label="Title">
         <input

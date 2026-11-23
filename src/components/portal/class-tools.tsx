@@ -570,7 +570,7 @@ function EditClassForm({ session, rule, onDone, onCancel }: { session: Session; 
 const fmtWhen = (iso: string) => `${fmtDateLong(iso)}, ${fmtTime(iso)}`;
 
 /** Student: ask to move or cancel a class. */
-function RequestForm({ session, kind, onDone, onCancel }: { session: Session; kind: "reschedule" | "cancel"; onDone: () => void; onCancel: () => void }) {
+export function RequestForm({ session, kind, onDone, onCancel }: { session: Session; kind: "reschedule" | "cancel"; onDone: () => void; onCancel: () => void }) {
   const { auth, requestChange, toast } = usePortal();
   const start = new Date(session.start);
   const [date, setDate] = useState(dateInput(start));
@@ -578,7 +578,7 @@ function RequestForm({ session, kind, onDone, onCancel }: { session: Session; ki
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const next = new Date(`${date}T${time}`);
-  const valid = kind === "cancel" || (date && time && next.getTime() > Date.now() && next.getTime() !== start.getTime());
+  const valid = note.trim().length > 0 && (kind === "cancel" || (date && time && next.getTime() > Date.now() && next.getTime() !== start.getTime()));
 
   return (
     <div className="rounded-xl border border-navy/15 p-4">
@@ -594,8 +594,8 @@ function RequestForm({ session, kind, onDone, onCancel }: { session: Session; ki
         </div>
       )}
       <div className="mt-4">
-        <Field label="Reason (optional)">
-          <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 500))} className={fieldCls} />
+        <Field label="Reason">
+          <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 500))} placeholder="e.g. School trip that day" className={fieldCls} />
         </Field>
       </div>
       <div className="mt-4 flex gap-2.5">

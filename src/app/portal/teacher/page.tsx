@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cohortOf, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
-import { needsAttention } from "@/lib/portal/insights";
+import { flagKey, needsAttention, type Flag } from "@/lib/portal/insights";
+import { getSupabase } from "@/lib/supabase/client";
 import { CommentsToAnswer } from "@/components/portal/comments-to-answer";
 import { Btn, EmptyRow, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
@@ -33,7 +34,24 @@ export default function TeacherDashboard() {
     const ms = new Date(a.dueAt).getTime() - now;
     return ms > 0 && ms < 7 * DAY;
   }).length;
-  const attention = needsAttention(db, now);
+  // flags the teacher cleared (kept in the database, so every device agrees)
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    getSupabase()
+      ?.from("attention_dismissals")
+      .select("key")
+      .then(({ data }) => alive && data && setDismissed(new Set((data as { key: string }[]).map((r) => r.key))));
+    return () => {
+      alive = false;
+    };
+  }, []);
+  const attention = needsAttention(db, now, dismissed);
+  const dismiss = async (studentId: string, flags: Flag[]) => {
+    const keys = flags.map((f) => flagKey(studentId, f));
+    setDismissed((d) => new Set(Array.from(d).concat(keys)));
+    await getSupabase()?.from("attention_dismissals").upsert(keys.map((key) => ({ key })), { onConflict: "member_id,key", ignoreDuplicates: true });
+  };
   const requests = db.requests.filter((r) => r.status === "pending" && db.sessions.some((s) => s.id === r.sessionId));
 
   return (
@@ -125,9 +143,14 @@ export default function TeacherDashboard() {
                     <Td className="font-medium">{st.name}</Td>
                     <Td>{flags.map((f) => f.text).join(" · ")}</Td>
                     <Td align="right">
-                      <Btn variant="outline" size="sm" href={`/portal/teacher/students/?open=${st.id}`}>
-                        Open
-                      </Btn>
+                      <div className="flex justify-end gap-2">
+                        <Btn variant="outline" size="sm" href={`/portal/teacher/students/?open=${st.id}`}>
+                          Open
+                        </Btn>
+                        <Btn variant="ghost" size="sm" onClick={() => dismiss(st.id, flags)} aria-label={`Dismiss for ${st.name}`}>
+                          Dismiss
+                        </Btn>
+                      </div>
                     </Td>
                   </tr>
                 ))}

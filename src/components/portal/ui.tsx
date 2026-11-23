@@ -232,17 +232,21 @@ export function MultiPick({
   value,
   onChange,
   options,
+  single,
 }: {
   label: string;
   value: string[];
   onChange: (v: string[]) => void;
   options: { value: string; label: string }[];
+  /** one at a time: picking another replaces the first */
+  single?: boolean;
 }) {
   const all = value.length === options.length;
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
         <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">{label}</span>
+        {!single && (
         <button
           type="button"
           onClick={() => onChange(all ? [] : options.map((o) => o.value))}
@@ -250,6 +254,7 @@ export function MultiPick({
         >
           {all ? "Clear" : "Select all"}
         </button>
+        )}
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
         {options.map((o) => {
@@ -259,7 +264,7 @@ export function MultiPick({
               key={o.value}
               type="button"
               aria-pressed={on}
-              onClick={() => onChange(on ? value.filter((v) => v !== o.value) : [...value, o.value])}
+              onClick={() => onChange(single ? [o.value] : on ? value.filter((v) => v !== o.value) : [...value, o.value])}
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
                 on ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"

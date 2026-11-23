@@ -7,7 +7,7 @@ import type { DB, Student } from "./types";
 
 const DAY = 86_400_000;
 
-export type Flag = { kind: "attendance" | "missing" | "falling" | "unread"; text: string };
+export type Flag = { kind: "attendance" | "missing" | "falling"; text: string };
 
 const ended = (s: { start: string; durationMin: number }, now: number) => new Date(s.start).getTime() + s.durationMin * 60_000 < now;
 
@@ -51,15 +51,16 @@ export function studentFlags(db: DB, st: Student, now: number): Flag[] {
     if (before - recent >= 10) flags.push({ kind: "falling", text: `Scores down ${before - recent} points` });
   }
 
-  const unread = db.submissions.filter((x) => x.studentId === st.id && x.status === "marked" && !x.seenAt && x.markedAt && new Date(x.markedAt).getTime() < now - 3 * DAY).length;
-  if (unread) flags.push({ kind: "unread", text: `Hasn't read ${unread} feedback` });
   return flags;
 }
 
-/** Every student with at least one flag, most flags first. */
-export function needsAttention(db: DB, now: number) {
+/** A flag's identity: the same reason stays dismissed; a changed one (e.g. 2 → 3 missing) shows again. */
+export const flagKey = (studentId: string, f: Flag) => `${studentId}|${f.kind}|${f.text}`;
+
+/** Every student with at least one flag (minus the ones the teacher dismissed), most flags first. */
+export function needsAttention(db: DB, now: number, dismissed: Set<string> = new Set()) {
   return db.students
-    .map((st) => ({ st, flags: studentFlags(db, st, now) }))
+    .map((st) => ({ st, flags: studentFlags(db, st, now).filter((f) => !dismissed.has(flagKey(st.id, f))) }))
     .filter((x) => x.flags.length)
     .sort((a, b) => b.flags.length - a.flags.length || a.st.name.localeCompare(b.st.name));
 }

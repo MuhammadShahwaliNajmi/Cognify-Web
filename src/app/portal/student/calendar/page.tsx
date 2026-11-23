@@ -9,6 +9,7 @@ import { sessionState } from "@/lib/portal/format";
 import type { Session } from "@/lib/portal/types";
 import { PageHeader } from "@/components/portal/ui";
 import { CalendarSync } from "@/components/portal/calendar-sync";
+import { RequestChange } from "@/components/portal/request-change";
 import { NextClassCard } from "@/components/portal/classroom";
 import { WeekCalendar, type CalEvent } from "@/components/portal/calendar";
 import { ClassDialog } from "@/components/portal/class-tools";
@@ -57,7 +58,15 @@ export default function StudentCalendar() {
 
   return (
     <>
-      <PageHeader title="Calendar" actions={<CalendarSync />} />
+      <PageHeader
+        title="Calendar"
+        actions={
+          <>
+            <RequestChange />
+            <CalendarSync />
+          </>
+        }
+      />
       {next && (
         <div className="mb-8">
           <NextClassCard session={next} />
