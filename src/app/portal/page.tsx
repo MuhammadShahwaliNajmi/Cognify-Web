@@ -7,6 +7,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { usePortal } from "@/lib/portal/store";
 import { GoogleSignInButton } from "@/components/portal/google-button";
+import { keepSignedIn, setKeepSignedIn } from "@/lib/portal/keep-signed-in";
 
 function JoinForm() {
   const { email, joinWithCode, signOut } = usePortal();
@@ -74,6 +75,8 @@ export default function PortalSignIn() {
   const { status, auth, email, signInWithGoogle, toasts } = usePortal();
   const router = useRouter();
   const [going, setGoing] = useState(false);
+  const [keep, setKeep] = useState(true);
+  useEffect(() => setKeep(keepSignedIn()), []);
   // back from Google's full-page sign-in (the store swaps the token for a session)
   const [returning, setReturning] = useState(false);
   useEffect(() => setReturning(window.location.hash.includes("id_token=")), []);
@@ -126,6 +129,18 @@ export default function PortalSignIn() {
                 <GoogleSignInButton onBusy={setGoing} />
               </div>
             </div>
+            <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 text-[13px] font-medium text-navy">
+              <input
+                type="checkbox"
+                checked={keep}
+                onChange={(e) => {
+                  setKeep(e.target.checked);
+                  setKeepSignedIn(e.target.checked);
+                }}
+                className="h-4 w-4 accent-[#1a2744]"
+              />
+              Keep me signed in
+            </label>
             <button
               type="button"
               onClick={() => signInWithGoogle()}

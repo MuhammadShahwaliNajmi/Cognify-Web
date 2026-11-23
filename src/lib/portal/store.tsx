@@ -5,6 +5,7 @@ import type { Session as AuthSession, SupabaseClient } from "@supabase/supabase-
 import { getSupabase } from "@/lib/supabase/client";
 import { loadPortal, toPortal, type Portal } from "./data";
 import { forwardToApp, startGoogleRedirect, takeGoogleRedirect } from "./google-redirect";
+import { browserWasClosed, markAlive } from "./keep-signed-in";
 import { cohortOf } from "./selectors";
 import { StorageError, fileLink, trashFeedbackFile, trashResource, uploadFile } from "./storage";
 import type { Assignment, Auth, DB, Resource, SeriesInput, Session, Student, Submission, Teacher } from "./types";
@@ -218,6 +219,10 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
     // signing in for the phone app: hand Google's answer back to the app and stop here
     if (forwardToApp()) return;
     let cancelled = false;
+    // "keep me signed in" was off and the browser has been closed since: sign out on this device
+    const expired = browserWasClosed();
+    markAlive();
+    if (expired) sb.auth.signOut({ scope: "local" });
     // back from the full-page Google sign-in? exchange its ID token for a session
     const back = takeGoogleRedirect();
     const exchanging = !!back && "idToken" in back;
