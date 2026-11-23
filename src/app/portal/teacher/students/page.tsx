@@ -11,8 +11,24 @@ import { ParentAccess } from "@/components/portal/parent-access";
 import { exportAttendance, exportGrades } from "@/lib/portal/export";
 import { fmtDate, fmtTime, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Stat, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import {
+  Avatar,
+  Btn,
+  Chip,
+  EmptyRow,
+  Field,
+  Label,
+  Modal,
+  PageHeader,
+  RowLink,
+  Stat,
+  Status,
+  Table,
+  Td,
+  fieldCls,
+} from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
+import { predictGrade } from "@/lib/portal/insights";
 import { ClassSetup, ScheduleForm } from "@/components/portal/class-tools";
 import { describeRule } from "@/lib/portal/series";
 
@@ -45,35 +61,30 @@ function ExamDateForm({ cohortId }: { cohortId: string }) {
   );
 }
 
-/** Predicted and target grade — set by the teacher, shown to the student. */
+/** Target grade — set by the teacher (the predicted grade is worked out from their work). */
 function GradeForm({ s }: { s: Student }) {
   const { updateStudent, toast } = useTeacher();
-  const [predicted, setPredicted] = useState(s.predicted);
   const [target, setTarget] = useState(s.target);
   const [busy, setBusy] = useState(false);
-  const changed = predicted.trim() !== s.predicted || target.trim() !== s.target;
+  const changed = target.trim() !== s.target;
   return (
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="w-28">
-        <span className="text-[12px] font-semibold text-navy">Predicted</span>
-        <input value={predicted} onChange={(e) => setPredicted(e.target.value.slice(0, 4))} placeholder="A / 6" className={fieldCls} />
-      </label>
-      <label className="w-28">
         <span className="text-[12px] font-semibold text-navy">Target</span>
-        <input value={target} onChange={(e) => setTarget(e.target.value.slice(0, 4))} placeholder="A* / 7" className={fieldCls} />
+        <input value={target} onChange={(e) => setTarget(e.target.value.slice(0, 6))} placeholder="A* / 7" className={fieldCls} />
       </label>
       <Btn
         variant="navy"
         disabled={!changed || busy}
         onClick={async () => {
           setBusy(true);
-          const ok = await updateStudent(s.id, { predicted, target });
+          const ok = await updateStudent(s.id, { predicted: s.predicted, target });
           setBusy(false);
-          if (ok) toast("Grades saved");
+          if (ok) toast("Target saved");
         }}
         className="mb-0.5"
       >
-        {busy ? "Saving…" : "Save grades"}
+        {busy ? "Saving…" : "Save target"}
       </Btn>
     </div>
   );
@@ -82,6 +93,7 @@ function GradeForm({ s }: { s: Student }) {
 function Profile({ s }: { s: Student }) {
   const { db, now } = useTeacher();
   const router = useRouter();
+  const predicted = predictGrade(db, s, now);
   const progress = db.progress.find((p) => p.studentId === s.id);
   const work = db.assignments
     .filter((a) => a.cohortId === s.cohortId)
@@ -102,11 +114,19 @@ function Profile({ s }: { s: Student }) {
       </div>
 
       <div className="mt-6 grid grid-cols-3 gap-4 rounded-2xl bg-navy/[0.04] p-5">
-        <Stat label="Predicted" value={s.predicted || "–"} sub={s.target ? `target ${s.target}` : "no target set"} />
+        <Stat
+          label="Predicted"
+          value={predicted?.grade ?? "–"}
+          sub={
+            predicted
+              ? `${predicted.pct}% · ${predicted.pieces} marked${s.target ? ` · target ${s.target}` : ""}`
+              : "after the first marked work"
+          }
+        />
         <Stat label="Attendance" value={`${attendancePct(db, s.id, s.cohortId, now)}%`} />
         <Stat label="Average" value={averagePct(db, s.id) !== null ? `${averagePct(db, s.id)}%` : "–"} />
       </div>
-      <GradeForm key={`${s.predicted}|${s.target}`} s={s} />
+      <GradeForm key={`target-${s.target}`} s={s} />
       <ExamDateForm key={`exam-${s.cohortId}`} cohortId={s.cohortId} />
       <ProgressReport key={s.id} s={s} />
       <ParentAccess key={`parents-${s.id}`} studentId={s.id} />
@@ -131,7 +151,10 @@ function Profile({ s }: { s: Student }) {
             <li
               key={a.id}
               onClick={sub ? () => router.push(`/portal/teacher/submissions/?open=${sub.id}`) : undefined}
-              className={cn("flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0", sub && "cursor-pointer hover:bg-navy/[0.03]")}
+              className={cn(
+                "flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0",
+                sub && "cursor-pointer hover:bg-navy/[0.03]",
+              )}
             >
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium tracking-tight text-navy">{a.title}</p>
@@ -383,10 +406,22 @@ function AddStudent({ onClose }: { onClose: () => void }) {
       </div>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Student's Google email (optional)">
-          <input value={f.email} onChange={(e) => set("email", e.target.value)} inputMode="email" placeholder="Leave empty to use a join code" className={fieldCls} />
+          <input
+            value={f.email}
+            onChange={(e) => set("email", e.target.value)}
+            inputMode="email"
+            placeholder="Leave empty to use a join code"
+            className={fieldCls}
+          />
         </Field>
         <Field label="Google Meet link (optional)">
-          <input value={f.meetUrl} onChange={(e) => set("meetUrl", e.target.value)} inputMode="url" placeholder="https://meet.google.com/abc-defg-hij" className={fieldCls} />
+          <input
+            value={f.meetUrl}
+            onChange={(e) => set("meetUrl", e.target.value)}
+            inputMode="url"
+            placeholder="https://meet.google.com/abc-defg-hij"
+            className={fieldCls}
+          />
         </Field>
       </div>
       {!emailOk && <p className="-mt-2 text-xs font-medium text-navy">Check the email address.</p>}
@@ -461,7 +496,9 @@ function ArchiveStudent({ cohortId, name, onArchived }: { cohortId: string; name
       ) : (
         <div className="rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
           <p className="text-[15px] font-semibold text-navy">Archive {name}?</p>
-          <p className="mt-1 text-sm text-navy">They lose access and their upcoming classes are removed. Nothing is deleted, and you can restore them.</p>
+          <p className="mt-1 text-sm text-navy">
+            They lose access and their upcoming classes are removed. Nothing is deleted, and you can restore them.
+          </p>
           <div className="mt-3 flex gap-2.5">
             <Btn
               variant="navy"
@@ -511,7 +548,13 @@ function ArchivedStudent({ cohortId, name, onDone }: { cohortId: string; name: s
           This permanently deletes their classes, assignments, assessments, submissions, marks and folders in the portal. Files already in
           Google Drive stay there.
         </p>
-        <Btn variant="navy" size="sm" className="mt-3" disabled={busy} onClick={() => act(() => removeStudent(cohortId), `${name} deleted`)}>
+        <Btn
+          variant="navy"
+          size="sm"
+          className="mt-3"
+          disabled={busy}
+          onClick={() => act(() => removeStudent(cohortId), `${name} deleted`)}
+        >
           <Trash2 size={14} /> Delete permanently
         </Btn>
       </div>
@@ -521,7 +564,8 @@ function ArchivedStudent({ cohortId, name, onDone }: { cohortId: string; name: s
 
 export default function TeacherStudents() {
   const { db, me, now } = useTeacher();
-  const teacherName = (cohortId: string) => db.teachers.find((t) => t.id === db.cohorts.find((c) => c.id === cohortId)?.teacherId)?.name ?? "Unassigned";
+  const teacherName = (cohortId: string) =>
+    db.teachers.find((t) => t.id === db.cohorts.find((c) => c.id === cohortId)?.teacherId)?.name ?? "Unassigned";
   const [openId, setOpenId] = useState<string | null>(null);
   // /portal/teacher/students/?open=<student id> opens that profile (links from the dashboard)
   useEffect(() => {
@@ -586,9 +630,15 @@ export default function TeacherStudents() {
                     {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
                     {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
                   </Td>
-                  <Td align="right" className="tabular-nums">{attendancePct(db, s.id, s.cohortId, now)}%</Td>
-                  <Td align="right" className="tabular-nums">{avg !== null ? `${avg}%` : "–"}</Td>
-                  <Td align="right" className="font-semibold text-navy">{s.predicted || "–"}</Td>
+                  <Td align="right" className="tabular-nums">
+                    {attendancePct(db, s.id, s.cohortId, now)}%
+                  </Td>
+                  <Td align="right" className="tabular-nums">
+                    {avg !== null ? `${avg}%` : "–"}
+                  </Td>
+                  <Td align="right" className="font-semibold text-navy">
+                    {predictGrade(db, s, now)?.grade ?? "–"}
+                  </Td>
                   <Td align="right">{s.target || "–"}</Td>
                 </RowLink>
               );
@@ -636,13 +686,22 @@ export default function TeacherStudents() {
           </>
         )}
       </Modal>
-      <Modal open={!!setupId} onClose={() => setSetupId(null)} eyebrow="Not joined yet" title={db.cohorts.find((c) => c.id === setupId)?.name ?? ""}>
+      <Modal
+        open={!!setupId}
+        onClose={() => setSetupId(null)}
+        eyebrow="Not joined yet"
+        title={db.cohorts.find((c) => c.id === setupId)?.name ?? ""}
+      >
         {setupId && (
           <>
             <ClassSetup cohortId={setupId} />
             <RepeatingClasses cohortId={setupId} />
             <TeacherOf cohortId={setupId} />
-            <ArchiveStudent cohortId={setupId} name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"} onArchived={() => setSetupId(null)} />
+            <ArchiveStudent
+              cohortId={setupId}
+              name={db.cohorts.find((c) => c.id === setupId)?.name ?? "this student"}
+              onArchived={() => setSetupId(null)}
+            />
           </>
         )}
       </Modal>

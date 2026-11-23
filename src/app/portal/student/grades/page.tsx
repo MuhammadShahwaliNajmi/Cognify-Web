@@ -7,9 +7,7 @@ import { useStudent } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import { Bar, EmptyRow, PageHeader, RowLink, Segmented, Status, Table, Td } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
-
-/** Approximate percentage needed for each grade (A Level letters, IB 1–7). */
-const BOUNDARY: Record<string, number> = { "A*": 88, A: 78, B: 68, C: 58, D: 48, "7": 80, "6": 68, "5": 56, "4": 45 };
+import { gradeMinPct, predictGrade } from "@/lib/portal/insights";
 
 function Figure({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -29,8 +27,9 @@ export default function StudentGrades() {
   const history = progress?.history ?? [];
   const mastery = [...(progress?.mastery ?? [])].sort((a, b) => a.score - b.score);
 
-  const latest = history.length ? history[history.length - 1].pct : null;
-  const targetPct = BOUNDARY[me.target];
+  const predicted = predictGrade(db, me, now, { readOnly: true });
+  const latest = predicted?.pct ?? null;
+  const targetPct = gradeMinPct(db, me, me.target);
   const items = db.assignments
     .filter((a) => a.cohortId === me.cohortId)
     .map((a) => ({ a, sub: submissionFor(db, a.id, me.id) }))
@@ -47,9 +46,21 @@ export default function StudentGrades() {
       <PageHeader title="Grades" />
 
       <div className="grid grid-cols-2 gap-6 rounded-xl border border-navy/12 p-5 sm:grid-cols-4">
-        <Figure label="Predicted grade" value={me.predicted || "–"} sub={me.predicted ? "set by your teacher" : "after your first graded work"} />
+        <Figure
+          label="Predicted grade"
+          value={predicted?.grade ?? "–"}
+          sub={
+            predicted
+              ? `from ${predicted.pieces} marked piece${predicted.pieces === 1 ? "" : "s"} and attendance`
+              : "after your first marked work"
+          }
+        />
         <Figure label="Target" value={me.target || "–"} />
-        <Figure label="Overall" value={max ? `${Math.round((got / max) * 100)}%` : "–"} sub={unread ? `${unread} new feedback to read` : `${graded.length} graded`} />
+        <Figure
+          label="Overall"
+          value={max ? `${Math.round((got / max) * 100)}%` : "–"}
+          sub={unread ? `${unread} new feedback to read` : `${graded.length} graded`}
+        />
         <Figure label="Attendance" value={`${attendancePct(db, me.id, me.cohortId, now)}%`} />
       </div>
       {targetPct !== undefined && latest !== null && (
@@ -74,7 +85,14 @@ export default function StudentGrades() {
       <div className="mt-4">
         {tab === "gradebook" && (
           <Table
-            head={[{ label: "Assignment" }, { label: "Type" }, { label: "Due" }, { label: "Returned" }, { label: "Score", align: "right" }, { label: "%", align: "right" }]}
+            head={[
+              { label: "Assignment" },
+              { label: "Type" },
+              { label: "Due" },
+              { label: "Returned" },
+              { label: "Score", align: "right" },
+              { label: "%", align: "right" },
+            ]}
           >
             {items.length === 0 ? (
               <EmptyRow cols={6}>No assignments yet.</EmptyRow>
@@ -87,11 +105,19 @@ export default function StudentGrades() {
                     <Td className="whitespace-nowrap">{a.kind}</Td>
                     <Td className="whitespace-nowrap">{fmtDate(a.dueAt)}</Td>
                     <Td className="whitespace-nowrap">
-                      {done ? fmtDate(sub!.markedAt!) : sub ? <Status>Being marked</Status> : <span className="text-navy">Not submitted</span>}
+                      {done ? (
+                        fmtDate(sub!.markedAt!)
+                      ) : sub ? (
+                        <Status>Being marked</Status>
+                      ) : (
+                        <span className="text-navy">Not submitted</span>
+                      )}
                     </Td>
                     <Td align="right" className="whitespace-nowrap tabular-nums">
                       {done && !sub!.seenAt ? (
-                        <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">New feedback</span>
+                        <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
+                          New feedback
+                        </span>
                       ) : done ? (
                         <span className="font-semibold text-navy">
                           {sub!.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
@@ -101,7 +127,11 @@ export default function StudentGrades() {
                       )}
                     </Td>
                     <Td align="right" className="tabular-nums font-semibold text-navy">
-                      {done && sub!.seenAt ? `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%` : <span className="font-normal text-navy">–</span>}
+                      {done && sub!.seenAt ? (
+                        `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%`
+                      ) : (
+                        <span className="font-normal text-navy">–</span>
+                      )}
                     </Td>
                   </RowLink>
                 );
