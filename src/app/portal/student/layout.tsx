@@ -29,7 +29,6 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     { href: "/portal/student/grades/", label: "Grades", badge: unread },
     { href: "/portal/student/resources/", label: "Resources" },
     { href: "/portal/student/announcements/", label: "Announcements", badge: fresh },
-    { href: "/portal/student/tutor/", label: "AI Tutor" },
   ];
   return (
     <Shell role="student" nav={nav}>

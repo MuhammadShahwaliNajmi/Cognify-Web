@@ -18,12 +18,14 @@ import {
   MultiPick,
   PageHeader,
   Picker,
+  Segmented,
   RowLink,
   Status,
   Table,
   Td,
   fieldCls,
 } from "@/components/portal/ui";
+import { StudentCell } from "@/components/portal/student-cell";
 import { QuestionPaperField, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
@@ -378,6 +380,11 @@ export default function TeacherAssessments() {
     })
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const open = rows.find((r) => r.a.id === openId);
+  // quick filters: what needs me, what's still to happen, what's done
+  const [tab, setTab] = useState<"all" | "mark" | "open" | "marked">("all");
+  const group = (st: AssessmentState) => (st === "submitted" ? "mark" : st === "marked" ? "marked" : "open");
+  const shown = tab === "all" ? rows : rows.filter((r) => group(r.state) === tab);
+  const count = (t: "mark" | "open" | "marked") => rows.filter((r) => group(r.state) === t).length;
 
   return (
     <>
@@ -398,28 +405,42 @@ export default function TeacherAssessments() {
         }
       />
 
+      <Segmented
+        value={tab}
+        onChange={setTab}
+        className="mb-4"
+        options={[
+          { value: "all", label: "All", count: rows.length },
+          { value: "mark", label: "To mark", count: count("mark") },
+          { value: "open", label: "Not done yet", count: count("open") },
+          { value: "marked", label: "Marked", count: count("marked") },
+        ]}
+      />
       <Table
-        minWidth={720}
+        minWidth={680}
         head={[
-          { label: "Assessment" },
           { label: "Student" },
-          { label: "Time" },
+          { label: "Assessment" },
           { label: "Start before" },
           { label: "Status" },
           { label: "Score", align: "right" },
           { label: " ", align: "right" },
         ]}
       >
-        {rows.length === 0 ? (
-          <EmptyRow cols={7}>No assessments yet.</EmptyRow>
+        {shown.length === 0 ? (
+          <EmptyRow cols={6}>{rows.length ? "Nothing here." : "No assessments yet."}</EmptyRow>
         ) : (
-          rows.map(({ a, student, state }) => {
+          shown.map(({ a, student, state }) => {
             const sub = student ? submissionFor(db, a.id, student.id) : undefined;
             return (
               <RowLink key={a.id} onClick={() => setOpenId(a.id)}>
-                <Td className="font-medium">{a.title}</Td>
-                <Td className="whitespace-nowrap">{student?.name ?? cohortOf(db, a.cohortId).name}</Td>
-                <Td className="whitespace-nowrap">{a.timeLimitMin} min</Td>
+                <Td>
+                  <StudentCell db={db} cohortId={a.cohortId} name={student?.name} />
+                </Td>
+                <Td className="text-navy">
+                  <span className="block font-medium">{a.title}</span>
+                  <span className="block text-[12px]">{a.timeLimitMin} min</span>
+                </Td>
                 <Td className="whitespace-nowrap">
                   {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
                 </Td>

@@ -11,6 +11,7 @@ import { WorkAndFeedbackFiles, cleanPoint } from "@/components/portal/work";
 import type { Submission } from "@/lib/portal/types";
 import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls, labelCls } from "@/components/portal/ui";
 import { CommentBank, WorkThread } from "@/components/portal/thread";
+import { StudentCell } from "@/components/portal/student-cell";
 
 const navBtn =
   "grid h-9 w-9 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold disabled:opacity-30 focus-gold";
@@ -238,7 +239,7 @@ function Submissions() {
           label="Student"
           value={who}
           onChange={setWho}
-          options={[{ value: "all", label: "All students" }, ...db.students.map((s) => ({ value: s.id, label: s.name }))]}
+          options={[{ value: "all", label: "All students" }, ...[...db.students].sort((a, b) => a.name.localeCompare(b.name)).map((s) => ({ value: s.id, label: s.name }))]}
         />
       </div>
 
@@ -254,7 +255,7 @@ function Submissions() {
 
       <div className="mt-4">
         <Table
-          head={[{ label: "Student" }, { label: "Assignment" }, { label: "Submitted" }, { label: "Status" }, { label: "Score", align: "right" }]}
+          head={[{ label: "Student" }, { label: "Work" }, { label: "Handed in" }, { label: "Status" }, { label: "Score", align: "right" }]}
         >
           {list.length === 0 ? (
             <EmptyRow cols={5}>
@@ -268,8 +269,13 @@ function Submissions() {
               const left = new Date(x.submittedAt).getTime() + 24 * HOUR - now;
               return (
                 <RowLink key={x.id} onClick={() => setOpenId(x.id)}>
-                  <Td className="whitespace-nowrap font-medium text-navy">{st.name}</Td>
-                  <Td>{a.title}</Td>
+                  <Td>
+                    <StudentCell db={db} cohortId={st.cohortId} name={st.name} />
+                  </Td>
+                  <Td className="text-navy">
+                    <span className="block font-medium">{a.title}</span>
+                    <span className="block text-[12px]">{a.timeLimitMin ? "Timed assessment" : a.kind}</span>
+                  </Td>
                   <Td className="whitespace-nowrap" >
                     <span title={`${fmtDate(x.submittedAt)}, ${fmtTime(x.submittedAt)}`}>{fmtRelative(x.submittedAt, now)}</span>
                   </Td>

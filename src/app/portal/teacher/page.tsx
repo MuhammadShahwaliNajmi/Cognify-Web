@@ -3,19 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cohortOf, registerMissing, topicOf } from "@/lib/portal/selectors";
+import { cohortOf, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { needsAttention } from "@/lib/portal/insights";
 import { CommentsToAnswer } from "@/components/portal/comments-to-answer";
-import { Btn, EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
+import { Btn, EmptyRow, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 import { ClassDialog } from "@/components/portal/class-tools";
 
 const dayKey = (iso: string) => new Date(iso).toDateString();
 
 export default function TeacherDashboard() {
-  const { db, me, now, setAttendance } = useTeacher();
+  const { db, me, now } = useTeacher();
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -33,15 +33,8 @@ export default function TeacherDashboard() {
     const ms = new Date(a.dueAt).getTime() - now;
     return ms > 0 && ms < 7 * DAY;
   }).length;
-  // one copy is posted per student; show each announcement once
-  const notices = db.announcements.filter((n, i, all) => all.findIndex((m) => m.title === n.title && m.body === n.body) === i).slice(0, 3);
   const attention = needsAttention(db, now);
   const requests = db.requests.filter((r) => r.status === "pending" && db.sessions.some((s) => s.id === r.sessionId));
-  // finished classes in the last 30 days with no register yet (one row per student)
-  const registers = db.sessions
-    .filter((s) => registerMissing(s, now) && now - new Date(s.start).getTime() < 30 * DAY)
-    .flatMap((s) => db.students.filter((st) => st.cohortId === s.cohortId).map((st) => ({ s, st })))
-    .reverse();
 
   return (
     <>
@@ -56,8 +49,8 @@ export default function TeacherDashboard() {
         ]}
       />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        <div className="space-y-8 lg:col-span-2">
+      <div>
+        <div className="space-y-8">
           <section>
             <SectionTitle
               action={
@@ -142,32 +135,6 @@ export default function TeacherDashboard() {
             </section>
           )}
 
-          {registers.length > 0 && (
-            <section>
-              <SectionTitle>Registers to take</SectionTitle>
-              <Table minWidth={520} head={[{ label: "Class" }, { label: "Student" }, { label: "", align: "right" }]}>
-                {registers.slice(0, 8).map(({ s, st }) => (
-                  <tr key={`${s.id}-${st.id}`}>
-                    <Td className="whitespace-nowrap">
-                      <span className="font-semibold">{fmtDay(s.start, now)}</span>, {fmtTime(s.start)}
-                    </Td>
-                    <Td className="font-medium">{st.name}</Td>
-                    <Td align="right">
-                      <div className="flex justify-end gap-2">
-                        <Btn variant="navy" size="sm" onClick={() => setAttendance(s.id, st.id, true)}>
-                          Present
-                        </Btn>
-                        <Btn variant="outline" size="sm" onClick={() => setAttendance(s.id, st.id, false)}>
-                          Absent
-                        </Btn>
-                      </div>
-                    </Td>
-                  </tr>
-                ))}
-                {registers.length > 8 && <EmptyRow cols={3}>{registers.length - 8} more after these</EmptyRow>}
-              </Table>
-            </section>
-          )}
 
           <section>
             <SectionTitle
@@ -208,30 +175,6 @@ export default function TeacherDashboard() {
           </section>
         </div>
 
-        <aside className="space-y-6">
-          <Panel title="Announcements" link={{ href: "/portal/teacher/announcements/", label: "Post" }}>
-            {notices.length === 0 ? (
-              <p className="text-sm text-navy">Nothing posted yet.</p>
-            ) : (
-              <ul className="divide-y divide-navy/10">
-                {notices.map((n) => (
-                  <li key={n.id} className="py-3 first:pt-0 last:pb-0">
-                    <p className="text-[15px] font-semibold text-navy">{n.title}</p>
-                    <p className="mt-0.5 line-clamp-2 text-sm text-navy">{n.body}</p>
-                    <p className="mt-1 text-[12px] font-semibold text-navy">
-                      {fmtDate(n.at)} ·{" "}
-                      {db.announcements.filter((m) => m.title === n.title && m.body === n.body).length > 1
-                        ? "Several students"
-                        : n.cohortId
-                          ? cohortOf(db, n.cohortId).name
-                          : "All students"}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Panel>
-        </aside>
       </div>
 
       <ClassDialog session={db.sessions.find((s) => s.id === openId) ?? null} onClose={() => setOpenId(null)} />

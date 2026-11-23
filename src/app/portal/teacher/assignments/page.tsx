@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { CopyPlus, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
+import { StudentCell } from "@/components/portal/student-cell";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
 import type { Assignment, AssignmentKind } from "@/lib/portal/types";
@@ -42,7 +43,7 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
   });
   const [deleting, setDeleting] = useState(false);
   // a new assignment can go to several students at once
-  const [forIds, setForIds] = useState<string[]>([cohortId]);
+  const [forIds, setForIds] = useState<string[]>(cohortId ? [cohortId] : []);
   // once work has been marked out of this total, the total stays
   const marked = !!editing && db.submissions.some((x) => x.assignmentId === editing.id && x.status === "marked");
   const [paper, setPaper] = useState<File | null>(null);
@@ -227,22 +228,21 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
 export default function TeacherAssignments() {
   const { db, now } = useTeacher();
   const router = useRouter();
-  const [cohortId, setCohortId] = useState(db.cohorts[0]?.id ?? "");
+  const [cohortId, setCohortId] = useState("all");
   const [tab, setTab] = useState<"open" | "closed" | "all">("open");
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [copyFrom, setCopyFrom] = useState<Assignment | null>(null);
   const editing = db.assignments.find((a) => a.id === editId);
 
-  const cohort = db.cohorts.find((c) => c.id === cohortId) ?? db.cohorts[0];
+  // all students by default; pick one to narrow it down
+  const cohort = cohortId === "all" ? undefined : db.cohorts.find((c) => c.id === cohortId);
   const all = db.assignments
-    .filter((a) => a.cohortId === cohort?.id && !a.timeLimitMin)
+    .filter((a) => (!cohort || a.cohortId === cohort.id) && !a.timeLimitMin && db.cohorts.some((c) => c.id === a.cohortId))
     .sort((a, b) => new Date(b.dueAt).getTime() - new Date(a.dueAt).getTime());
   const open = all.filter((a) => new Date(a.dueAt).getTime() > now).reverse();
   const closed = all.filter((a) => new Date(a.dueAt).getTime() <= now);
   const list = tab === "open" ? open : tab === "closed" ? closed : all;
-
-  if (!cohort) return <PageHeader title="Assignments" />;
 
   return (
     <>
@@ -259,9 +259,9 @@ export default function TeacherAssignments() {
       <div className="mb-5">
         <Picker
           label="Student"
-          value={cohort.id}
+          value={cohortId}
           onChange={setCohortId}
-          options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))}
+          options={[{ value: "all", label: "All students" }, ...[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name }))]}
         />
       </div>
 
@@ -278,10 +278,10 @@ export default function TeacherAssignments() {
       <div className="mt-4">
         <Table
           head={[
+            { label: "Student" },
             { label: "Assignment" },
-            { label: "Type" },
             { label: "Due" },
-            { label: "Submission" },
+            { label: "Status" },
             { label: "Score", align: "right" },
             { label: " ", align: "right" },
           ]}
@@ -294,15 +294,18 @@ export default function TeacherAssignments() {
               const due = new Date(a.dueAt).getTime() - now;
               const cells = (
                 <>
-                  <Td className="font-medium text-navy">
-                    <span className="inline-flex items-center gap-1.5">
+                  <Td>
+                    <StudentCell db={db} cohortId={a.cohortId} />
+                  </Td>
+                  <Td className="text-navy">
+                    <span className="inline-flex items-center gap-1.5 font-medium">
                       {a.title}
                       {(a.attachmentFileId || a.attachmentUrl) && (
                         <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
                       )}
                     </span>
+                    <span className="block text-[12px]">{a.kind}</span>
                   </Td>
-                  <Td className="whitespace-nowrap">{a.kind}</Td>
                   <Td className="whitespace-nowrap">
                     {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
                   </Td>
@@ -312,7 +315,7 @@ export default function TeacherAssignments() {
                     ) : sub ? (
                       <Status tone="attention">To mark</Status>
                     ) : due < 0 ? (
-                      <Status>Not handed in</Status>
+                      <Status tone="attention">Overdue</Status>
                     ) : (
                       <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
                     )}
@@ -357,16 +360,16 @@ export default function TeacherAssignments() {
       </div>
 
       <Modal open={creating} onClose={() => setCreating(false)} title="New assignment">
-        <AssignmentForm cohortId={cohort.id} onDone={() => setCreating(false)} />
+        <AssignmentForm cohortId={cohort?.id ?? ""} onDone={() => setCreating(false)} />
       </Modal>
       <Modal open={!!copyFrom} onClose={() => setCopyFrom(null)} title="Set again">
-        {copyFrom && <AssignmentForm key={`copy-${copyFrom.id}`} cohortId={cohort.id} copyFrom={copyFrom} onDone={() => setCopyFrom(null)} />}
+        {copyFrom && <AssignmentForm key={`copy-${copyFrom.id}`} cohortId="" copyFrom={copyFrom} onDone={() => setCopyFrom(null)} />}
       </Modal>
-      <Modal open={!!editing} onClose={() => setEditId(null)} eyebrow={cohort.name} title="Edit assignment">
+      <Modal open={!!editing} onClose={() => setEditId(null)} eyebrow={editing ? db.cohorts.find((c) => c.id === editing.cohortId)?.name : undefined} title="Edit assignment">
         {editing && (
           <AssignmentForm
             key={editing.id}
-            cohortId={cohort.id}
+            cohortId={editing.cohortId}
             editing={editing}
             onDone={() => setEditId(null)}
             onSetAgain={(a) => {
