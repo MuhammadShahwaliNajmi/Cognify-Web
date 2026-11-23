@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, Smartphone } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { usePortal } from "@/lib/portal/store";
 import { GoogleSignInButton } from "@/components/portal/google-button";
@@ -151,14 +151,6 @@ export default function PortalSignIn() {
           {toasts[toasts.length - 1].text}
         </p>
       )}
-
-      <a
-        href="/get-app/"
-        className="mt-6 inline-flex items-center gap-2 rounded-full border border-gold px-5 py-2.5 text-sm font-semibold text-gold transition-colors hover:bg-gold hover:text-navy-deep"
-      >
-        <Smartphone size={16} />
-        Get the Concept Lab app
-      </a>
 
       <Link href="/" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-white/85 transition-colors hover:text-gold">
         <ArrowLeft size={16} />

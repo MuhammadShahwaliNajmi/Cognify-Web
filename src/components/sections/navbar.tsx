@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { AnimatePresence, motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { useEffect, useState } from "react";
-import { LogIn, Menu, Smartphone, X } from "lucide-react";
+import { LogIn, Menu, X } from "lucide-react";
 import { LiquidButton } from "@/components/ui/liquid-button";
 import { Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
@@ -124,34 +124,12 @@ export function Navbar() {
             <LogIn size={14} />
             <span className="hidden xl:inline">Portal</span>
           </Link>
-          {/* the Concept Lab app: how to install it */}
-          <a
-            href="/get-app/"
-            aria-label="Get the Concept Lab app"
-            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-gold py-1.5 pl-1.5 pr-4 text-[0.8125rem] font-semibold tracking-tight text-navy-deep shadow-[0_8px_20px_-12px_rgba(212,178,84,0.9)] transition-transform duration-200 hover:-translate-y-0.5 focus-gold"
-          >
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold">
-              <Smartphone size={13} />
-            </span>
-            App
-          </a>
           <LiquidButton href="/apply/" className="whitespace-nowrap px-5 py-2.5 text-[0.8125rem] lg:px-6">
             Apply for Cohort
           </LiquidButton>
         </div>
 
-        {/* phones: the app, one tap from the top bar */}
         <div className="flex items-center gap-2 md:hidden">
-          <a
-            href="/get-app/"
-            aria-label="Get the Concept Lab app"
-            className="inline-flex items-center gap-1.5 rounded-full bg-gold py-1.5 pl-1.5 pr-3 text-[13px] font-semibold tracking-tight text-navy-deep shadow-[0_8px_20px_-12px_rgba(212,178,84,0.9)] active:scale-[0.97]"
-          >
-            <span className="grid h-6 w-6 place-items-center rounded-full bg-navy-deep text-gold">
-              <Smartphone size={13} />
-            </span>
-            App
-          </a>
           <button
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -217,19 +195,6 @@ export function Navbar() {
                   >
                     <LogIn size={13} /> Portal
                   </Link>
-                </motion.li>
-                <motion.li
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.04 * (LINKS.length + 2), ...spring.snappy }}
-                >
-                  <a
-                    href="/get-app/"
-                    onClick={() => setOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-full border border-white/40 bg-transparent px-4 py-1.5 text-left text-[13px] font-semibold tracking-tight text-white transition-colors duration-200 hover:border-gold hover:text-gold"
-                  >
-                    <Smartphone size={13} /> Get the app
-                  </a>
                 </motion.li>
               </ul>
 
