@@ -199,7 +199,7 @@ function Detail({ a, sub }: { a: Assignment; sub?: Submission }) {
 }
 
 function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
-  const { db, me, now, openAttachment } = useStudent();
+  const { db, me, now, parent, openAttachment } = useStudent();
   // the most recent returned work, to carry its next steps forward
   const last = db.submissions
     .filter((x) => x.studentId === me.id && x.status === "marked" && x.assignmentId !== a.id)
@@ -274,7 +274,7 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
         <div className="mt-6">
           <div className="flex items-center justify-between gap-3">
             <Label>Your submission</Label>
-            {!replacing && (
+            {!replacing && !parent && (
               <Btn variant="ghost" size="sm" onClick={() => setReplacing(true)}>
                 Replace
               </Btn>
@@ -320,7 +320,8 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
           <LastTargets items={last.sub.improvements ?? []} reflection={last.sub.reflection} title={`From “${last.a.title}”, returned ${fmtDate(last.sub.markedAt!)}`} />
         </div>
       )}
-      {!sub && (
+      {!sub && parent && <p className="mt-6 text-[15px] font-semibold text-navy">Not handed in yet.</p>}
+      {!sub && !parent && (
         <div className="mt-6">
           <Label>Hand in your work</Label>
           <div className="mt-3">

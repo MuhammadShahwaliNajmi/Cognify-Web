@@ -676,7 +676,7 @@ function RequestCard({ r, teacher }: { r: ClassRequest; teacher: boolean }) {
 
 /** One class, opened from the calendar: time, topic, the Meet button, and what's left after it. */
 export function ClassDialog({ session, onClose }: { session: Session | null; onClose: () => void }) {
-  const { db, auth, setAttendance, cancelSession, endSeries, toast } = usePortal();
+  const { db, auth, parent, setAttendance, cancelSession, endSeries, toast } = usePortal();
   const now = useTick(30_000);
   const [viewing, setViewing] = useState<Resource | null>(null);
   const [moving, setMoving] = useState(false);
@@ -756,7 +756,7 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                     </Btn>
                   </>
                 )}
-                {!teacher && !virtual && !myPending && !moving && !cancelling && (
+                {!teacher && !parent && !virtual && !myPending && !moving && !cancelling && (
                   <>
                     <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
                       <Pencil size={15} />

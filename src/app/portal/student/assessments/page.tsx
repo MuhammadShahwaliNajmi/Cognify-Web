@@ -29,7 +29,7 @@ const tone = (s: AssessmentState) =>
 
 /* ---------------- the timed room ---------------- */
 function Room({ a }: { a: Assignment }) {
-  const { db, me, startAssessment, submitWork, openAttachment, toast } = useStudent();
+  const { db, me, parent, startAssessment, submitWork, openAttachment, toast } = useStudent();
   const now = useTick(1000);
   const state = assessmentState(db, a, me.id, now);
   const attempt = attemptFor(db, a.id, me.id);
@@ -124,9 +124,13 @@ function Room({ a }: { a: Assignment }) {
               <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{a.brief}</p>
             </div>
           )}
-          <Btn variant="gold" size="lg" onClick={() => setConfirming(true)}>
-            <Timer size={18} /> Start assessment
-          </Btn>
+          {parent ? (
+            <p className="text-[15px] font-semibold text-navy">Not started yet.</p>
+          ) : (
+            <Btn variant="gold" size="lg" onClick={() => setConfirming(true)}>
+              <Timer size={18} /> Start assessment
+            </Btn>
+          )}
         </div>
       )}
 

@@ -103,7 +103,7 @@ export function JoinButton({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
-  const { db, auth, markJoined, toast } = usePortal();
+  const { db, auth, parent, markJoined, toast } = usePortal();
   const now = useTick(STATE_TICK);
   const [missing, setMissing] = useState(false);
   const state = sessionState(session.start, session.durationMin, now);
@@ -123,6 +123,7 @@ export function JoinButton({
     }
   };
 
+  if (parent) return null;
   return (
     <>
       <Btn variant="gold" size={size} onClick={open} className={className}>

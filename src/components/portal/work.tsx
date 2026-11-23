@@ -361,9 +361,9 @@ function NextStep({ sub }: { sub: Submission }) {
 
 /** Returned work for the student: comments → strengths → next steps → score → their own next step. */
 export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission; now: number }) {
-  const { acknowledgeFeedback } = usePortal();
+  const { acknowledgeFeedback, parent } = usePortal();
   const [busy, setBusy] = useState(false);
-  const read = !!sub.seenAt;
+  const read = !!sub.seenAt || parent;
 
   return (
     <div className="space-y-4">

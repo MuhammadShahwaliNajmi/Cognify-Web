@@ -15,7 +15,7 @@ type Comment = { id: number; author_id: number; body: string; created_at: string
  * same threads as the app). Only those two can see it; each comment notifies the other.
  */
 export function WorkThread({ assignmentId, studentId, className }: { assignmentId: string; studentId: string; className?: string }) {
-  const { db, me, now, toast } = usePortal();
+  const { db, me, now, parent, toast } = usePortal();
   const [list, setList] = useState<Comment[] | null>(null);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -84,6 +84,7 @@ export function WorkThread({ assignmentId, studentId, className }: { assignmentI
           })
         )}
       </div>
+      {!parent && (
       <div className="mt-3 flex items-end gap-2">
         <textarea
           value={draft}
@@ -106,6 +107,7 @@ export function WorkThread({ assignmentId, studentId, className }: { assignmentI
           <ArrowUp size={18} />
         </button>
       </div>
+      )}
     </div>
   );
 }

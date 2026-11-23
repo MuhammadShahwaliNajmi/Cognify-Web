@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { ProgressReport } from "@/components/portal/report";
+import { ParentAccess } from "@/components/portal/parent-access";
 import { exportAttendance, exportGrades } from "@/lib/portal/export";
 import { fmtDate, fmtTime, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
@@ -108,6 +109,7 @@ function Profile({ s }: { s: Student }) {
       <GradeForm key={`${s.predicted}|${s.target}`} s={s} />
       <ExamDateForm key={`exam-${s.cohortId}`} cohortId={s.cohortId} />
       <ProgressReport key={s.id} s={s} />
+      <ParentAccess key={`parents-${s.id}`} studentId={s.id} />
 
       {progress && (
         <div className="mt-6">

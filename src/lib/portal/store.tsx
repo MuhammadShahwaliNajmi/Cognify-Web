@@ -31,6 +31,8 @@ type Store = {
   db: DB;
   auth: Auth;
   me: Student | Teacher | null;
+  /** a parent signed in with their own email, looking at their child's portal (read-only) */
+  parent: boolean;
   now: number;
   toasts: Toast[];
   toast: (text: string) => void;
@@ -147,7 +149,7 @@ type Store = {
   removeStudent: (cohortId: string) => Promise<boolean>;
 };
 
-type Actions = Omit<Store, "status" | "ready" | "email" | "db" | "auth" | "me" | "now" | "toasts" | "toast">;
+type Actions = Omit<Store, "status" | "ready" | "email" | "db" | "auth" | "me" | "parent" | "now" | "toasts" | "toast">;
 type Write = PromiseLike<{ error: { message: string } | null }>;
 
 const Ctx = createContext<Store | null>(null);
@@ -279,8 +281,15 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const { db, me } = portal;
+  // signed in with an email that isn't the student's own → a parent (the database makes them read-only)
+  const signedInAs = session?.user.email?.toLowerCase() ?? null;
+  const parent = !!me && "plan" in me && !!signedInAs && me.email.toLowerCase() !== signedInAs;
 
   const actions = useMemo<Actions>(() => {
+    const viewOnly = async () => {
+      toast("Parents can view the portal but not change anything.");
+      return false;
+    };
     /** run a write, report a failure, refresh on success */
     const run = async (label: string, write: (api: SupabaseClient) => Write) => {
       if (!sb) return false;
@@ -330,6 +339,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
       /* ---------- classes ---------- */
       markJoined: (sessionId, studentId) =>
+        parent ? viewOnly() :
         run("Recording attendance", (api) =>
           api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present: true, joined_at: new Date().toISOString() })
         ),
@@ -429,6 +439,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
       /* ---------- class change requests ---------- */
       requestChange: ({ sessionId, studentId, kind, proposedStart, note }) =>
+        parent ? viewOnly() :
         run("Sending the request", (api) =>
           api.from("class_requests").insert({
             session_id: num(sessionId),
@@ -438,7 +449,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             note: note?.trim() || null,
           })
         ),
-      withdrawRequest: (id) => run("Withdrawing the request", (api) => api.from("class_requests").delete().eq("id", num(id))),
+      withdrawRequest: (id) => parent ? viewOnly() : run("Withdrawing the request", (api) => api.from("class_requests").delete().eq("id", num(id))),
       resolveRequest: (id, approve) =>
         run(approve ? "Approving" : "Declining", (api) => api.rpc("resolve_class_request", { p_request: num(id), p_approve: approve })),
 
@@ -495,6 +506,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             : api.from("assessment_questions").delete().eq("assignment_id", num(id));
         }),
       startAssessment: (assignmentId) =>
+        parent ? viewOnly() :
         run("Starting the assessment", (api) => api.rpc("start_assessment", { p_assignment: num(assignmentId) })),
       allowRetake: (assignmentId, studentId) =>
         run("Allowing a retake", async (api) => {
@@ -523,6 +535,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       deleteAssignment: (id) => run("Deleting the assignment", (api) => api.from("assignments").delete().eq("id", num(id))),
       openAttachment: (assignmentId) => open(() => fileLink("assignment", assignmentId)),
       submitWork: async ({ assignmentId, studentId, file, answerText, note, onProgress }) => {
+        if (parent) return viewOnly();
         if (!sb) return false;
         const existing = db.submissions.find((x) => x.assignmentId === assignmentId && x.studentId === studentId);
         let stored: { drive_file_id: string | null; file_path: string | null; mime_type: string | null } = {
@@ -590,6 +603,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           }
         }),
       acknowledgeFeedback: (submissionId, reflection) =>
+        parent ? viewOnly() :
         run("Saving", (api) => api.rpc("acknowledge_feedback", { p_submission: num(submissionId), p_reflection: reflection ?? null })),
       markWork: (id, m) =>
         run("Returning the work", (api) =>
@@ -695,7 +709,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           api.from("members").update({ predicted: p.predicted.trim() || null, target: p.target.trim() || null }).eq("id", num(id))
         ),
     };
-  }, [sb, db, me, toast, reload]);
+  }, [sb, db, me, parent, toast, reload]);
 
   const store = useMemo<Store>(
     () => ({
@@ -706,11 +720,12 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       db,
       auth: me ? { role: "plan" in me ? "student" : "teacher", userId: me.id } : null,
       me,
+      parent,
       now,
       toasts,
       toast,
     }),
-    [actions, status, session, db, me, now, toasts, toast]
+    [actions, status, session, db, me, parent, now, toasts, toast]
   );
 
   return framed ? null : <Ctx.Provider value={store}>{children}</Ctx.Provider>;
