@@ -4,25 +4,39 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { LogOut } from "lucide-react";
+import { LogOut, Users } from "lucide-react";
 import { LogoMark, Wordmark } from "@/components/ui/logo";
 import { cn, spring } from "@/lib/utils";
 import { usePortal } from "@/lib/portal/store";
 import type { Role } from "@/lib/portal/types";
 import { Avatar } from "./ui";
 
-export type NavItem = { href: string; label: string; badge?: number };
+/** A top tab. With `children` it groups related pages (e.g. Classwork → Assignments, Assessments) under one tab. */
+export type NavItem = { href: string; label: string; badge?: number; children?: NavItem[] };
+export type MenuLink = { href: string; label: string };
 
 const norm = (p: string) => (p.length > 1 ? p.replace(/\/$/, "") : p);
 
 /** Portal frame: slim white header, a row of tabs, one clean page underneath. */
-export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; children: React.ReactNode }) {
-  const { ready, auth, me, signOut, toasts } = usePortal();
+export function Shell({
+  role,
+  nav,
+  menuLinks = [],
+  children,
+}: {
+  role: Role;
+  nav: NavItem[];
+  menuLinks?: MenuLink[];
+  children: React.ReactNode;
+}) {
+  const { ready, auth, me, parent, signOut, toasts } = usePortal();
   const router = useRouter();
   const pathname = norm(usePathname() ?? "");
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const tabsRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const firstPath = useRef(true);
 
   const allowed = ready && auth?.role === role && me;
   useEffect(() => {
@@ -40,6 +54,21 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
     const tabs = tabsRef.current;
     const active = tabs?.querySelector<HTMLElement>('[aria-current="page"]');
     if (tabs && active) tabs.scrollTo({ left: active.offsetLeft - (tabs.clientWidth - active.offsetWidth) / 2 });
+  }, [pathname, shown]);
+
+  // after moving to another page, put keyboard and screen-reader focus on its title
+  useEffect(() => {
+    if (!shown) return;
+    if (firstPath.current) {
+      firstPath.current = false;
+      return;
+    }
+    const h1 = mainRef.current?.querySelector<HTMLElement>("h1");
+    if (h1) {
+      h1.tabIndex = -1;
+      h1.focus({ preventScroll: true });
+    }
+    setMenu(false);
   }, [pathname, shown]);
 
   // close the account menu on outside click / Escape
@@ -71,11 +100,13 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
   }
 
   const root = norm(nav[0].href);
-  const isActive = (href: string) => {
+  const matches = (href: string) => {
     const h = norm(href);
     return h === root ? pathname === root : pathname.startsWith(h);
   };
-  const sub = "plan" in me ? "Student" : me.title || "Teacher";
+  const isActive = (item: NavItem) => (item.children ? item.children.some((c) => matches(c.href)) : matches(item.href));
+  const group = nav.find((item) => item.children && isActive(item));
+  const sub = parent ? `Parent view of ${me.name}` : "plan" in me ? "Student" : me.title || "Teacher";
 
   const leave = async () => {
     setMenu(false);
@@ -85,15 +116,27 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
 
   return (
     <div data-portal className="min-h-[100dvh] bg-white text-navy">
+      <a
+        href="#main"
+        className="sr-only z-50 rounded-full bg-gold px-4 py-2 text-sm font-semibold text-navy-deep focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
+      >
+        Skip to content
+      </a>
       {/* ---------- header + tabs ---------- */}
       <header className="sticky top-0 z-40 bg-navy-deep">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 pt-4 md:px-8">
-          <Link href={nav[0].href} aria-label="Portal home">
-            <Wordmark onDark />
-          </Link>
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href={nav[0].href} aria-label="Portal home">
+              <Wordmark onDark />
+            </Link>
+            {parent && (
+              <span className="truncate rounded-full border border-gold/70 px-2.5 py-1 text-[12px] font-semibold text-gold">
+                Parent view
+              </span>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
-
             <div ref={menuRef} className="relative">
               <button
                 type="button"
@@ -118,6 +161,19 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                       <p className="truncate text-[13px] text-navy">{me.email}</p>
                       <p className="mt-0.5 text-[12px] text-navy font-semibold">{sub}</p>
                     </div>
+                    {menuLinks.map((l) => (
+                      <Link
+                        key={l.href}
+                        href={l.href}
+                        onClick={() => setMenu(false)}
+                        aria-current={matches(l.href) ? "page" : undefined}
+                        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-navy transition-colors hover:bg-navy/[0.04] focus-gold"
+                      >
+                        <Users size={15} className="text-navy" />
+                        {l.label}
+                      </Link>
+                    ))}
+                    <div className="my-1 border-t border-navy/10" />
                     <button
                       type="button"
                       onClick={leave}
@@ -136,15 +192,15 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
         <nav ref={tabsRef} aria-label="Portal" className="portal-tabs no-scrollbar relative mx-auto max-w-6xl overflow-x-auto px-3 md:px-6">
           <div className="flex gap-1">
             {nav.map((item) => {
-              const on = isActive(item.href);
+              const on = isActive(item);
               return (
                 <Link
-                  key={item.href}
-                  href={item.href}
+                  key={item.label}
+                  href={item.children ? item.children[0].href : item.href}
                   aria-current={on ? "page" : undefined}
                   className={cn(
                     "relative flex items-center gap-1.5 whitespace-nowrap px-3 pb-3 pt-4 text-[14px] font-medium tracking-tight transition-colors focus-gold",
-                    on ? "text-white" : "text-white/65 hover:text-white"
+                    on ? "text-white" : "text-white/65 hover:text-white",
                   )}
                 >
                   {item.label}
@@ -168,10 +224,37 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
       </header>
 
       {/* ---------- page ---------- */}
-      <main className="mx-auto w-full max-w-6xl px-5 pb-20 pt-8 md:px-8 md:pt-10">{children}</main>
+      <main id="main" ref={mainRef} className="mx-auto w-full max-w-6xl px-5 pb-20 pt-6 md:px-8 md:pt-8">
+        {group?.children && (
+          <nav aria-label={group.label} className="mb-6 flex gap-2 md:mb-7">
+            {group.children.map((c) => {
+              const on = matches(c.href);
+              return (
+                <Link
+                  key={c.href}
+                  href={c.href}
+                  aria-current={on ? "page" : undefined}
+                  className={cn(
+                    "inline-flex min-h-[40px] items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold transition-colors focus-gold",
+                    on ? "bg-navy-deep text-white" : "border border-navy/15 text-navy hover:border-gold",
+                  )}
+                >
+                  {c.label}
+                  {!!c.badge && (
+                    <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gold px-1 text-[12px] font-bold tabular-nums text-navy-deep">
+                      {c.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+        {children}
+      </main>
 
       {/* ---------- toasts ---------- */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex flex-col items-center gap-2 px-4">
+      <div aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-[90] flex flex-col items-center gap-2 px-4">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div

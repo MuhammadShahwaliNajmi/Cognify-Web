@@ -10,12 +10,17 @@ import { initials } from "@/lib/portal/format";
 /* Portal UI kit — calm and uncluttered: white surfaces, hairline borders,
    navy text, gold only for the active state and the main action. */
 
-export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
-  return (
-    <span className={cn("text-[12.5px] font-semibold text-navy", className)}>
-      {children}
-    </span>
-  );
+/** A small section title. A heading by default (sections sit under a page or dialog title); `as="span"` for plain labels. */
+export function Label({
+  className,
+  children,
+  as: Tag = "h3",
+}: {
+  className?: string;
+  children: React.ReactNode;
+  as?: "h2" | "h3" | "span";
+}) {
+  return <Tag className={cn("text-[12.5px] font-semibold text-navy", Tag !== "span" && "block", className)}>{children}</Tag>;
 }
 
 type ChipTone = "gold" | "navy" | "soft" | "outline" | "onNavy";
@@ -42,7 +47,7 @@ export function Chip({
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-semibold tracking-tight",
         tones[tone],
-        className
+        className,
       )}
     >
       {dot && <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-current" />}
@@ -72,7 +77,7 @@ export function Btn({ variant = "navy", size = "md", href, external, className, 
     variant === "outline" && "border border-navy/15 bg-white text-navy hover:border-gold hover:text-gold",
     variant === "ghost" && "text-navy hover:text-gold",
     variant === "onNavy" && "border border-white/20 text-white hover:border-gold hover:text-gold",
-    className
+    className,
   );
   if (href && external)
     return (
@@ -93,15 +98,7 @@ export function Btn({ variant = "navy", size = "md", href, external, className, 
   );
 }
 
-export function PageHeader({
-  title,
-  gold,
-  actions,
-}: {
-  title: string;
-  gold?: string;
-  actions?: React.ReactNode;
-}) {
+export function PageHeader({ title, gold, actions }: { title: string; gold?: string; actions?: React.ReactNode }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between md:mb-8">
       <div>
@@ -124,7 +121,7 @@ export function Avatar({ name, size = "md", className }: { name: string; size?: 
         size === "sm" && "h-8 w-8 text-[12px]",
         size === "md" && "h-10 w-10 text-[12px]",
         size === "lg" && "h-14 w-14 text-base",
-        className
+        className,
       )}
     >
       {initials(name)}
@@ -174,12 +171,19 @@ export function Segmented<T extends string>({
               onClick={() => onChange(o.value)}
               className={cn(
                 "relative whitespace-nowrap px-3 pb-3 pt-1 text-[14px] font-medium tracking-tight transition-colors focus-gold",
-                on ? "font-semibold text-navy" : "text-navy hover:text-navy"
+                on ? "font-semibold text-navy" : "text-navy hover:text-navy",
               )}
             >
               {o.label}
               {o.count !== undefined && (
-                <span className={cn("ml-1.5 rounded-full px-1.5 text-[12px] tabular-nums", on ? "bg-gold text-navy-deep" : "bg-navy/[0.07] text-navy")}>{o.count}</span>
+                <span
+                  className={cn(
+                    "ml-1.5 rounded-full px-1.5 text-[12px] tabular-nums",
+                    on ? "bg-gold text-navy-deep" : "bg-navy/[0.07] text-navy",
+                  )}
+                >
+                  {o.count}
+                </span>
               )}
               {on && (
                 <motion.span
@@ -247,13 +251,13 @@ export function MultiPick({
       <div className="flex items-center justify-between gap-3">
         <span className="text-[13px] font-semibold text-navy">{label}</span>
         {!single && (
-        <button
-          type="button"
-          onClick={() => onChange(all ? [] : options.map((o) => o.value))}
-          className="text-[13px] font-semibold text-navy underline decoration-gold decoration-2 underline-offset-4 focus-gold"
-        >
-          {all ? "Clear" : "Select all"}
-        </button>
+          <button
+            type="button"
+            onClick={() => onChange(all ? [] : options.map((o) => o.value))}
+            className="text-[13px] font-semibold text-navy underline decoration-gold decoration-2 underline-offset-4 focus-gold"
+          >
+            {all ? "Clear" : "Select all"}
+          </button>
         )}
       </div>
       <div className="mt-2 flex flex-wrap gap-2">
@@ -267,7 +271,7 @@ export function MultiPick({
               onClick={() => onChange(single ? [o.value] : on ? value.filter((v) => v !== o.value) : [...value, o.value])}
               className={cn(
                 "rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
-                on ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"
+                on ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]",
               )}
             >
               {o.label}
@@ -335,24 +339,28 @@ export function Modal({
             transition={spring.snappy}
             className={cn(
               "thin-scroll relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[28px] bg-white p-6 shadow-[0_40px_100px_-30px_rgba(8,16,33,0.6)] md:rounded-[28px] md:p-8",
-              full ? "md:h-[94dvh] md:max-h-[94dvh] md:max-w-[min(1440px,96vw)] md:p-6" : wide ? "md:max-w-3xl" : "md:max-w-xl"
+              full ? "md:h-[94dvh] md:max-h-[94dvh] md:max-w-[min(1440px,96vw)] md:p-6" : wide ? "md:max-w-3xl" : "md:max-w-xl",
             )}
           >
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                {eyebrow && <Label className="font-semibold">{eyebrow}</Label>}
+                {eyebrow && (
+                  <Label as="span" className="block font-semibold">
+                    {eyebrow}
+                  </Label>
+                )}
                 <h2 className="mt-1.5 text-xl font-semibold leading-snug tracking-tight text-navy md:text-2xl">{title}</h2>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-              {actions}
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold hover:text-gold focus-gold"
-              >
-                <X size={16} />
-              </button>
+                {actions}
+                <button
+                  type="button"
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-navy/12 text-navy transition-colors hover:border-gold hover:text-gold focus-gold"
+                >
+                  <X size={16} />
+                </button>
               </div>
             </div>
             {children}
@@ -366,7 +374,12 @@ export function Modal({
 export const fieldCls =
   "mt-2 w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/55 focus:border-gold focus:ring-4 focus:ring-gold/15";
 /** A text box that grows to show everything typed (no scrolling inside a small box). */
-export function AutoTextarea({ value, minRows = 3, className, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string; minRows?: number }) {
+export function AutoTextarea({
+  value,
+  minRows = 3,
+  className,
+  ...rest
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string; minRows?: number }) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => {
     const el = ref.current;
@@ -374,7 +387,15 @@ export function AutoTextarea({ value, minRows = 3, className, ...rest }: React.T
     el.style.height = "auto";
     el.style.height = `${el.scrollHeight + 2}px`;
   }, [value]);
-  return <textarea ref={ref} value={value} rows={minRows} className={cn(fieldCls, "resize-none overflow-hidden leading-relaxed", className)} {...rest} />;
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      rows={minRows}
+      className={cn(fieldCls, "resize-none overflow-hidden leading-relaxed", className)}
+      {...rest}
+    />
+  );
 }
 
 export const labelCls = "block text-[13px] font-semibold text-navy";
@@ -403,11 +424,13 @@ export function Empty({ icon, title, text, action }: { icon: React.ReactNode; ti
 export function Stat({ label, value, sub, onNavy }: { label: string; value: React.ReactNode; sub?: string; onNavy?: boolean }) {
   return (
     <div>
-      <Label className={onNavy ? "text-white/45" : undefined}>{label}</Label>
+      <Label as="span" className={cn("block", onNavy && "text-white/85")}>
+        {label}
+      </Label>
       <p className={cn("mt-2 text-[1.9rem] font-semibold leading-none tracking-tight tabular-nums", onNavy ? "text-gold" : "text-navy")}>
         {value}
       </p>
-      {sub && <p className={cn("mt-2 text-[13px]", onNavy ? "text-white/55" : "text-navy")}>{sub}</p>}
+      {sub && <p className={cn("mt-2 text-[13px]", onNavy ? "text-white/85" : "text-navy")}>{sub}</p>}
     </div>
   );
 }
@@ -483,7 +506,7 @@ export function Table({
                 className={cn(
                   "whitespace-nowrap bg-navy-deep px-4 py-3 text-[12.5px] font-semibold text-gold",
                   h.align === "right" && "text-right",
-                  h.className
+                  h.className,
                 )}
               >
                 {h.label}
@@ -523,7 +546,7 @@ export function Status({ tone = "plain", children }: { tone?: "done" | "attentio
         "inline-flex items-center whitespace-nowrap rounded-md px-2 py-0.5 text-[12px] font-semibold",
         tone === "done" && "bg-navy text-white",
         tone === "attention" && "bg-gold text-navy-deep",
-        tone === "plain" && "bg-navy/[0.06] text-navy"
+        tone === "plain" && "bg-navy/[0.06] text-navy",
       )}
     >
       {children}
@@ -558,7 +581,15 @@ export function RowLink({ onClick, children }: { onClick: () => void; children: 
 }
 
 /** Navy band at the top of a dashboard: date, greeting and a few key figures. */
-export function WelcomeBand({ date, title, figures }: { date: string; title: string; figures: { label: string; value: React.ReactNode }[] }) {
+export function WelcomeBand({
+  date,
+  title,
+  figures,
+}: {
+  date: string;
+  title: string;
+  figures: { label: string; value: React.ReactNode }[];
+}) {
   return (
     <div className="mb-8 rounded-2xl bg-navy-deep p-6 md:p-7">
       <p className="text-[13px] font-semibold text-gold">{date}</p>

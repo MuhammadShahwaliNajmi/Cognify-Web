@@ -23,6 +23,7 @@ import {
   RowLink,
   Stat,
   Status,
+  Segmented,
   Table,
   Td,
   fieldCls,
@@ -93,6 +94,7 @@ function GradeForm({ s }: { s: Student }) {
 function Profile({ s }: { s: Student }) {
   const { db, now } = useTeacher();
   const router = useRouter();
+  const [tab, setTab] = useState<"overview" | "report" | "settings">("overview");
   const predicted = predictGrade(db, s, now);
   const progress = db.progress.find((p) => p.studentId === s.id);
   const work = db.assignments
@@ -126,59 +128,88 @@ function Profile({ s }: { s: Student }) {
         <Stat label="Attendance" value={`${attendancePct(db, s.id, s.cohortId, now)}%`} />
         <Stat label="Average" value={averagePct(db, s.id) !== null ? `${averagePct(db, s.id)}%` : "–"} />
       </div>
-      <GradeForm key={`target-${s.target}`} s={s} />
-      <ExamDateForm key={`exam-${s.cohortId}`} cohortId={s.cohortId} />
-      <ProgressReport key={s.id} s={s} />
-      <ParentAccess key={`parents-${s.id}`} studentId={s.id} />
 
-      {progress && (
-        <div className="mt-6">
-          <Label>Grade trend</Label>
-          <div className="mt-2">
-            <TrendChart points={progress.history} />
+      <Segmented
+        className="mt-6"
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "overview", label: "Overview" },
+          { value: "report", label: "Report" },
+          { value: "settings", label: "Settings" },
+        ]}
+      />
+
+      {tab === "overview" && (
+        <>
+          {progress && (
+            <div className="mt-6">
+              <Label>Grade trend</Label>
+              <div className="mt-2">
+                <TrendChart points={progress.history} />
+              </div>
+            </div>
+          )}
+          <div className="mt-6">
+            <Label>Work this term</Label>
+            <ul className="mt-2">
+              {work.map(({ a, sub }) => {
+                const body = (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium tracking-tight text-navy">{a.title}</p>
+                      <p className="text-xs text-navy">
+                        {a.kind} · due {fmtDate(a.dueAt)}
+                      </p>
+                    </div>
+                    {sub?.status === "marked" ? (
+                      <Chip tone="navy">
+                        {sub.marks} / {a.maxMarks}
+                      </Chip>
+                    ) : sub ? (
+                      <Chip tone="soft" dot>
+                        To mark
+                      </Chip>
+                    ) : new Date(a.dueAt).getTime() < now ? (
+                      <Chip tone="gold">Not handed in</Chip>
+                    ) : (
+                      <Chip tone="outline">Open</Chip>
+                    )}
+                  </>
+                );
+                return (
+                  <li key={a.id} className="border-t border-navy/10 first:border-t-0">
+                    {sub ? (
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/portal/teacher/submissions/?open=${sub.id}`)}
+                        className="flex w-full items-center gap-3 py-3 text-left hover:bg-navy/[0.03] focus-gold"
+                      >
+                        {body}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-3 py-3">{body}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        </div>
+        </>
       )}
 
-      <div className="mt-6 border-t border-navy/10 pt-5">
-        <ClassSetup cohortId={s.cohortId} />
-      </div>
+      {tab === "report" && <ProgressReport key={s.id} s={s} />}
 
-      <div className="mt-6">
-        <Label>Work this term</Label>
-        <ul className="mt-2">
-          {work.map(({ a, sub }) => (
-            <li
-              key={a.id}
-              onClick={sub ? () => router.push(`/portal/teacher/submissions/?open=${sub.id}`) : undefined}
-              className={cn(
-                "flex items-center gap-3 border-t border-navy/10 py-3 first:border-t-0",
-                sub && "cursor-pointer hover:bg-navy/[0.03]",
-              )}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium tracking-tight text-navy">{a.title}</p>
-                <p className="text-xs text-navy">
-                  {a.kind} · due {fmtDate(a.dueAt)}
-                </p>
-              </div>
-              {sub?.status === "marked" ? (
-                <Chip tone="navy">
-                  {sub.marks} / {a.maxMarks}
-                </Chip>
-              ) : sub ? (
-                <Chip tone="soft" dot>
-                  To mark
-                </Chip>
-              ) : new Date(a.dueAt).getTime() < now ? (
-                <Chip tone="gold">Not handed in</Chip>
-              ) : (
-                <Chip tone="outline">Open</Chip>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {tab === "settings" && (
+        <>
+          <GradeForm key={`target-${s.target}`} s={s} />
+          <ExamDateForm key={`exam-${s.cohortId}`} cohortId={s.cohortId} />
+          <ParentAccess key={`parents-${s.id}`} studentId={s.id} />
+          <div className="mt-6 border-t border-navy/10 pt-5">
+            <ClassSetup cohortId={s.cohortId} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

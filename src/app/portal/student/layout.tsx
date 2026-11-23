@@ -10,22 +10,27 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
   const cohortId = db.students.find((s) => s.id === auth?.userId)?.cohortId;
   const mine = db.assignments.filter((a) => a.cohortId === cohortId);
   const todo = mine.filter(
-    (a) => !a.timeLimitMin && !db.submissions.some((x) => x.assignmentId === a.id && x.studentId === auth?.userId)
+    (a) => !a.timeLimitMin && !db.submissions.some((x) => x.assignmentId === a.id && x.studentId === auth?.userId),
   ).length;
   // timed assessments still to start, or running now
   const tests = auth
     ? mine.filter((a) => a.timeLimitMin && ["upcoming", "in-progress", "grace"].includes(assessmentState(db, a, auth.userId, now))).length
     : 0;
   const unread = db.submissions.filter((x) => x.studentId === auth?.userId && x.status === "marked" && !x.seenAt).length;
-  const fresh = db.announcements.filter(
-    (a) => (!a.cohortId || a.cohortId === cohortId) && now - new Date(a.at).getTime() < 3 * DAY
-  ).length;
+  const fresh = db.announcements.filter((a) => (!a.cohortId || a.cohortId === cohortId) && now - new Date(a.at).getTime() < 3 * DAY).length;
 
   const nav: NavItem[] = [
     { href: "/portal/student/", label: "Dashboard" },
     { href: "/portal/student/calendar/", label: "Calendar" },
-    { href: "/portal/student/assignments/", label: "Assignments", badge: todo },
-    { href: "/portal/student/assessments/", label: "Assessments", badge: tests },
+    {
+      href: "/portal/student/assignments/",
+      label: "Classwork",
+      badge: todo + tests,
+      children: [
+        { href: "/portal/student/assignments/", label: "Assignments", badge: todo },
+        { href: "/portal/student/assessments/", label: "Assessments", badge: tests },
+      ],
+    },
     { href: "/portal/student/grades/", label: "Grades", badge: unread },
     { href: "/portal/student/resources/", label: "Resources" },
     { href: "/portal/student/announcements/", label: "Announcements", badge: fresh },
