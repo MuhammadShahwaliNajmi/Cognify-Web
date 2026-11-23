@@ -164,7 +164,7 @@ export function NextClassCard({ session, cohortLabel }: { session: Session; coho
     <div className={cn("rounded-2xl bg-navy-deep p-5 md:p-6", live && "ring-2 ring-gold")}>
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-gold">
+          <p className="flex items-center gap-2 text-[12px] text-gold font-semibold">
             {live && <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />}
             {live ? "Live now" : fmtDay(session.start, now)} · {fmtTime(session.start)} – {fmtTime(new Date(end).toISOString())}
           </p>

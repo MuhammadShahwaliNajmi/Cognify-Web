@@ -338,7 +338,7 @@ export default function TeacherAssignments() {
                         setEditId(a.id);
                       }}
                       onKeyDown={(e) => e.stopPropagation()}
-                      className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                      className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
                     >
                       <Pencil size={14} />
                     </button>

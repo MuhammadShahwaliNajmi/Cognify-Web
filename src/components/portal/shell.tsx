@@ -116,7 +116,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                     <div className="px-3 py-2.5">
                       <p className="truncate text-sm font-semibold text-navy">{me.name}</p>
                       <p className="truncate text-[13px] text-navy">{me.email}</p>
-                      <p className="mt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-navy">{sub}</p>
+                      <p className="mt-0.5 text-[12px] text-navy font-semibold">{sub}</p>
                     </div>
                     <button
                       type="button"
@@ -149,7 +149,7 @@ export function Shell({ role, nav, children }: { role: Role; nav: NavItem[]; chi
                 >
                   {item.label}
                   {!!item.badge && (
-                    <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gold px-1 text-[11px] font-bold tabular-nums text-navy-deep">
+                    <span className="grid h-[18px] min-w-[18px] place-items-center rounded-full bg-gold px-1 text-[12px] font-bold tabular-nums text-navy-deep">
                       {item.badge}
                     </span>
                   )}

@@ -80,7 +80,7 @@ export default function TeacherAnnouncements() {
       </Rise>
 
       <Rise i={1} className="mt-10">
-        <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy">Sent</h2>
+        <h2 className="mb-3 text-[13px] font-semibold text-navy">Sent</h2>
         {sent.length === 0 ? (
           <Empty icon={<Megaphone size={20} />} title="No announcements yet" text="Anything you post appears here and on your students' portals." />
         ) : (
@@ -95,7 +95,7 @@ export default function TeacherAnnouncements() {
                       type="button"
                       aria-label={`Delete ${n.title}`}
                       onClick={() => setRemoveId(n.id)}
-                      className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                      className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
                     >
                       <Trash2 size={14} />
                     </button>

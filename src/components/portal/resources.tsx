@@ -164,7 +164,7 @@ function typeFor(folderName: string | undefined, mime: string): ResourceType {
 }
 
 const rowCls = "cursor-pointer transition-colors hover:bg-gold/[0.08]";
-const iconBtn = "grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold";
+const iconBtn = "grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold";
 
 /**
  * Folders and files for one student. Teachers can create, rename and delete

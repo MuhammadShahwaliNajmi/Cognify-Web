@@ -865,7 +865,7 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             {ended && teacher && !virtual && <NotesField key={`notes-${s.id}`} session={s} />}
             {!teacher && s.notes && (
               <div className="rounded-2xl border-l-[3px] border-gold bg-gold/10 p-4">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Lesson notes</p>
+                <p className="text-[12px] font-semibold text-navy">Lesson notes</p>
                 <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-navy">{s.notes}</p>
               </div>
             )}

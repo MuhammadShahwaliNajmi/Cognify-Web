@@ -297,7 +297,7 @@ function ScoreCard({ a, sub, now }: { a: Assignment; sub: Submission; now: numbe
         <Ring value={sub.marks ?? 0} max={a.maxMarks} size={84} />
       </div>
       <div className="min-w-0">
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">Score</p>
+        <p className="text-[12px] text-gold font-semibold">Score</p>
         <p className="mt-1 text-[2rem] font-bold leading-none tabular-nums text-white">
           {sub.marks} <span className="text-xl font-semibold text-white/75">/ {a.maxMarks}</span>
         </p>

@@ -25,7 +25,7 @@ function ExamDateForm({ cohortId }: { cohortId: string }) {
   return (
     <div className="mt-3 flex flex-wrap items-end gap-3">
       <label className="w-44">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Exam date</span>
+        <span className="text-[12px] font-semibold text-navy">Exam date</span>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldCls} />
       </label>
       <Btn
@@ -55,11 +55,11 @@ function GradeForm({ s }: { s: Student }) {
   return (
     <div className="mt-4 flex flex-wrap items-end gap-3">
       <label className="w-28">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Predicted</span>
+        <span className="text-[12px] font-semibold text-navy">Predicted</span>
         <input value={predicted} onChange={(e) => setPredicted(e.target.value.slice(0, 4))} placeholder="A / 6" className={fieldCls} />
       </label>
       <label className="w-28">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">Target</span>
+        <span className="text-[12px] font-semibold text-navy">Target</span>
         <input value={target} onChange={(e) => setTarget(e.target.value.slice(0, 4))} placeholder="A* / 7" className={fieldCls} />
       </label>
       <Btn
@@ -614,7 +614,7 @@ export default function TeacherStudents() {
 
       {db.archived.length > 0 && (
         <div className="mt-10">
-          <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-[0.14em] text-navy">Archived</h2>
+          <h2 className="mb-3 text-[13px] font-semibold text-navy">Archived</h2>
           <Table minWidth={480} head={[{ label: "Student" }, { label: "Course" }]}>
             {db.archived.map((c) => (
               <RowLink key={c.id} onClick={() => setArchivedId(c.id)}>

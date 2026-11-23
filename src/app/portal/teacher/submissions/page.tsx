@@ -166,7 +166,7 @@ function ReturnFiles({ sub }: { sub: Submission }) {
                   setRemoving(null);
                   if (ok) toast("File removed");
                 }}
-                className="grid h-7 w-7 place-items-center rounded-full text-navy transition-colors hover:bg-navy/[0.06] focus-gold disabled:opacity-40"
+                className="grid h-9 w-9 place-items-center rounded-full text-navy transition-colors hover:bg-navy/[0.06] focus-gold disabled:opacity-40"
               >
                 <X size={14} />
               </button>

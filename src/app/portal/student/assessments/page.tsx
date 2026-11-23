@@ -94,14 +94,14 @@ function Room({ a }: { a: Assignment }) {
       <div className={cn("rounded-2xl bg-navy-deep p-6", live && "sticky top-[7.5rem] z-30 shadow-[0_18px_40px_-20px_rgba(8,16,33,0.7)]")}>
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">
+            <p className="text-[12px] text-gold font-semibold">
               Timed assessment · {a.timeLimitMin} min · {a.maxMarks} marks
             </p>
             <h1 className="mt-1.5 text-[1.5rem] font-bold leading-tight tracking-tight text-white">{a.title}</h1>
           </div>
           {live && (
             <div className="text-right">
-              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/80">
+              <p className="text-[12px] text-white/80 font-semibold">
                 {state === "grace" ? "Time up · submitting closes in" : "Time left"}
               </p>
               <p className="text-[2rem] font-bold leading-none tabular-nums text-gold">{fmtClock(state === "grace" ? graceLeft : left)}</p>
@@ -271,7 +271,7 @@ function Room({ a }: { a: Assignment }) {
 function Fact({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-navy/15 p-4">
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">{label}</p>
+      <p className="text-[12px] text-navy font-semibold">{label}</p>
       <p className="mt-1.5 text-lg font-bold text-navy">{value}</p>
     </div>
   );

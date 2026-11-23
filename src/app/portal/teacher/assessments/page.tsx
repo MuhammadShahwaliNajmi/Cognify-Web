@@ -281,19 +281,19 @@ function AttemptDetail({ a, student, onClose }: { a: Assignment; student: Studen
       {attempt && (
         <dl className="grid grid-cols-2 gap-4 rounded-xl border border-navy/15 p-4 sm:grid-cols-3">
           <div>
-            <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">Started</dt>
+            <dt className="text-[12px] text-navy font-semibold">Started</dt>
             <dd className="mt-1 text-sm font-semibold text-navy">
               {fmtDate(attempt.startedAt)}, {fmtTime(attempt.startedAt)}
             </dd>
           </div>
           <div>
-            <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">Submitted</dt>
+            <dt className="text-[12px] text-navy font-semibold">Submitted</dt>
             <dd className="mt-1 text-sm font-semibold text-navy">
               {sub ? `${fmtTime(sub.submittedAt)}${late ? " (grace period)" : ""}` : "—"}
             </dd>
           </div>
           <div>
-            <dt className="font-mono text-[11px] uppercase tracking-[0.14em] text-navy">Time used</dt>
+            <dt className="text-[12px] text-navy font-semibold">Time used</dt>
             <dd className="mt-1 text-sm font-semibold text-navy">{used !== null ? fmtDuration(used) : "—"}</dd>
           </div>
         </dl>
@@ -465,7 +465,7 @@ export default function TeacherAssessments() {
                       setEditId(a.id);
                     }}
                     onKeyDown={(e) => e.stopPropagation()}
-                    className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                    className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
                   >
                     <Pencil size={14} />
                   </button>

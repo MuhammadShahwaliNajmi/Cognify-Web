@@ -37,7 +37,7 @@ export function ParentAccess({ studentId }: { studentId: string }) {
                 await getSupabase()?.from("parent_logins").delete().eq("email", e);
                 setEmails(await load());
               }}
-              className="grid h-7 w-7 place-items-center rounded text-navy hover:text-gold"
+              className="grid h-9 w-9 place-items-center rounded text-navy hover:text-gold"
             >
               <Trash2 size={13} />
             </button>

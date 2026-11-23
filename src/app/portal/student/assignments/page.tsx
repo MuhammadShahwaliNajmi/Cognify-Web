@@ -99,7 +99,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
               setPages(0);
             }}
             aria-label="Remove file"
-            className="grid h-8 w-8 place-items-center rounded-full text-navy transition-colors hover:text-navy focus-gold"
+            className="grid h-10 w-10 place-items-center rounded-full text-navy transition-colors hover:text-navy focus-gold"
           >
             <X size={15} />
           </button>

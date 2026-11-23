@@ -30,7 +30,7 @@ export default function StudentResources() {
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search all files"
           aria-label="Search all files"
-          className="w-full rounded-lg border border-navy/15 bg-white py-2.5 pl-11 pr-5 text-[15px] text-navy outline-none transition-all placeholder:text-navy/40 focus:border-gold focus:ring-4 focus:ring-gold/15"
+          className="w-full rounded-lg border border-navy/15 bg-white py-2.5 pl-11 pr-5 text-[15px] text-navy outline-none transition-all placeholder:text-navy/55 focus:border-gold focus:ring-4 focus:ring-gold/15"
         />
       </div>
 

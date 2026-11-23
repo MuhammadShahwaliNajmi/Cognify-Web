@@ -76,7 +76,7 @@ export function WorkThread({ assignmentId, studentId, className }: { assignmentI
                 >
                   {c.body}
                 </p>
-                <span className="mx-1.5 mt-1 text-[11px] text-navy">
+                <span className="mx-1.5 mt-1 text-[12px] text-navy">
                   {nameOf(c.author_id)} · {fmtRelative(c.created_at, now)}
                 </span>
               </div>
@@ -95,7 +95,7 @@ export function WorkThread({ assignmentId, studentId, className }: { assignmentI
           rows={2}
           maxLength={2000}
           placeholder="Write a private comment"
-          className="min-h-[46px] flex-1 resize-y rounded-xl border border-navy/15 bg-white px-3 py-2.5 text-[14px] text-navy outline-none placeholder:text-navy/45 focus:border-gold"
+          className="min-h-[46px] flex-1 resize-y rounded-xl border border-navy/15 bg-white px-3 py-2.5 text-[14px] text-navy outline-none placeholder:text-navy/55 focus:border-gold"
         />
         <button
           type="button"

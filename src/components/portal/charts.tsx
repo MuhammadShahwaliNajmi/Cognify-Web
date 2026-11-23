@@ -141,7 +141,7 @@ export function Ring({ value, max, size = 112 }: { value: number; max: number; s
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
         <span className="text-[1.6rem] font-semibold tracking-tight tabular-nums text-navy">{value}</span>
-        <span className="mt-1 text-[11px] font-medium text-navy">out of {max}</span>
+        <span className="mt-1 text-[12px] font-medium text-navy">out of {max}</span>
       </div>
     </div>
   );

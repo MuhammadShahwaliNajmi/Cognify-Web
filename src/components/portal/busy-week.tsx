@@ -46,7 +46,7 @@ export function BusyWeek({ db, cohortId, deadlines, now }: { db: DB; cohortId: s
                 <span className="bg-gold" style={{ height: `${(w / max) * 100}%` }} />
                 <span className={on ? "bg-white" : "bg-navy"} style={{ height: `${(c / max) * 100}%` }} />
               </span>
-              <span className={cn("text-[11px] font-bold", on ? "text-gold" : "text-navy")}>{i === 0 ? "Today" : d.toLocaleDateString([], { weekday: "short" })}</span>
+              <span className={cn("text-[12px] font-bold", on ? "text-gold" : "text-navy")}>{i === 0 ? "Today" : d.toLocaleDateString([], { weekday: "short" })}</span>
             </button>
           );
         })}

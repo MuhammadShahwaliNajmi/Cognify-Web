@@ -114,7 +114,7 @@ export default function TeacherAccounts() {
                         type="button"
                         aria-label={`Remove ${t.name}`}
                         onClick={() => setRemoving(t)}
-                        className="grid h-8 w-8 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                        className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
                       >
                         <Trash2 size={14} />
                       </button>

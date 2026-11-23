@@ -12,7 +12,7 @@ import { initials } from "@/lib/portal/format";
 
 export function Label({ className, children }: { className?: string; children: React.ReactNode }) {
   return (
-    <span className={cn("font-mono text-[11px] uppercase tracking-[0.2em] text-navy", className)}>
+    <span className={cn("text-[12.5px] font-semibold text-navy", className)}>
       {children}
     </span>
   );
@@ -40,7 +40,7 @@ export function Chip({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-tight",
+        "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-semibold tracking-tight",
         tones[tone],
         className
       )}
@@ -64,8 +64,8 @@ type BtnProps = {
 export function Btn({ variant = "navy", size = "md", href, external, className, children, ...rest }: BtnProps) {
   const cls = cn(
     "gloss inline-flex items-center justify-center gap-2 rounded-full font-semibold tracking-tight transition-[background-color,border-color,color,transform,opacity] duration-200 focus-gold active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45",
-    size === "sm" && "px-3.5 py-1.5 text-[13px]",
-    size === "md" && "px-5 py-2.5 text-sm",
+    size === "sm" && "min-h-[40px] px-4 py-2 text-[13px]",
+    size === "md" && "min-h-[44px] px-5 py-2.5 text-sm",
     size === "lg" && "px-7 py-3.5 text-[15px]",
     variant === "gold" && "bg-gold text-navy-deep hover:-translate-y-0.5",
     variant === "navy" && "bg-navy-deep text-white hover:bg-navy",
@@ -121,7 +121,7 @@ export function Avatar({ name, size = "md", className }: { name: string; size?: 
     <span
       className={cn(
         "grid shrink-0 place-items-center rounded-full bg-gradient-to-br from-navy to-navy-deep font-semibold tracking-wide text-gold",
-        size === "sm" && "h-8 w-8 text-[11px]",
+        size === "sm" && "h-8 w-8 text-[12px]",
         size === "md" && "h-10 w-10 text-[12px]",
         size === "lg" && "h-14 w-14 text-base",
         className
@@ -245,7 +245,7 @@ export function MultiPick({
   return (
     <div>
       <div className="flex items-center justify-between gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-navy">{label}</span>
+        <span className="text-[13px] font-semibold text-navy">{label}</span>
         {!single && (
         <button
           type="button"
@@ -364,7 +364,7 @@ export function Modal({
 }
 
 export const fieldCls =
-  "mt-2 w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/40 focus:border-gold focus:ring-4 focus:ring-gold/15";
+  "mt-2 w-full rounded-xl border border-navy/15 bg-white px-4 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/55 focus:border-gold focus:ring-4 focus:ring-gold/15";
 /** A text box that grows to show everything typed (no scrolling inside a small box). */
 export function AutoTextarea({ value, minRows = 3, className, ...rest }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { value: string; minRows?: number }) {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -377,7 +377,7 @@ export function AutoTextarea({ value, minRows = 3, className, ...rest }: React.T
   return <textarea ref={ref} value={value} rows={minRows} className={cn(fieldCls, "resize-none overflow-hidden leading-relaxed", className)} {...rest} />;
 }
 
-export const labelCls = "block text-[11px] font-semibold uppercase tracking-[0.18em] text-navy";
+export const labelCls = "block text-[13px] font-semibold text-navy";
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -481,7 +481,7 @@ export function Table({
                 key={h.label}
                 scope="col"
                 className={cn(
-                  "whitespace-nowrap bg-navy-deep px-4 py-3 font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-gold",
+                  "whitespace-nowrap bg-navy-deep px-4 py-3 text-[12.5px] font-semibold text-gold",
                   h.align === "right" && "text-right",
                   h.className
                 )}
@@ -561,7 +561,7 @@ export function RowLink({ onClick, children }: { onClick: () => void; children: 
 export function WelcomeBand({ date, title, figures }: { date: string; title: string; figures: { label: string; value: React.ReactNode }[] }) {
   return (
     <div className="mb-8 rounded-2xl bg-navy-deep p-6 md:p-7">
-      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-gold">{date}</p>
+      <p className="text-[13px] font-semibold text-gold">{date}</p>
       <h1 className="mt-2 text-[1.6rem] font-bold leading-tight tracking-tight text-white md:text-[1.9rem]">{title}</h1>
       <dl className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/10 pt-5 sm:grid-cols-4">
         {figures.map((f) => (
@@ -580,7 +580,7 @@ export function Panel({ title, link, children }: { title: string; link?: { href:
   return (
     <section className="rounded-xl border border-navy/15">
       <div className="flex items-center justify-between rounded-t-xl bg-navy-deep px-5 py-3">
-        <p className="font-mono text-[11px] font-medium uppercase tracking-[0.14em] text-gold">{title}</p>
+        <p className="text-[13.5px] font-semibold text-gold">{title}</p>
         {link && (
           <Link href={link.href} className="text-[13px] font-medium text-white/85 hover:text-gold">
             {link.label}

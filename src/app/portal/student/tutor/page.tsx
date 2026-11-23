@@ -148,7 +148,7 @@ export default function StudentTutor() {
           ))}
           {thinking && (
             <div className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-navy-deep text-gold">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-navy-deep text-gold">
                 <Sparkles size={14} />
               </span>
               <span className="flex gap-1.5 rounded-full border border-navy/10 px-4 py-3" aria-label="Lab AI Tutor is typing">
@@ -186,7 +186,7 @@ export default function StudentTutor() {
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Type a question, or pick a sample above"
               aria-label="Your question"
-              className="w-full rounded-full border border-navy/15 bg-white px-5 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/40 focus:border-gold focus:ring-4 focus:ring-gold/15"
+              className="w-full rounded-full border border-navy/15 bg-white px-5 py-3 text-[15px] text-navy outline-none transition-all placeholder:text-navy/55 focus:border-gold focus:ring-4 focus:ring-gold/15"
             />
             <button
               type="submit"

@@ -269,7 +269,7 @@ function DayHeading({ d, today, onClick, big }: { d: Date; today: Date; onClick:
   const isToday = sameDay(d, today);
   return (
     <button type="button" onClick={onClick} className="group flex w-full flex-col items-center gap-0.5 py-1.5 focus-gold">
-      <span className={cn("text-[11px] font-semibold uppercase tracking-[0.1em]", "text-navy")}>
+      <span className={cn("text-[12px] font-semibold", "text-navy")}>
         {d.toLocaleDateString([], { weekday: "short" })}
       </span>
       <span
@@ -430,7 +430,7 @@ function TimeGrid({
             {Array.from({ length: hours }, (_, i) => fromH + i).map((h, i) => (
               <span
                 key={h}
-                className={cn("absolute right-2 text-[11px] font-medium tabular-nums leading-none text-navy", i === 0 ? "top-0.5" : "-translate-y-1/2")}
+                className={cn("absolute right-2 text-[12px] font-medium tabular-nums leading-none text-navy", i === 0 ? "top-0.5" : "-translate-y-1/2")}
                 style={i === 0 ? undefined : { top: i * hourPx }}
               >
                 {hourLabel(h)}
@@ -578,7 +578,7 @@ function ScheduleList({
               >
                 {d.getDate()}
               </span>
-              <span className="pt-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-navy">
+              <span className="pt-1.5 text-[12px] font-semibold text-navy">
                 {d.toLocaleDateString([], { month: "short", weekday: "short" })}
               </span>
             </button>
@@ -637,7 +637,7 @@ function MonthGrid({
     <div className="overflow-hidden rounded-xl border border-navy/12 bg-white">
       <div className="grid grid-cols-7 border-b border-navy/12">
         {cells.slice(0, 7).map((d, i) => (
-          <div key={i} className={cn("py-2 text-center text-[11px] font-semibold uppercase tracking-[0.1em] text-navy", i > 0 && "border-l border-navy/12")}>
+          <div key={i} className={cn("py-2 text-center text-[12px] font-semibold text-navy", i > 0 && "border-l border-navy/12")}>
             {d.toLocaleDateString([], { weekday: "short" })}
           </div>
         ))}
@@ -683,7 +683,7 @@ function MonthGrid({
                       disabled={!e.onClick}
                       title={`${e.title} · ${timeText(e)}`}
                       className={cn(
-                        "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[10.5px] transition-colors focus-gold md:px-1.5 md:text-[12px]",
+                        "flex w-full items-center gap-1.5 rounded px-1 py-0.5 text-left text-[12px] transition-colors focus-gold md:px-1.5 md:text-[12px]",
                         "md:bg-transparent md:text-navy md:hover:bg-navy/[0.06]",
                         e.kind === "class" ? "bg-navy-deep text-white" : "bg-gold/30 text-navy"
                       )}
