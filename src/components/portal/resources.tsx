@@ -92,7 +92,9 @@ export function ResourceViewer({ resource, onClose }: { resource: Resource | nul
         <div>
           {resource.driveFileId ? (
             failed ? (
-              <p className="rounded-xl bg-navy/[0.04] p-6 text-center text-sm text-navy">This file can&apos;t be opened right now. Try again in a moment.</p>
+              <p className="rounded-xl bg-navy/[0.04] p-6 text-center text-sm text-navy">
+                This file can&apos;t be opened right now. Try again in a moment.
+              </p>
             ) : !url ? (
               <div className="grid aspect-video w-full place-items-center rounded-xl bg-navy/[0.04]">
                 <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
@@ -116,7 +118,12 @@ export function ResourceViewer({ resource, onClose }: { resource: Resource | nul
               </div>
             )
           ) : legacy ? (
-            <iframe src={legacy} title={resource.title} allow="autoplay; fullscreen" className="aspect-video w-full rounded-xl border border-navy/12" />
+            <iframe
+              src={legacy}
+              title={resource.title}
+              allow="autoplay; fullscreen"
+              className="aspect-video w-full rounded-xl border border-navy/12"
+            />
           ) : (
             <p className="rounded-xl bg-navy/[0.04] p-6 text-center text-sm text-navy">No file is attached to this item yet.</p>
           )}
@@ -211,7 +218,7 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
       setPending((p) => [...p, { id, name: file.name, progress: 0 }]);
       try {
         const up = await uploadFile(file, { purpose: "resource", cohortId, folderId: here?.id ?? null }, (progress) =>
-          setPending((p) => p.map((x) => (x.id === id ? { ...x, progress } : x)))
+          setPending((p) => p.map((x) => (x.id === id ? { ...x, progress } : x))),
         );
         const ok = await addResource({
           cohortId,
@@ -252,19 +259,28 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
       {/* breadcrumb + actions */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <nav aria-label="Folder" className="flex min-w-0 flex-wrap items-center gap-1 text-[15px]">
-          <button type="button" onClick={() => setFolderId(null)} className="rounded-md px-1.5 py-0.5 font-semibold text-navy hover:text-gold focus-gold">
+          <button
+            type="button"
+            onClick={() => setFolderId(null)}
+            className="rounded-md px-1.5 py-0.5 font-semibold text-navy hover:text-gold focus-gold"
+          >
             {rootLabel}
           </button>
           {trail.map((f) => (
             <span key={f.id} className="flex items-center gap-1">
               <ChevronRight size={14} className="text-gold" />
-              <button type="button" onClick={() => setFolderId(f.id)} className="rounded-md px-1.5 py-0.5 font-semibold text-navy hover:text-gold focus-gold">
+              <button
+                type="button"
+                onClick={() => setFolderId(f.id)}
+                className="rounded-md px-1.5 py-0.5 font-semibold text-navy hover:text-gold focus-gold"
+              >
                 {f.name}
               </button>
             </span>
           ))}
         </nav>
-        {teacher && (
+        {/* every student has the same three folders (Notes, Books, Other): files go inside them */}
+        {teacher && current && (
           <div className="flex flex-wrap items-center gap-2">
             <Btn variant="ghost" size="sm" onClick={() => setLinking(true)}>
               <Link2 size={14} /> Add link
@@ -320,7 +336,15 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
         </ul>
       )}
 
-      <Table head={[{ label: "Name" }, { label: "Type" }, { label: "Size" }, { label: "Added" }, ...(teacher ? [{ label: " ", align: "right" as const }] : [])]}>
+      <Table
+        head={[
+          { label: "Name" },
+          { label: "Type" },
+          { label: "Size" },
+          { label: "Added" },
+          ...(teacher ? [{ label: " ", align: "right" as const }] : []),
+        ]}
+      >
         {subfolders.length === 0 && files.length === 0 ? (
           <EmptyRow cols={teacher ? 5 : 4}>{teacher ? "Empty folder. Upload files or drop them here." : "Nothing here yet."}</EmptyRow>
         ) : (
@@ -338,10 +362,16 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
                   {countIn(f.id)} item{countIn(f.id) === 1 ? "" : "s"}
                 </Td>
                 <Td>—</Td>
-                {teacher && (
+                {teacher && !f.parentId && <Td align="right"> </Td>}
+                {teacher && f.parentId && (
                   <Td align="right">
                     <span className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                      <button type="button" aria-label={`Rename ${f.name}`} onClick={() => setNaming({ mode: "rename", folder: f })} className={iconBtn}>
+                      <button
+                        type="button"
+                        aria-label={`Rename ${f.name}`}
+                        onClick={() => setNaming({ mode: "rename", folder: f })}
+                        className={iconBtn}
+                      >
                         <Pencil size={14} />
                       </button>
                       <button
@@ -487,7 +517,13 @@ function LinkForm({ onSave }: { onSave: (title: string, link: string) => Promise
         <input value={title} onChange={(e) => setTitle(e.target.value)} className={fieldCls} />
       </Field>
       <Field label="Link">
-        <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://drive.google.com/…" inputMode="url" className={fieldCls} />
+        <input
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://drive.google.com/…"
+          inputMode="url"
+          className={fieldCls}
+        />
       </Field>
       <Btn
         variant="gold"

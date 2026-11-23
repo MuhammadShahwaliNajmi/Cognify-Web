@@ -8,7 +8,8 @@ import { useTeacher } from "@/lib/portal/store";
 import { StudentCell } from "@/components/portal/student-cell";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
-import type { Assignment, AssignmentKind } from "@/lib/portal/types";
+import { ASSIGNMENT_KINDS, GRADINGS, type Assignment, type AssignmentKind, type Grading } from "@/lib/portal/types";
+import { gradingText, scoreText } from "@/lib/portal/selectors";
 import { QuestionPaperField } from "@/components/portal/work";
 import {
   Btn,
@@ -27,7 +28,19 @@ import {
 } from "@/components/portal/ui";
 
 /** Set a new assignment, or change / delete an existing one. */
-function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { cohortId: string; editing?: Assignment; copyFrom?: Assignment; onDone: () => void; onSetAgain?: (a: Assignment) => void }) {
+function AssignmentForm({
+  cohortId,
+  editing,
+  copyFrom,
+  onDone,
+  onSetAgain,
+}: {
+  cohortId: string;
+  editing?: Assignment;
+  copyFrom?: Assignment;
+  onDone: () => void;
+  onSetAgain?: (a: Assignment) => void;
+}) {
   const { db, addAssignment, updateAssignment, deleteAssignment, toast } = useTeacher();
   const due = editing ? new Date(editing.dueAt) : null;
   // "Set again" starts from another piece of work (same paper), with a new date
@@ -35,7 +48,7 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
   const [f, setF] = useState({
     title: src?.title ?? "",
     kind: src?.kind ?? ("Essay" as AssignmentKind),
-    unit: src?.unit ?? "",
+    grading: src?.grading ?? ("marks" as Grading),
     brief: src?.brief ?? "",
     date: dateInput(due ?? new Date(Date.now() + 7 * DAY)),
     time: due ? timeInput(due) : "23:59",
@@ -50,13 +63,20 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
   const [progress, setProgress] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) => setF((x) => ({ ...x, [k]: v }));
-  const marks = Number(f.maxMarks);
-  const ok = f.title.trim() && f.unit.trim() && f.brief.trim() && marks > 0 && (editing || forIds.length > 0);
+  // pass / fail and complete are stored as 1 or 0 out of 1; feedback-only work keeps a nominal 1
+  const marks = f.grading === "marks" ? Number(f.maxMarks) : 1;
+  const ok = f.title.trim() && marks > 0 && (editing || forIds.length > 0);
 
   return (
     <div className="space-y-5">
       {!editing && db.cohorts.length > 1 && (
-        <MultiPick single label="Student" value={forIds} onChange={setForIds} options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+        <MultiPick
+          single
+          label="Student"
+          value={forIds}
+          onChange={setForIds}
+          options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))}
+        />
       )}
       <Field label="Title">
         <input
@@ -69,26 +89,39 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Field label="Type">
           <select value={f.kind} onChange={(e) => set("kind", e.target.value as AssignmentKind)} className={fieldCls}>
-            <option>Essay</option>
-            <option>Past paper</option>
-            <option>Problem set</option>
-            <option>Assessment</option>
+            {ASSIGNMENT_KINDS.map((k) => (
+              <option key={k}>{k}</option>
+            ))}
+            {f.kind === "Assessment" && <option>Assessment</option>}
           </select>
         </Field>
-        <Field label="Marks">
+        <Field label="Graded by">
+          <select
+            value={f.grading}
+            onChange={(e) => set("grading", e.target.value as Grading)}
+            disabled={marked}
+            className={cn(fieldCls, marked && "opacity-60")}
+          >
+            {GRADINGS.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+      </div>
+      {f.grading === "marks" && (
+        <Field label="Out of (marks)">
           <input
             value={f.maxMarks}
             onChange={(e) => set("maxMarks", e.target.value.replace(/\D/g, ""))}
             inputMode="numeric"
             disabled={marked}
-            className={cn(fieldCls, marked && "opacity-60")}
+            className={cn(fieldCls, "sm:max-w-[12rem]", marked && "opacity-60")}
           />
         </Field>
-      </div>
-      <Field label="Unit / topic">
-        <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Labour market" className={fieldCls} />
-      </Field>
-      <Field label="Instructions for students">
+      )}
+      <Field label="Instructions (optional)">
         <textarea value={f.brief} onChange={(e) => set("brief", e.target.value)} rows={4} className={cn(fieldCls, "resize-none")} />
       </Field>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -103,7 +136,9 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
       {!editing && (
         <Field label="Question paper (optional)">
           {copyFrom?.attachmentFileId && !paper && (
-            <p className="mb-2 text-[13px] font-semibold text-navy">Uses the same paper: {copyFrom.attachmentName || "question paper"}. Choose a file to replace it.</p>
+            <p className="mb-2 text-[13px] font-semibold text-navy">
+              Uses the same paper: {copyFrom.attachmentName || "question paper"}. Choose a file to replace it.
+            </p>
           )}
           <input
             type="file"
@@ -127,10 +162,11 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
             const saved = await updateAssignment(editing.id, {
               title: f.title.trim(),
               kind: f.kind,
-              unit: f.unit.trim(),
+              unit: f.title.trim(),
               brief: f.brief.trim(),
               dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
               maxMarks: marks,
+              grading: f.grading,
             });
             setBusy(false);
             if (!saved) return;
@@ -143,7 +179,11 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
             attachmentName?: string;
             attachmentMime?: string;
           } = copyFrom?.attachmentFileId
-            ? { attachmentFileId: copyFrom.attachmentFileId, attachmentName: copyFrom.attachmentName, attachmentMime: copyFrom.attachmentMime }
+            ? {
+                attachmentFileId: copyFrom.attachmentFileId,
+                attachmentName: copyFrom.attachmentName,
+                attachmentMime: copyFrom.attachmentMime,
+              }
             : {};
           if (paper) {
             try {
@@ -170,10 +210,11 @@ function AssignmentForm({ cohortId, editing, copyFrom, onDone, onSetAgain }: { c
                 title: f.title.trim(),
                 kind: f.kind,
                 strand: null,
-                unit: f.unit.trim(),
+                unit: f.title.trim(),
                 brief: f.brief.trim(),
                 dueAt: new Date(`${f.date}T${f.time}`).toISOString(),
                 maxMarks: marks,
+                grading: f.grading,
                 ...attachment,
               })) && saved;
           setBusy(false);
@@ -261,7 +302,10 @@ export default function TeacherAssignments() {
           label="Student"
           value={cohortId}
           onChange={setCohortId}
-          options={[{ value: "all", label: "All students" }, ...[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name }))]}
+          options={[
+            { value: "all", label: "All students" },
+            ...[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name })),
+          ]}
         />
       </div>
 
@@ -322,11 +366,9 @@ export default function TeacherAssignments() {
                   </Td>
                   <Td align="right" className="whitespace-nowrap tabular-nums">
                     {sub?.status === "marked" ? (
-                      <span className="font-semibold text-navy">
-                        {sub.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
-                      </span>
+                      <span className="font-semibold text-navy">{scoreText(a, sub.marks)}</span>
                     ) : (
-                      <span className="text-navy">– / {a.maxMarks}</span>
+                      <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
                     )}
                   </Td>
                   <Td align="right">
@@ -346,7 +388,7 @@ export default function TeacherAssignments() {
                 </>
               );
               return sub ? (
-                <RowLink key={a.id} onClick={() => router.push(`/portal/teacher/submissions/?open=${sub.id}`)}>
+                <RowLink key={a.id} onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}>
                   {cells}
                 </RowLink>
               ) : (
@@ -365,7 +407,12 @@ export default function TeacherAssignments() {
       <Modal open={!!copyFrom} onClose={() => setCopyFrom(null)} title="Set again">
         {copyFrom && <AssignmentForm key={`copy-${copyFrom.id}`} cohortId="" copyFrom={copyFrom} onDone={() => setCopyFrom(null)} />}
       </Modal>
-      <Modal open={!!editing} onClose={() => setEditId(null)} eyebrow={editing ? db.cohorts.find((c) => c.id === editing.cohortId)?.name : undefined} title="Edit assignment">
+      <Modal
+        open={!!editing}
+        onClose={() => setEditId(null)}
+        eyebrow={editing ? db.cohorts.find((c) => c.id === editing.cohortId)?.name : undefined}
+        title="Edit assignment"
+      >
         {editing && (
           <AssignmentForm
             key={editing.id}

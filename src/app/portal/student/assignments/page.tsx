@@ -4,12 +4,26 @@ import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, CheckCircle2, Clock, FileText, Paperclip, UploadCloud, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { submissionFor } from "@/lib/portal/selectors";
+import { gradingText, scoreText, submissionFor } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, MB, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import { isPhoto, photosToPdf } from "@/lib/portal/photos-pdf";
 import type { Assignment, Submission } from "@/lib/portal/types";
-import { Btn, Chip, EmptyRow, Field, Label, Modal, PageHeader, RowLink, Segmented, Status, Table, Td, fieldCls } from "@/components/portal/ui";
+import {
+  Btn,
+  Chip,
+  EmptyRow,
+  Field,
+  Label,
+  Modal,
+  PageHeader,
+  RowLink,
+  Segmented,
+  Status,
+  Table,
+  Td,
+  fieldCls,
+} from "@/components/portal/ui";
 import { FeedbackPanel, LastTargets, TypedAnswer, WorkAndFeedbackFiles, WorkFile, hasFile } from "@/components/portal/work";
 import { WorkThread } from "@/components/portal/thread";
 
@@ -40,7 +54,15 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
       setPreparing(true);
       try {
         const ordered = files.sort((x, y) => x.name.localeCompare(y.name, undefined, { numeric: true }));
-        f = await photosToPdf(ordered, `${a.title.replace(/[^\w\- ]+/g, "").trim().slice(0, 80) || "Work"}.pdf`);
+        f = await photosToPdf(
+          ordered,
+          `${
+            a.title
+              .replace(/[^\w\- ]+/g, "")
+              .trim()
+              .slice(0, 80) || "Work"
+          }.pdf`,
+        );
       } catch (e) {
         toast(e instanceof Error ? e.message : "Couldn't combine the photos.");
         return;
@@ -120,7 +142,7 @@ function SubmitForm({ a, replacing, onDone }: { a: Assignment; replacing?: boole
           }}
           className={cn(
             "flex w-full flex-col items-center rounded-2xl border-2 border-dashed px-6 py-9 text-center transition-colors focus-gold",
-            over ? "border-gold bg-gold/10" : "border-navy/15 hover:border-gold"
+            over ? "border-gold bg-gold/10" : "border-navy/15 hover:border-gold",
           )}
         >
           <span className="grid h-12 w-12 place-items-center rounded-full bg-navy-deep text-gold">
@@ -169,7 +191,8 @@ function Returned({ a, sub }: { a: Assignment; sub: Submission }) {
         <FeedbackPanel a={a} sub={sub} now={now} />
         <details className="group rounded-2xl bg-navy/[0.04] p-4">
           <summary className="cursor-pointer list-none text-[13px] font-semibold text-navy">
-            The task · {a.maxMarks} marks <span className="font-normal underline decoration-gold decoration-2 underline-offset-4 group-open:hidden">show</span>
+            The task · {gradingText(a)}{" "}
+            <span className="font-normal underline decoration-gold decoration-2 underline-offset-4 group-open:hidden">show</span>
           </summary>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-navy">{a.brief}</p>
           {a.attachmentFileId && (
@@ -233,8 +256,8 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <Chip tone="navy">{a.kind}</Chip>
-        {a.unit && <Chip tone="soft">{a.unit}</Chip>}
-        <Chip tone="soft">{a.maxMarks} marks</Chip>
+        {a.unit && a.unit !== a.title && <Chip tone="soft">{a.unit}</Chip>}
+        <Chip tone="soft">{gradingText(a)}</Chip>
         {!sub && (
           <Chip tone={msLeft < 0 ? "navy" : msLeft < 48 * HOUR ? "gold" : "outline"}>
             <Clock size={11} />
@@ -298,10 +321,14 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
                   <span
                     className={cn(
                       "relative z-10 mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full",
-                      s.done ? "bg-gold text-navy-deep" : s.active ? "border-2 border-gold bg-white" : "border border-navy/20 bg-white"
+                      s.done ? "bg-gold text-navy-deep" : s.active ? "border-2 border-gold bg-white" : "border border-navy/20 bg-white",
                     )}
                   >
-                    {s.done ? <CheckCircle2 size={14} /> : s.active ? <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" /> : null}
+                    {s.done ? (
+                      <CheckCircle2 size={14} />
+                    ) : s.active ? (
+                      <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
+                    ) : null}
                   </span>
                   <div>
                     <p className={cn("text-sm font-semibold tracking-tight", s.done || s.active ? "text-navy" : "text-navy")}>{s.t}</p>
@@ -317,7 +344,11 @@ function Pending({ a, sub }: { a: Assignment; sub?: Submission }) {
       {/* not submitted → last feedback's next steps, then upload */}
       {!sub && last && (
         <div className="mt-6">
-          <LastTargets items={last.sub.improvements ?? []} reflection={last.sub.reflection} title={`From “${last.a.title}”, returned ${fmtDate(last.sub.markedAt!)}`} />
+          <LastTargets
+            items={last.sub.improvements ?? []}
+            reflection={last.sub.reflection}
+            title={`From “${last.a.title}”, returned ${fmtDate(last.sub.markedAt!)}`}
+          />
         </div>
       )}
       {!sub && parent && <p className="mt-6 text-[15px] font-semibold text-navy">Not handed in yet.</p>}
@@ -356,7 +387,9 @@ function Assignments() {
 
   const close = () => {
     setOpenId(null);
-    if (params.get("open")) router.replace("/portal/student/assignments/", { scroll: false });
+    // opened from another page: go back there; opened from an email link: stay on Assignments
+    if (params.get("back")) router.back();
+    else if (params.get("open")) router.replace("/portal/student/assignments/", { scroll: false });
   };
 
   return (
@@ -400,7 +433,11 @@ function Assignments() {
                   </Td>
                   <Td>
                     {sub?.status === "marked" ? (
-                      sub.seenAt ? <Status tone="done">Graded</Status> : <Status tone="attention">New feedback</Status>
+                      sub.seenAt ? (
+                        <Status tone="done">Graded</Status>
+                      ) : (
+                        <Status tone="attention">New feedback</Status>
+                      )
                     ) : sub ? (
                       <Status>Submitted {fmtRelative(sub.submittedAt, now)}</Status>
                     ) : ms < 0 ? (
@@ -415,12 +452,9 @@ function Assignments() {
                     {sub?.status === "marked" && !sub.seenAt ? (
                       <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">Read feedback</span>
                     ) : sub?.status === "marked" ? (
-                      <>
-                        {sub.marks}
-                        <span className="font-normal text-navy"> / {a.maxMarks}</span>
-                      </>
+                      scoreText(a, sub.marks)
                     ) : (
-                      <span className="font-normal text-navy">– / {a.maxMarks}</span>
+                      <span className="font-normal text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
                     )}
                   </Td>
                 </RowLink>
@@ -435,7 +469,11 @@ function Assignments() {
         onClose={close}
         wide
         full={open?.sub?.status === "marked"}
-        eyebrow={open ? `${open.a.kind}${open.a.unit ? ` · ${open.a.unit}` : ""}${open.sub?.status === "marked" ? " · returned" : ""}` : undefined}
+        eyebrow={
+          open
+            ? `${open.a.kind}${open.a.unit && open.a.unit !== open.a.title ? ` · ${open.a.unit}` : ""}${open.sub?.status === "marked" ? " · returned" : ""}`
+            : undefined
+        }
         title={open?.a.title ?? ""}
       >
         {open && <Detail key={open.a.id} a={open.a} sub={open.sub} />}

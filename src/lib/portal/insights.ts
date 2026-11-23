@@ -2,7 +2,7 @@
  * Teacher insights, shared by the website and the app: which students need attention,
  * and a plain-text progress report a teacher can send to parents (WhatsApp, email, print).
  */
-import { cohortOf, courseOf, submissionFor } from "./selectors";
+import { cohortOf, courseOf, isScored, submissionFor } from "./selectors";
 import type { DB, Student } from "./types";
 
 const DAY = 86_400_000;
@@ -28,7 +28,7 @@ function markedPcts(db: DB, st: Student) {
       const a = db.assignments.find((y) => y.id === x.assignmentId);
       return { sub: x, a, pct: a ? Math.round(((x.marks ?? 0) / a.maxMarks) * 100) : 0 };
     })
-    .filter((x) => x.a);
+    .filter((x) => x.a && isScored(x.a));
 }
 
 const avg = (xs: number[]) => (xs.length ? Math.round(xs.reduce((n, x) => n + x, 0) / xs.length) : null);
@@ -176,37 +176,38 @@ export function teachingOverview(db: DB, now: number, days = 30) {
 /* ---------- predicted grade (worked out, not typed in) ---------- */
 
 type Band = [min: number, grade: string];
+// strict boundaries: a grade has to be earned clearly, not scraped
 const IB: Band[] = [
-  [72, "7"],
-  [62, "6"],
-  [52, "5"],
-  [42, "4"],
-  [32, "3"],
-  [18, "2"],
+  [80, "7"],
+  [70, "6"],
+  [60, "5"],
+  [50, "4"],
+  [40, "3"],
+  [25, "2"],
   [0, "1"],
 ];
 const LETTERS: Band[] = [
-  [80, "A*"],
-  [70, "A"],
-  [60, "B"],
-  [50, "C"],
-  [40, "D"],
-  [30, "E"],
+  [90, "A*"],
+  [80, "A"],
+  [70, "B"],
+  [60, "C"],
+  [50, "D"],
+  [40, "E"],
   [0, "U"],
 ];
 const FA: Band[] = [
-  [80, "A+"],
-  [70, "A"],
-  [60, "B"],
-  [50, "C"],
-  [40, "D"],
-  [33, "E"],
+  [90, "A+"],
+  [80, "A"],
+  [70, "B"],
+  [60, "C"],
+  [50, "D"],
+  [40, "E"],
   [0, "F"],
 ];
 const IEO: Band[] = [
-  [80, "Gold"],
-  [65, "Silver"],
-  [50, "Bronze"],
+  [85, "Gold"],
+  [72, "Silver"],
+  [60, "Bronze"],
   [0, "Honourable mention"],
 ];
 
@@ -233,26 +234,45 @@ function recentAverage(pcts: number[]) {
   return sum / weight;
 }
 
-export type Prediction = { grade: string; pct: number; pieces: number; attendance: number };
+export type Prediction = { grade: string; pct: number; pieces: number; missed: number; attendance: number };
 
 /**
- * Predicted grade from marked work and attendance:
- *  - timed assessments count 60%, other work 40% (whichever exists counts fully), recent work weighs more;
- *  - attendance under 90% takes 0.15 points off per missing point;
- *  - mapped to the student's board. Null until something is marked. `readOnly` counts only feedback the student has read.
+ * Predicted grade, worked out strictly from marked work and attendance:
+ *  - timed assessments count 70%, other work 30% (whichever exists counts fully); recent work weighs more;
+ *  - work past its deadline and never handed in counts as 0%;
+ *  - uneven results cost half their spread (standard deviation);
+ *  - until there are 3 pieces, each missing piece counts as 50%;
+ *  - attendance under 95% takes 0.5 points off per missing point;
+ *  - mapped to the student's board with strict boundaries.
+ * Only work marked out of a total counts (not pass/fail, complete or feedback only).
+ * `readOnly` counts only feedback the student has read.
  */
 export function predictGrade(db: DB, st: Student, now: number, opts: { readOnly?: boolean } = {}): Prediction | null {
   const marked = markedPcts(db, st).filter((x) => !opts.readOnly || x.sub.seenAt);
   if (!marked.length) return null;
-  const timed = recentAverage(marked.filter((x) => x.a!.timeLimitMin).map((x) => x.pct));
-  const work = recentAverage(marked.filter((x) => !x.a!.timeLimitMin).map((x) => x.pct));
-  const base = timed !== null && work !== null ? 0.6 * timed + 0.4 * work : (timed ?? work)!;
+  const missedWork = db.assignments.filter(
+    (a) => a.cohortId === st.cohortId && isScored(a) && new Date(a.dueAt).getTime() < now && !submissionFor(db, a.id, st.id),
+  );
+  // oldest first, missed work sitting at its deadline
+  const pieces = [
+    ...marked.map((x) => ({ at: x.sub.markedAt ?? x.a!.dueAt, timed: !!x.a!.timeLimitMin, pct: x.pct })),
+    ...missedWork.map((a) => ({ at: a.dueAt, timed: !!a.timeLimitMin, pct: 0 })),
+  ].sort((x, y) => x.at.localeCompare(y.at));
+  const timed = recentAverage(pieces.filter((x) => x.timed).map((x) => x.pct));
+  const work = recentAverage(pieces.filter((x) => !x.timed).map((x) => x.pct));
+  let base = timed !== null && work !== null ? 0.7 * timed + 0.3 * work : (timed ?? work)!;
+  // inconsistency costs: half the spread of their results
+  const all = pieces.map((x) => x.pct);
+  const mean = all.reduce((n, x) => n + x, 0) / all.length;
+  base -= 0.5 * Math.sqrt(all.reduce((n, x) => n + (x - mean) ** 2, 0) / all.length);
+  // too little evidence: fill up to 3 pieces with 50%
+  if (pieces.length < 3) base = (base * pieces.length + 50 * (3 - pieces.length)) / 3;
   const att = attendanceIn(db, st, 0, now);
   const attendance = att.total ? Math.round((att.present / att.total) * 100) : 100;
-  const pct = Math.max(0, Math.min(100, Math.round(base - Math.max(0, 90 - attendance) * 0.15)));
+  const pct = Math.max(0, Math.min(100, Math.round(base - Math.max(0, 95 - attendance) * 0.5)));
   const bands = bandsFor(cohortOf(db, st.cohortId).board);
   const grade = bands ? bands.find(([min]) => pct >= min)![1] : `${pct}%`;
-  return { grade, pct, pieces: marked.length, attendance };
+  return { grade, pct, pieces: marked.length, missed: missedWork.length, attendance };
 }
 
 /** The percentage a grade on the student's board starts at (for "points to your target"); undefined if unknown. */

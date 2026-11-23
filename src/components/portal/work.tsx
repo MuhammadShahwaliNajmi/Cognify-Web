@@ -7,6 +7,7 @@ import { getSupabase } from "@/lib/supabase/client";
 import { fileLink, previewKind, uploadFile } from "@/lib/portal/storage";
 import { usePortal } from "@/lib/portal/store";
 import { fmtBytes, fmtDate, fmtRelative, fmtTime } from "@/lib/portal/format";
+import { scoreText } from "@/lib/portal/selectors";
 import type { Assignment, FeedbackFile, Submission } from "@/lib/portal/types";
 import { AutoTextarea, Btn, Label, labelCls } from "./ui";
 import { Ring } from "./charts";
@@ -20,7 +21,9 @@ async function workLink(sub: Submission, download = false) {
   if (sub.driveFileId) return fileLink("submission", sub.id, download);
   const sb = getSupabase();
   if (!sb || !sub.filePath) throw new Error("No file was attached.");
-  const { data, error } = await sb.storage.from("submissions").createSignedUrl(sub.filePath, 3600, download ? { download: sub.fileName || true } : undefined);
+  const { data, error } = await sb.storage
+    .from("submissions")
+    .createSignedUrl(sub.filePath, 3600, download ? { download: sub.fileName || true } : undefined);
   if (!data) throw new Error(error?.message ?? "No file was attached.");
   return data.signedUrl;
 }
@@ -28,7 +31,11 @@ async function workLink(sub: Submission, download = false) {
 export const hasFile = (sub: Submission) => !!(sub.driveFileId || sub.filePath);
 
 /** A feedback point without a typed bullet ("- ", "• ", "1. ") — the page adds its own. */
-export const cleanPoint = (s: string) => s.trim().replace(/^([-–—•*·]|\d+[.)])\s+/, "").trim();
+export const cleanPoint = (s: string) =>
+  s
+    .trim()
+    .replace(/^([-–—•*·]|\d+[.)])\s+/, "")
+    .trim();
 
 type FileLike = { key: string; name: string; size?: string; mime?: string; link: (download: boolean) => Promise<string> };
 
@@ -58,7 +65,7 @@ export function FileView({ file, className, fill }: { file: FileLike; className?
   const go = async (download: boolean) => {
     const tab = download ? null : window.open("", "_blank");
     try {
-      const u = download ? await file.link(true) : url ?? (await file.link(false));
+      const u = download ? await file.link(true) : (url ?? (await file.link(false)));
       if (tab) tab.location.href = u;
       else window.location.href = u;
     } catch (e) {
@@ -86,7 +93,9 @@ export function FileView({ file, className, fill }: { file: FileLike; className?
 
       {viewable ? (
         failed ? (
-          <p className={cn("grid place-items-center p-6 text-center text-sm text-navy", frame)}>This file can&apos;t be shown right now. Try Download.</p>
+          <p className={cn("grid place-items-center p-6 text-center text-sm text-navy", frame)}>
+            This file can&apos;t be shown right now. Try Download.
+          </p>
         ) : !url ? (
           <div className={cn("grid place-items-center bg-navy/[0.03]", frame)}>
             <span className="h-2 w-2 animate-pulse-node rounded-full bg-gold" />
@@ -188,7 +197,12 @@ export function QuestionPaperField({ a, label = "Question paper" }: { a: Assignm
       ) : (
         <div className="mt-2 flex flex-wrap items-center gap-3">
           {a.attachmentUrl && (
-            <a href={a.attachmentUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
+            <a
+              href={a.attachmentUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4"
+            >
               Linked paper
             </a>
           )}
@@ -230,7 +244,7 @@ export function WorkAndFeedbackFiles({ sub, student, className }: { sub: Submiss
     ...(hasFile(sub) ? [{ id: "work", label: workLabel, file: workFile(sub) }] : []),
   ];
   // students open on the marked copy; teachers on the work they're marking
-  const [on, setOn] = useState(student ? tabs[0]?.id : tabs.find((t) => t.id === "work")?.id ?? tabs[0]?.id);
+  const [on, setOn] = useState(student ? tabs[0]?.id : (tabs.find((t) => t.id === "work")?.id ?? tabs[0]?.id));
   const current = tabs.find((t) => t.id === on) ?? tabs[0];
 
   return (
@@ -246,7 +260,7 @@ export function WorkAndFeedbackFiles({ sub, student, className }: { sub: Submiss
               onClick={() => setOn(t.id)}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
-                current?.id === t.id ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"
+                current?.id === t.id ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]",
               )}
             >
               {t.id !== "work" && <Paperclip size={12} />}
@@ -280,7 +294,11 @@ function Points({ title, items, icon, tone }: { title: string; items: string[]; 
       <ul className="mt-3 flex flex-col gap-2.5">
         {list.map((s) => (
           <li key={s} className="flex gap-2.5 text-[15px] leading-relaxed text-navy">
-            {icon === "check" ? <CheckCircle2 size={16} className="mt-1 shrink-0 text-navy" /> : <TrendingUp size={16} className="mt-1 shrink-0 text-navy" />}
+            {icon === "check" ? (
+              <CheckCircle2 size={16} className="mt-1 shrink-0 text-navy" />
+            ) : (
+              <TrendingUp size={16} className="mt-1 shrink-0 text-navy" />
+            )}
             {s}
           </li>
         ))}
@@ -291,6 +309,14 @@ function Points({ title, items, icon, tone }: { title: string; items: string[]; 
 
 function ScoreCard({ a, sub, now }: { a: Assignment; sub: Submission; now: number }) {
   const pct = Math.round(((sub.marks ?? 0) / a.maxMarks) * 100);
+  if (a.grading !== "marks")
+    return (
+      <div className="rounded-2xl bg-navy-deep p-5">
+        <p className="text-[12px] font-semibold text-gold">Result</p>
+        <p className="mt-1 text-[2rem] font-bold leading-none text-white">{scoreText(a, sub.marks)}</p>
+        <p className="mt-1.5 text-sm text-white/85">Returned {sub.markedAt ? fmtRelative(sub.markedAt, now) : ""}</p>
+      </div>
+    );
   return (
     <div className="flex items-center gap-5 rounded-2xl bg-navy-deep p-5">
       <div className="shrink-0 rounded-full bg-white p-1">
@@ -332,7 +358,12 @@ function NextStep({ sub }: { sub: Submission }) {
     <div className="rounded-2xl bg-navy/[0.04] p-5">
       <Label>My next step</Label>
       <p className="mt-1.5 text-[15px] font-medium text-navy">What will you do differently in your next piece of work?</p>
-      <AutoTextarea value={text} onChange={(e) => setText(e.target.value.slice(0, 1000))} minRows={2} placeholder="e.g. Use the PED formula with numbers in my next answer" />
+      <AutoTextarea
+        value={text}
+        onChange={(e) => setText(e.target.value.slice(0, 1000))}
+        minRows={2}
+        placeholder="e.g. Use the PED formula with numbers in my next answer"
+      />
       <div className="mt-3 flex gap-2.5">
         <Btn
           variant="navy"
@@ -387,7 +418,10 @@ export function FeedbackPanel({ a, sub, now }: { a: Assignment; sub: Submission;
       {sub.feedbackFiles.length > 0 && (
         <p className="flex items-center gap-2 text-[13px] font-medium text-navy">
           <Paperclip size={14} className="shrink-0" />
-          {sub.feedbackFiles.length === 1 ? "Your teacher returned a marked copy." : `Your teacher returned ${sub.feedbackFiles.length} files.`} Open it beside your work.
+          {sub.feedbackFiles.length === 1
+            ? "Your teacher returned a marked copy."
+            : `Your teacher returned ${sub.feedbackFiles.length} files.`}{" "}
+          Open it beside your work.
         </p>
       )}
 

@@ -3,14 +3,13 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { assessmentState, attendancePct, cohortOf, daysToExam, meetLink, workHref } from "@/lib/portal/selectors";
+import { assessmentState, attendancePct, cohortOf, daysToExam, isScored, meetLink, scoreText, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { HOUR, fmtDate, fmtDateLong, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { EmptyRow, Panel, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { NextClassCard } from "@/components/portal/classroom";
 import { BusyWeek } from "@/components/portal/busy-week";
 import { onTimeStreak } from "@/lib/portal/insights";
-
 
 export default function StudentDashboard() {
   const { db, me, now, markJoined, toast } = useStudent();
@@ -29,7 +28,10 @@ export default function StudentDashboard() {
     if (state === "ended") return toast("That class has finished.");
     const link = meetLink(db, s);
     if (!link) return toast("Your teacher hasn't added the Meet link yet.");
-    if (state === "upcoming") return toast(`The class opens at ${fmtTime(new Date(new Date(s.start).getTime() - 10 * 60_000).toISOString())}. Press Join class then.`);
+    if (state === "upcoming")
+      return toast(
+        `The class opens at ${fmtTime(new Date(new Date(s.start).getTime() - 10 * 60_000).toISOString())}. Press Join class then.`,
+      );
     markJoined(s.id, me.id).finally(() => window.location.assign(link));
   }, [db, me.id, markJoined, router, toast]);
 
@@ -40,7 +42,7 @@ export default function StudentDashboard() {
       (a) =>
         a.cohortId === me.cohortId &&
         !mine.some((x) => x.assignmentId === a.id) &&
-        (!a.timeLimitMin || ["upcoming", "in-progress", "grace"].includes(assessmentState(db, a, me.id, now)))
+        (!a.timeLimitMin || ["upcoming", "in-progress", "grace"].includes(assessmentState(db, a, me.id, now))),
     )
     .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
   const notices = db.announcements.filter((a) => !a.cohortId || a.cohortId === me.cohortId).slice(0, 3);
@@ -48,7 +50,7 @@ export default function StudentDashboard() {
     .filter((x) => x.status === "marked")
     .sort((a, b) => new Date(b.markedAt!).getTime() - new Date(a.markedAt!).getTime());
   // scores count once the feedback has been read (comments first)
-  const read = graded.filter((x) => x.seenAt);
+  const read = graded.filter((x) => x.seenAt && isScored(db.assignments.find((a) => a.id === x.assignmentId) ?? {}));
   const max = read.reduce((n, x) => n + (db.assignments.find((a) => a.id === x.assignmentId)?.maxMarks ?? 0), 0);
   const got = read.reduce((n, x) => n + (x.marks ?? 0), 0);
 
@@ -115,7 +117,9 @@ export default function StudentDashboard() {
                       <Td align="right">
                         {a.timeLimitMin ? (
                           <Status tone="attention">
-                            {assessmentState(db, a, me.id, now) === "upcoming" ? `Timed · start by ${fmtRelative(a.dueAt, now)}` : "In progress"}
+                            {assessmentState(db, a, me.id, now) === "upcoming"
+                              ? `Timed · start by ${fmtRelative(a.dueAt, now)}`
+                              : "In progress"}
                           </Status>
                         ) : ms < 0 ? (
                           <Status tone="attention">Overdue</Status>
@@ -176,7 +180,7 @@ export default function StudentDashboard() {
                     <li key={x.id} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
                       <span className="truncate text-sm text-navy">{a.title}</span>
                       <span className="shrink-0 text-sm font-bold tabular-nums text-navy">
-                        {x.seenAt ? `${x.marks}/${a.maxMarks}` : "New feedback"}
+                        {x.seenAt ? scoreText(a, x.marks) : "New feedback"}
                       </span>
                     </li>
                   );

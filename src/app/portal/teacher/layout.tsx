@@ -27,7 +27,14 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     { href: "/portal/teacher/announcements/", label: "Announcements" },
   ];
   return (
-    <Shell role="teacher" nav={nav} menuLinks={isAdmin ? [{ href: "/portal/teacher/teachers/", label: "Teachers and admins" }] : []}>
+    <Shell
+      role="teacher"
+      nav={nav}
+      menuLinks={[
+        { href: "/portal/teacher/parents/", label: "Parents" },
+        ...(isAdmin ? [{ href: "/portal/teacher/teachers/", label: "Teachers and admins" }] : []),
+      ]}
+    >
       {children}
     </Shell>
   );

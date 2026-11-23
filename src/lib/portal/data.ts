@@ -5,7 +5,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { fmtBytes } from "./format";
-import type { AssignmentKind, DB, Plan, Progress, ResourceType, Role, Strand, Student, Submission, Teacher } from "./types";
+import type { AssignmentKind, DB, Grading, Plan, Progress, ResourceType, Role, Strand, Student, Submission, Teacher } from "./types";
 
 type Id = number;
 
@@ -88,6 +88,7 @@ export type Snapshot = {
     due_at: string;
     max_marks: number;
     time_limit_min: number | null;
+    grading?: Grading | null;
     attachment_url: string | null;
     attachment_file_id: string | null;
     attachment_name: string | null;
@@ -126,7 +127,7 @@ export type Snapshot = {
     note: string | null;
     status: "pending" | "approved" | "declined";
     created_at: string;
-  }[];  // timed assessments (also: assignments.time_limit_min, submissions.answer_text / mime_type)
+  }[]; // timed assessments (also: assignments.time_limit_min, submissions.answer_text / mime_type)
   attempts: { assignment_id: Id; member_id: Id; started_at: string; ends_at: string }[];
   questions: { assignment_id: Id; body: string }[];
 };
@@ -200,13 +201,18 @@ export function toPortal(all: Snapshot): Portal {
       note: s.note ?? undefined,
       status: marked ? "marked" : "submitted",
       marks: marked ? Number(s.marks) : undefined,
-      feedback: marked ? s.feedback ?? "" : undefined,
-      strengths: marked ? s.strengths ?? [] : undefined,
-      improvements: marked ? s.improvements ?? [] : undefined,
+      feedback: marked ? (s.feedback ?? "") : undefined,
+      strengths: marked ? (s.strengths ?? []) : undefined,
+      improvements: marked ? (s.improvements ?? []) : undefined,
       markedAt: s.marked_at ?? undefined,
       seenAt: s.seen_at ?? undefined,
       reflection: s.reflection ?? undefined,
-      feedbackFiles: (s.feedback_files ?? []).map((f) => ({ id: id(f.id), name: f.name, mimeType: f.mime ?? undefined, sizeBytes: f.size ?? undefined })),
+      feedbackFiles: (s.feedback_files ?? []).map((f) => ({
+        id: id(f.id),
+        name: f.name,
+        mimeType: f.mime ?? undefined,
+        sizeBytes: f.size ?? undefined,
+      })),
     };
   });
 
@@ -216,7 +222,8 @@ export function toPortal(all: Snapshot): Portal {
   const counts = (x: Submission) => !!x.markedAt && (viewer?.role !== "student" || !!x.seenAt);
 
   // predicted-grade trend: one point per marked piece of work, oldest first
-  const maxMarks = new Map(snap.assignments.map((a) => [id(a.id), a.max_marks]));
+  // only work marked out of a total feeds the trend and topic scores (not pass/fail, complete or feedback only)
+  const maxMarks = new Map(snap.assignments.filter((a) => (a.grading ?? "marks") === "marks").map((a) => [id(a.id), a.max_marks]));
   const unitOf = new Map(snap.assignments.map((a) => [id(a.id), { unit: a.unit, strand: a.strand }]));
   /** topic scores from marked work (average % per topic, latest "next step" as what to work on);
    *  a teacher's own entry for a topic replaces it */
@@ -246,7 +253,7 @@ export function toPortal(all: Snapshot): Portal {
   const progress: Progress[] = students.map((st) => ({
     studentId: st.id,
     history: submissions
-      .filter((x) => x.studentId === st.id && counts(x))
+      .filter((x) => x.studentId === st.id && counts(x) && maxMarks.has(x.assignmentId))
       .sort((a, b) => new Date(a.markedAt!).getTime() - new Date(b.markedAt!).getTime())
       .map((x) => {
         const max = maxMarks.get(x.assignmentId);
@@ -254,7 +261,7 @@ export function toPortal(all: Snapshot): Portal {
       }),
     mastery: topics(
       st.id,
-      snap.mastery.filter((m) => id(m.member_id) === st.id).map((m) => ({ unit: m.unit, strand: m.strand, score: m.score, fix: m.fix }))
+      snap.mastery.filter((m) => id(m.member_id) === st.id).map((m) => ({ unit: m.unit, strand: m.strand, score: m.score, fix: m.fix })),
     ),
   }));
 
@@ -263,7 +270,7 @@ export function toPortal(all: Snapshot): Portal {
     ? null
     : mine.role === "teacher"
       ? { id: id(mine.id), name: mine.full_name, email: mine.email, title: mine.title ?? "", isAdmin: !!mine.is_admin }
-      : students.find((s) => s.id === id(mine.id)) ?? null;
+      : (students.find((s) => s.id === id(mine.id)) ?? null);
 
   return {
     me,
@@ -334,6 +341,7 @@ export function toPortal(all: Snapshot): Portal {
         brief: a.brief,
         dueAt: a.due_at,
         maxMarks: a.max_marks,
+        grading: a.grading ?? "marks",
         attachmentUrl: a.attachment_url ?? undefined,
         attachmentFileId: a.attachment_file_id ?? undefined,
         attachmentName: a.attachment_name ?? undefined,

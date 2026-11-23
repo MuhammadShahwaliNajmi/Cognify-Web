@@ -72,14 +72,23 @@ type Store = {
   /** cancel an upcoming class (it disappears from calendars; a timetable slot won't come back) */
   cancelSession: (sessionId: string) => Promise<boolean>;
   /** student: ask to move or cancel an upcoming class */
-  requestChange: (r: { sessionId: string; studentId: string; kind: "reschedule" | "cancel"; proposedStart?: string; note?: string }) => Promise<boolean>;
+  requestChange: (r: {
+    sessionId: string;
+    studentId: string;
+    kind: "reschedule" | "cancel";
+    proposedStart?: string;
+    note?: string;
+  }) => Promise<boolean>;
   withdrawRequest: (id: string) => Promise<boolean>;
   /** teacher: approve (applies the change) or decline a request */
   resolveRequest: (id: string, approve: boolean) => Promise<boolean>;
 
   addAssignment: (a: Omit<Assignment, "id">) => Promise<boolean>;
   /** change an assignment or assessment (a new deadline restarts its reminders) */
-  updateAssignment: (id: string, p: Pick<Assignment, "title" | "kind" | "unit" | "brief" | "dueAt" | "maxMarks">) => Promise<boolean>;
+  updateAssignment: (
+    id: string,
+    p: Pick<Assignment, "title" | "kind" | "unit" | "brief" | "dueAt" | "maxMarks" | "grading">,
+  ) => Promise<boolean>;
   /** attach, replace (file) or remove (null) an assignment's question paper */
   setQuestionPaper: (id: string, file: { fileId: string; name: string; mime: string } | null) => Promise<boolean>;
   /** delete an assignment or assessment with its hand-ins and marks */
@@ -100,7 +109,7 @@ type Store = {
   /** teacher: change a timed assessment (questions are replaced; empty removes them) */
   updateAssessment: (
     id: string,
-    p: Pick<Assignment, "title" | "unit" | "brief" | "dueAt" | "maxMarks"> & { timeLimitMin: number; questions: string }
+    p: Pick<Assignment, "title" | "unit" | "brief" | "dueAt" | "maxMarks"> & { timeLimitMin: number; questions: string },
   ) => Promise<boolean>;
   /** student: start the clock (once) */
   startAssessment: (assignmentId: string) => Promise<boolean>;
@@ -192,7 +201,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       setStatus(res.me ? "ready" : "needs-join");
       return true;
     },
-    [sb, toast]
+    [sb, toast],
   );
 
   // the portal never runs inside another site's frame (clickjacking)
@@ -344,22 +353,37 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
 
       /* ---------- classes ---------- */
       markJoined: (sessionId, studentId) =>
-        parent ? viewOnly() :
-        run("Recording attendance", (api) =>
-          api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present: true, joined_at: new Date().toISOString() })
-        ),
+        parent
+          ? viewOnly()
+          : run("Recording attendance", (api) =>
+              api
+                .from("attendance")
+                .upsert({ session_id: num(sessionId), member_id: num(studentId), present: true, joined_at: new Date().toISOString() }),
+            ),
       toggleAttendance: (sessionId, studentId) => {
         const here = db.sessions.find((s) => s.id === sessionId)?.attendance[studentId] ?? false;
         return run("Updating the register", (api) =>
-          api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present: !here })
+          api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present: !here }),
         );
       },
       setAttendance: (sessionId, studentId, present) =>
-        run("Updating the register", (api) => api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present })),
+        run("Updating the register", (api) =>
+          api.from("attendance").upsert({ session_id: num(sessionId), member_id: num(studentId), present }),
+        ),
       setCohortMeet: (cohortId, url) =>
-        run("Saving the Meet link", (api) => api.from("cohorts").update({ meet_url: url.trim() || null }).eq("id", num(cohortId))),
+        run("Saving the Meet link", (api) =>
+          api
+            .from("cohorts")
+            .update({ meet_url: url.trim() || null })
+            .eq("id", num(cohortId)),
+        ),
       setExamDate: (cohortId, date) =>
-        run("Saving the exam date", (api) => api.from("cohorts").update({ exam_on: date || null }).eq("id", num(cohortId))),
+        run("Saving the exam date", (api) =>
+          api
+            .from("cohorts")
+            .update({ exam_on: date || null })
+            .eq("id", num(cohortId)),
+        ),
       regenerateCode: (cohortId) => run("Creating a new code", (api) => api.rpc("regenerate_join_code", { p_cohort_id: num(cohortId) })),
       addRepeatingClass: (r) =>
         run("Adding the repeating class", (api) =>
@@ -373,7 +397,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             p_weekdays: r.weekdays,
             p_every: r.everyWeeks,
             p_ends_on: r.endsOn,
-          })
+          }),
         ),
       updateSeries: (seriesId, scope, from, r) =>
         run("Saving the repeating class", (api) =>
@@ -388,12 +412,15 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             p_weekdays: r.weekdays,
             p_every: r.everyWeeks,
             p_ends_on: r.endsOn,
-          })
+          }),
         ),
       endSeries: (seriesId, from) => run("Cancelling the classes", (api) => api.rpc("end_series", { p_series: seriesId, p_from: from })),
       editSession: (sessionId, p) =>
         run("Saving the class", (api) =>
-          api.from("sessions").update({ title: p.title.trim(), unit: p.unit.trim() || null, auto: false }).eq("id", num(sessionId))
+          api
+            .from("sessions")
+            .update({ title: p.title.trim(), unit: p.unit.trim() || null, auto: false })
+            .eq("id", num(sessionId)),
         ),
       deleteSession: (sessionId) => run("Saving the class", (api) => api.from("sessions").delete().eq("id", num(sessionId))),
       addSession: (s) =>
@@ -406,14 +433,19 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             starts_at: s.start,
             duration_min: s.durationMin,
             meet_url: s.meetUrl ?? null,
-          })
+          }),
         ),
       rescheduleSession: (sessionId, start, durationMin) =>
         run("Rescheduling", (api) => api.rpc("reschedule_session", { p_session: num(sessionId), p_start: start, p_duration: durationMin })),
       cancelSession: (sessionId) =>
         run("Cancelling the class", (api) => api.from("sessions").update({ cancelled: true }).eq("id", num(sessionId))),
       setLessonNotes: (sessionId, notes) =>
-        run("Saving the notes", (api) => api.from("sessions").update({ notes: notes.trim() || null }).eq("id", num(sessionId))),
+        run("Saving the notes", (api) =>
+          api
+            .from("sessions")
+            .update({ notes: notes.trim() || null })
+            .eq("id", num(sessionId)),
+        ),
       setRecording: async (sessionId, url) => {
         const ses = db.sessions.find((s) => s.id === sessionId);
         if (!sb || !ses) return false;
@@ -423,9 +455,9 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           toast(`Saving the recording failed: ${error.message}`);
           return false;
         }
-        // the recording also appears in the student's Recordings folder
+        // the recording also appears in the student's Other folder
         const existing = db.resources.find((r) => r.sessionId === sessionId && r.type === "Recording");
-        const folder = db.folders.find((f) => f.cohortId === ses.cohortId && !f.parentId && f.name.toLowerCase() === "recordings");
+        const folder = db.folders.find((f) => f.cohortId === ses.cohortId && !f.parentId && f.name.toLowerCase() === "other");
         return run("Adding the recording to The Vault", (api) =>
           existing
             ? api.from("resources").update({ drive_url: driveUrl }).eq("id", num(existing.id))
@@ -438,23 +470,25 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
                 strand: ses.strand,
                 unit: ses.unit || "Class recordings",
                 drive_url: driveUrl,
-              })
+              }),
         );
       },
 
       /* ---------- class change requests ---------- */
       requestChange: ({ sessionId, studentId, kind, proposedStart, note }) =>
-        parent ? viewOnly() :
-        run("Sending the request", (api) =>
-          api.from("class_requests").insert({
-            session_id: num(sessionId),
-            member_id: num(studentId),
-            kind,
-            proposed_start: kind === "reschedule" ? proposedStart : null,
-            note: note?.trim() || null,
-          })
-        ),
-      withdrawRequest: (id) => parent ? viewOnly() : run("Withdrawing the request", (api) => api.from("class_requests").delete().eq("id", num(id))),
+        parent
+          ? viewOnly()
+          : run("Sending the request", (api) =>
+              api.from("class_requests").insert({
+                session_id: num(sessionId),
+                member_id: num(studentId),
+                kind,
+                proposed_start: kind === "reschedule" ? proposedStart : null,
+                note: note?.trim() || null,
+              }),
+            ),
+      withdrawRequest: (id) =>
+        parent ? viewOnly() : run("Withdrawing the request", (api) => api.from("class_requests").delete().eq("id", num(id))),
       resolveRequest: (id, approve) =>
         run(approve ? "Approving" : "Declining", (api) => api.rpc("resolve_class_request", { p_request: num(id), p_approve: approve })),
 
@@ -470,11 +504,12 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             brief: a.brief,
             due_at: a.dueAt,
             max_marks: a.maxMarks,
+            grading: a.grading,
             attachment_url: a.attachmentUrl || null,
             attachment_file_id: a.attachmentFileId || null,
             attachment_name: a.attachmentName || null,
             attachment_mime: a.attachmentMime || null,
-          })
+          }),
         ),
       addAssessment: (a) =>
         run("Setting the assessment", async (api) => {
@@ -503,7 +538,14 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Saving the assessment", async (api) => {
           const { error } = await api
             .from("assignments")
-            .update({ title: p.title, unit: p.unit, brief: p.brief, due_at: p.dueAt, max_marks: p.maxMarks, time_limit_min: p.timeLimitMin })
+            .update({
+              title: p.title,
+              unit: p.unit,
+              brief: p.brief,
+              due_at: p.dueAt,
+              max_marks: p.maxMarks,
+              time_limit_min: p.timeLimitMin,
+            })
             .eq("id", num(id));
           if (error) return { error };
           return p.questions.trim()
@@ -511,8 +553,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             : api.from("assessment_questions").delete().eq("assignment_id", num(id));
         }),
       startAssessment: (assignmentId) =>
-        parent ? viewOnly() :
-        run("Starting the assessment", (api) => api.rpc("start_assessment", { p_assignment: num(assignmentId) })),
+        parent ? viewOnly() : run("Starting the assessment", (api) => api.rpc("start_assessment", { p_assignment: num(assignmentId) })),
       allowRetake: (assignmentId, studentId) =>
         run("Allowing a retake", async (api) => {
           const sub = await api.from("submissions").delete().eq("assignment_id", num(assignmentId)).eq("member_id", num(studentId));
@@ -523,8 +564,16 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Saving the assignment", (api) =>
           api
             .from("assignments")
-            .update({ title: p.title, kind: p.kind, unit: p.unit, brief: p.brief, due_at: p.dueAt, max_marks: p.maxMarks })
-            .eq("id", num(id))
+            .update({
+              title: p.title,
+              kind: p.kind,
+              unit: p.unit,
+              brief: p.brief,
+              due_at: p.dueAt,
+              max_marks: p.maxMarks,
+              grading: p.grading,
+            })
+            .eq("id", num(id)),
         ),
       setQuestionPaper: (id, file) =>
         run(file ? "Attaching the question paper" : "Removing the question paper", (api) =>
@@ -533,9 +582,9 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             .update(
               file
                 ? { attachment_file_id: file.fileId, attachment_name: file.name, attachment_mime: file.mime, attachment_url: null }
-                : { attachment_file_id: null, attachment_name: null, attachment_mime: null, attachment_url: null }
+                : { attachment_file_id: null, attachment_name: null, attachment_mime: null, attachment_url: null },
             )
-            .eq("id", num(id))
+            .eq("id", num(id)),
         ),
       deleteAssignment: (id) => run("Deleting the assignment", (api) => api.from("assignments").delete().eq("id", num(id))),
       openAttachment: (assignmentId) => open(() => fileLink("assignment", assignmentId)),
@@ -548,23 +597,24 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           file_path: existing?.filePath ?? null,
           mime_type: null,
         };
-        if (file) try {
-          const up = await uploadFile(file, { purpose: "submission", assignmentId }, onProgress);
-          stored = { drive_file_id: up.id, file_path: null, mime_type: up.mimeType || file.type || null };
-        } catch (e) {
-          if (!(e instanceof StorageError && e.status === 503)) {
-            toast(message(e, "Upload failed"));
-            return false;
+        if (file)
+          try {
+            const up = await uploadFile(file, { purpose: "submission", assignmentId }, onProgress);
+            stored = { drive_file_id: up.id, file_path: null, mime_type: up.mimeType || file.type || null };
+          } catch (e) {
+            if (!(e instanceof StorageError && e.status === 503)) {
+              toast(message(e, "Upload failed"));
+              return false;
+            }
+            // file storage isn't connected → keep students able to hand in, via the built-in bucket
+            const path = `${studentId}/${assignmentId}/${Date.now()}-${file.name.replace(/[^\w.\- ]+/g, "_").slice(-120)}`;
+            const up = await sb.storage.from("submissions").upload(path, file, { contentType: file.type || undefined });
+            if (up.error) {
+              toast(`Upload failed: ${up.error.message}`);
+              return false;
+            }
+            stored = { drive_file_id: null, file_path: path, mime_type: file.type || null };
           }
-          // file storage isn't connected → keep students able to hand in, via the built-in bucket
-          const path = `${studentId}/${assignmentId}/${Date.now()}-${file.name.replace(/[^\w.\- ]+/g, "_").slice(-120)}`;
-          const up = await sb.storage.from("submissions").upload(path, file, { contentType: file.type || undefined });
-          if (up.error) {
-            toast(`Upload failed: ${up.error.message}`);
-            return false;
-          }
-          stored = { drive_file_id: null, file_path: path, mime_type: file.type || null };
-        }
         return run("Submitting", (api) =>
           api.from("submissions").upsert(
             {
@@ -576,19 +626,26 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
               ...(answerText !== undefined ? { answer_text: answerText.trim() || null } : {}),
               note: note?.trim() || null,
             },
-            { onConflict: "assignment_id,member_id" } // the database stamps the hand-in time
-          )
+            { onConflict: "assignment_id,member_id" }, // the database stamps the hand-in time
+          ),
         );
       },
       addFeedbackFiles: async (submissionId, files, onProgress) => {
         if (!sb) return false;
         const total = files.reduce((n, f) => n + f.size, 0) || 1;
         let done = 0;
-        const rows: { submission_id: number; drive_file_id: string; file_name: string; mime_type: string | null; size_bytes: number }[] = [];
+        const rows: { submission_id: number; drive_file_id: string; file_name: string; mime_type: string | null; size_bytes: number }[] =
+          [];
         for (const file of files) {
           try {
             const up = await uploadFile(file, { purpose: "feedback", submissionId }, (p) => onProgress?.((done + p * file.size) / total));
-            rows.push({ submission_id: num(submissionId), drive_file_id: up.id, file_name: file.name.slice(0, 200), mime_type: up.mimeType || file.type || null, size_bytes: file.size });
+            rows.push({
+              submission_id: num(submissionId),
+              drive_file_id: up.id,
+              file_name: file.name.slice(0, 200),
+              mime_type: up.mimeType || file.type || null,
+              size_bytes: file.size,
+            });
             done += file.size;
           } catch (e) {
             toast(e instanceof StorageError && e.status === 503 ? "File storage isn't connected yet." : message(e, "Upload failed"));
@@ -608,8 +665,9 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           }
         }),
       acknowledgeFeedback: (submissionId, reflection) =>
-        parent ? viewOnly() :
-        run("Saving", (api) => api.rpc("acknowledge_feedback", { p_submission: num(submissionId), p_reflection: reflection ?? null })),
+        parent
+          ? viewOnly()
+          : run("Saving", (api) => api.rpc("acknowledge_feedback", { p_submission: num(submissionId), p_reflection: reflection ?? null })),
       markWork: (id, m) =>
         run("Returning the work", (api) =>
           api.from("feedback").upsert({
@@ -620,7 +678,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             improvements: m.improvements ?? [],
             marked_by: numOrNull(me?.id),
             marked_at: new Date().toISOString(),
-          })
+          }),
         ),
       openSubmission: (sub) =>
         open(async () => {
@@ -646,7 +704,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             drive_file_id: r.driveFileId || null,
             mime_type: r.mimeType || null,
             size_bytes: r.sizeBytes ?? null,
-          })
+          }),
         ),
       deleteResource: async (id) => {
         try {
@@ -660,13 +718,15 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       },
       addFolder: ({ cohortId, parentId, name }) =>
         run("Creating the folder", (api) =>
-          api.from("folders").insert({ cohort_id: num(cohortId), parent_id: numOrNull(parentId), name: name.trim() })
+          api.from("folders").insert({ cohort_id: num(cohortId), parent_id: numOrNull(parentId), name: name.trim() }),
         ),
       renameFolder: (id, name) => run("Renaming the folder", (api) => api.from("folders").update({ name: name.trim() }).eq("id", num(id))),
       deleteFolder: (id) => run("Deleting the folder", (api) => api.from("folders").delete().eq("id", num(id))),
       addAnnouncement: (a) =>
         run("Posting", (api) =>
-          api.from("announcements").insert({ cohort_id: numOrNull(a.cohortId), title: a.title, body: a.body, created_by: numOrNull(me?.id) })
+          api
+            .from("announcements")
+            .insert({ cohort_id: numOrNull(a.cohortId), title: a.title, body: a.body, created_by: numOrNull(me?.id) }),
         ),
       addStudent: async (st) => {
         if (!sb) return null;
@@ -694,24 +754,37 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
             full_name: t.name.trim(),
             title: t.title?.trim() || null,
             is_admin: !!t.admin,
-          })
+          }),
         ),
       setAdmin: (memberId, admin) =>
-        run(admin ? "Making them an admin" : "Removing admin access", (api) => api.rpc("set_admin", { p_member: num(memberId), p_admin: admin })),
-      removeTeacher: (memberId) => run("Removing the teacher", (api) => api.from("members").delete().eq("id", num(memberId)).eq("role", "teacher").eq("is_admin", false)),
+        run(admin ? "Making them an admin" : "Removing admin access", (api) =>
+          api.rpc("set_admin", { p_member: num(memberId), p_admin: admin }),
+        ),
+      removeTeacher: (memberId) =>
+        run("Removing the teacher", (api) =>
+          api.from("members").delete().eq("id", num(memberId)).eq("role", "teacher").eq("is_admin", false),
+        ),
       assignTeacher: (cohortId, teacherId) =>
-        run("Changing the teacher", (api) => api.from("cohorts").update({ teacher_id: teacherId ? num(teacherId) : null }).eq("id", num(cohortId))),
+        run("Changing the teacher", (api) =>
+          api
+            .from("cohorts")
+            .update({ teacher_id: teacherId ? num(teacherId) : null })
+            .eq("id", num(cohortId)),
+        ),
       deleteAnnouncement: (id) => run("Deleting the announcement", (api) => api.from("announcements").delete().eq("id", num(id))),
       setTimetable: (cohortId, slots) =>
         run("Saving the timetable", (api) => api.rpc("set_timetable", { p_cohort: num(cohortId), p_slots: slots })),
       archiveStudent: (cohortId, archive) =>
         run(archive ? "Archiving the student" : "Restoring the student", (api) =>
-          api.rpc("archive_student", { p_cohort: num(cohortId), p_archive: archive })
+          api.rpc("archive_student", { p_cohort: num(cohortId), p_archive: archive }),
         ),
       removeStudent: (cohortId) => run("Removing the student", (api) => api.rpc("remove_student", { p_cohort: num(cohortId) })),
       updateStudent: (id, p) =>
         run("Saving", (api) =>
-          api.from("members").update({ predicted: p.predicted.trim() || null, target: p.target.trim() || null }).eq("id", num(id))
+          api
+            .from("members")
+            .update({ predicted: p.predicted.trim() || null, target: p.target.trim() || null })
+            .eq("id", num(id)),
         ),
     };
   }, [sb, db, me, parent, toast, reload]);
@@ -730,7 +803,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       toasts,
       toast,
     }),
-    [actions, status, session, db, me, parent, now, toasts, toast]
+    [actions, status, session, db, me, parent, now, toasts, toast],
   );
 
   return framed ? null : <Ctx.Provider value={store}>{children}</Ctx.Provider>;

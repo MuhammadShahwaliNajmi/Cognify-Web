@@ -91,14 +91,7 @@ export type Session = {
   attendance: Record<string, boolean>;
 };
 
-export type ResourceType =
-  | "Slides"
-  | "Notes"
-  | "Summary sheet"
-  | "Past paper"
-  | "Essay structure"
-  | "Recording"
-  | "File";
+export type ResourceType = "Slides" | "Notes" | "Summary sheet" | "Past paper" | "Essay structure" | "Recording" | "File";
 
 export type Resource = {
   id: string;
@@ -123,7 +116,34 @@ export type Folder = {
   name: string;
 };
 
-export type AssignmentKind = "Essay" | "Past paper" | "Problem set" | "Assessment";
+/** The kinds a teacher can pick ("Assessment" is kept for timed assessments and older work). */
+export const ASSIGNMENT_KINDS = [
+  "Essay",
+  "Past paper",
+  "Exam-style questions",
+  "Problem set",
+  "Data response",
+  "Case study",
+  "Worksheet",
+  "Quiz",
+  "Reading",
+  "Research",
+  "Presentation",
+  "Project",
+  "Coursework",
+  "Revision",
+  "Other",
+] as const;
+export type AssignmentKind = (typeof ASSIGNMENT_KINDS)[number] | "Assessment";
+
+/** How work is graded: marks out of a total, pass / fail, complete / incomplete, or feedback only. */
+export type Grading = "marks" | "pass_fail" | "complete" | "none";
+export const GRADINGS: { value: Grading; label: string }[] = [
+  { value: "marks", label: "Marks" },
+  { value: "pass_fail", label: "Pass / fail" },
+  { value: "complete", label: "Complete / incomplete" },
+  { value: "none", label: "Feedback only" },
+];
 
 export type Assignment = {
   id: string;
@@ -135,6 +155,8 @@ export type Assignment = {
   brief: string;
   dueAt: string; // ISO
   maxMarks: number;
+  /** "marks" unless set; pass/fail and complete are 1 / 0 out of 1 */
+  grading: Grading;
   attachmentUrl?: string; // pasted link to the question paper
   attachmentFileId?: string; // uploaded question paper
   attachmentName?: string;

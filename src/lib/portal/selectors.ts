@@ -24,15 +24,45 @@ export const registerMissing = (s: Session, now: number) =>
 /** Share of finished classes (with a register) the student was present at (100 before the first one). */
 export function attendancePct(db: DB, studentId: string, cohortId: string, now: number) {
   const past = db.sessions.filter(
-    (s) => s.cohortId === cohortId && new Date(s.start).getTime() + s.durationMin * 60_000 < now && Object.keys(s.attendance).length > 0
+    (s) => s.cohortId === cohortId && new Date(s.start).getTime() + s.durationMin * 60_000 < now && Object.keys(s.attendance).length > 0,
   );
   if (!past.length) return 100;
   return Math.round((past.filter((s) => s.attendance[studentId]).length / past.length) * 100);
 }
 
 /** Mean score across marked work, or null if nothing is marked yet. */
+/** Work marked out of a total (pass/fail, complete and feedback-only work have no percentage). */
+export const isScored = (a: { grading?: string }) => (a.grading ?? "marks") === "marks";
+
+/** How a marked piece of work reads: "14 / 20", "Pass", "Fail", "Complete", "Incomplete", "Feedback given". */
+export function scoreText(a: { grading?: string; maxMarks: number }, marks: number | undefined | null) {
+  switch (a.grading) {
+    case "pass_fail":
+      return marks ? "Pass" : "Fail";
+    case "complete":
+      return marks ? "Complete" : "Incomplete";
+    case "none":
+      return "Feedback given";
+    default:
+      return `${marks ?? 0} / ${a.maxMarks}`;
+  }
+}
+
+/** What a piece of work is out of, before marking: "/ 20", "Pass / fail", … */
+export function gradingText(a: { grading?: string; maxMarks: number }) {
+  return a.grading === "pass_fail"
+    ? "Pass / fail"
+    : a.grading === "complete"
+      ? "Complete / incomplete"
+      : a.grading === "none"
+        ? "Feedback only"
+        : `${a.maxMarks} marks`;
+}
+
 export function averagePct(db: DB, studentId: string) {
-  const marked = db.submissions.filter((x) => x.studentId === studentId && x.status === "marked");
+  const marked = db.submissions.filter(
+    (x) => x.studentId === studentId && x.status === "marked" && isScored(db.assignments.find((y) => y.id === x.assignmentId) ?? {}),
+  );
   if (!marked.length) return null;
   const total = marked.reduce((sum, x) => {
     const a = db.assignments.find((y) => y.id === x.assignmentId);
@@ -47,9 +77,9 @@ export const attemptFor = (db: DB, assignmentId: string, studentId: string) =>
 /** Timed assessments vs ordinary assignments. */
 export const isAssessment = (a: { timeLimitMin?: number }) => !!a.timeLimitMin;
 
-/** Where a student opens a piece of work. */
+/** Where a student opens a piece of work from inside the portal (`back=1`: closing it returns to where they were). */
 export const workHref = (a: { id: string; timeLimitMin?: number }) =>
-  `/portal/student/${a.timeLimitMin ? "assessments" : "assignments"}/?open=${a.id}`;
+  `/portal/student/${a.timeLimitMin ? "assessments" : "assignments"}/?open=${a.id}&back=1`;
 
 /** Grace after the clock runs out for an upload to finish (matches the database). */
 export const GRACE_MS = 2 * 60_000;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { attendancePct, submissionFor, workHref } from "@/lib/portal/selectors";
+import { attendancePct, gradingText, isScored, scoreText, submissionFor, workHref } from "@/lib/portal/selectors";
 import { useStudent } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
 import { Bar, EmptyRow, PageHeader, RowLink, Segmented, Status, Table, Td } from "@/components/portal/ui";
@@ -22,10 +22,9 @@ function Figure({ label, value, sub }: { label: string; value: string; sub?: str
 export default function StudentGrades() {
   const { db, me, now } = useStudent();
   const router = useRouter();
-  const [tab, setTab] = useState<"gradebook" | "trend" | "topics">("gradebook");
+  const [tab, setTab] = useState<"gradebook" | "trend">("gradebook");
   const progress = db.progress.find((p) => p.studentId === me.id);
   const history = progress?.history ?? [];
-  const mastery = [...(progress?.mastery ?? [])].sort((a, b) => a.score - b.score);
 
   const predicted = predictGrade(db, me, now, { readOnly: true });
   const latest = predicted?.pct ?? null;
@@ -36,10 +35,10 @@ export default function StudentGrades() {
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const graded = items.filter((r) => r.sub?.status === "marked");
   // scores count once the feedback has been read (comments first)
-  const read = graded.filter((r) => r.sub!.seenAt);
+  const read = graded.filter((r) => r.sub!.seenAt && isScored(r.a));
   const got = read.reduce((n, r) => n + (r.sub!.marks ?? 0), 0);
   const max = read.reduce((n, r) => n + r.a.maxMarks, 0);
-  const unread = graded.length - read.length;
+  const unread = graded.filter((r) => !r.sub!.seenAt).length;
 
   return (
     <>
@@ -77,7 +76,6 @@ export default function StudentGrades() {
           options={[
             { value: "gradebook", label: "Gradebook", count: items.length || undefined },
             { value: "trend", label: "Trend" },
-            { value: "topics", label: "Topics", count: mastery.length || undefined },
           ]}
         />
       </div>
@@ -119,15 +117,13 @@ export default function StudentGrades() {
                           New feedback
                         </span>
                       ) : done ? (
-                        <span className="font-semibold text-navy">
-                          {sub!.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
-                        </span>
+                        <span className="font-semibold text-navy">{scoreText(a, sub!.marks)}</span>
                       ) : (
-                        <span className="text-navy">– / {a.maxMarks}</span>
+                        <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
                       )}
                     </Td>
                     <Td align="right" className="tabular-nums font-semibold text-navy">
-                      {done && sub!.seenAt ? (
+                      {done && sub!.seenAt && isScored(a) ? (
                         `${Math.round(((sub!.marks ?? 0) / a.maxMarks) * 100)}%`
                       ) : (
                         <span className="font-normal text-navy">–</span>
@@ -144,34 +140,6 @@ export default function StudentGrades() {
           <div className="rounded-xl border border-navy/12 p-5">
             <TrendChart points={history} target={targetPct} targetLabel={me.target ? `${me.target} line` : undefined} />
           </div>
-        )}
-
-        {tab === "topics" && (
-          <Table minWidth={520} head={[{ label: "Topic" }, { label: "Score" }, { label: "What to work on" }]}>
-            {mastery.length === 0 ? (
-              <EmptyRow cols={3}>Topics appear here once your work is marked and you have read the feedback.</EmptyRow>
-            ) : (
-              mastery.map((m, i) => (
-                <tr key={m.unit}>
-                  <Td className="font-medium text-navy">
-                    {m.unit}
-                    {i < 2 && (
-                      <span className="ml-2">
-                        <Status tone="attention">Focus</Status>
-                      </span>
-                    )}
-                  </Td>
-                  <Td className="w-48">
-                    <div className="flex items-center gap-3">
-                      <Bar value={m.score} className="flex-1" />
-                      <span className="w-10 text-right font-semibold tabular-nums text-navy">{m.score}%</span>
-                    </div>
-                  </Td>
-                  <Td className="text-navy">{m.fix || "—"}</Td>
-                </tr>
-              ))
-            )}
-          </Table>
         )}
       </div>
     </>

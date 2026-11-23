@@ -83,7 +83,6 @@ function AssessmentForm({
   const ok =
     (editing ? f.cohortId : forIds.length > 0) &&
     f.title.trim() &&
-    f.unit.trim() &&
     limit >= 5 &&
     limit <= 600 &&
     marks > 0 &&
@@ -93,7 +92,13 @@ function AssessmentForm({
   return (
     <div className="space-y-5">
       {!editing && (
-        <MultiPick single label="Student" value={forIds} onChange={setForIds} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />
+        <MultiPick
+          single
+          label="Student"
+          value={forIds}
+          onChange={setForIds}
+          options={cohorts.map((c) => ({ value: c.id, label: c.name }))}
+        />
       )}
       <Field label="Title">
         <input
@@ -104,9 +109,6 @@ function AssessmentForm({
         />
       </Field>
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Topic">
-          <input value={f.unit} onChange={(e) => set("unit", e.target.value)} placeholder="Market failure" className={fieldCls} />
-        </Field>
         <Field label="Marks">
           <input
             value={f.maxMarks}
@@ -134,7 +136,7 @@ function AssessmentForm({
           />
         </Field>
       </div>
-      <Field label="Instructions (visible before starting)">
+      <Field label="Instructions (optional, visible before starting)">
         <textarea
           value={f.brief}
           onChange={(e) => set("brief", e.target.value)}
@@ -170,7 +172,7 @@ function AssessmentForm({
           if (editing) {
             const saved = await updateAssessment(editing.id, {
               title: f.title.trim(),
-              unit: f.unit.trim(),
+              unit: f.title.trim(),
               brief: f.brief.trim(),
               dueAt: due.toISOString(),
               maxMarks: marks,
@@ -205,10 +207,11 @@ function AssessmentForm({
                 title: f.title.trim(),
                 kind: "Assessment",
                 strand: null,
-                unit: f.unit.trim(),
+                unit: f.title.trim(),
                 brief: f.brief.trim(),
                 dueAt: due.toISOString(),
                 maxMarks: marks,
+                grading: "marks",
                 timeLimitMin: limit,
                 questions: f.questions,
                 ...attachment,
@@ -322,7 +325,7 @@ function AttemptDetail({ a, student, onClose }: { a: Assignment; student: Studen
 
       <div className="flex flex-wrap gap-2.5 border-t border-navy/10 pt-5">
         {sub && (
-          <Btn variant="gold" onClick={() => router.push(`/portal/teacher/submissions/?open=${sub.id}`)}>
+          <Btn variant="gold" onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}>
             <PenLine size={15} /> {sub.status === "marked" ? "Edit mark" : "Mark"}
           </Btn>
         )}
@@ -380,40 +383,40 @@ export default function TeacherAssessments() {
     })
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const open = rows.find((r) => r.a.id === openId);
-  // quick filters: what needs me, what's still to happen, what's done
-  const [tab, setTab] = useState<"all" | "mark" | "open" | "marked">("all");
-  const group = (st: AssessmentState) => (st === "submitted" ? "mark" : st === "marked" ? "marked" : "open");
-  const shown = tab === "all" ? rows : rows.filter((r) => group(r.state) === tab);
-  const count = (t: "mark" | "open" | "marked") => rows.filter((r) => group(r.state) === t).length;
+  // same filters as Assignments (marking lives in Submissions)
+  const [tab, setTab] = useState<"open" | "closed" | "all">("open");
+  const upcoming = rows.filter((r) => new Date(r.a.dueAt).getTime() > now).reverse();
+  const past = rows.filter((r) => new Date(r.a.dueAt).getTime() <= now);
+  const shown = tab === "open" ? upcoming : tab === "closed" ? past : rows;
 
   return (
     <>
       <PageHeader
         title="Assessments"
         actions={
-          <>
-            <Picker
-              label="Student"
-              value={who}
-              onChange={setWho}
-              options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: c.name }))]}
-            />
-            <Btn variant="navy" onClick={() => setCreating(true)}>
-              <Plus size={15} /> New assessment
-            </Btn>
-          </>
+          <Btn variant="navy" onClick={() => setCreating(true)}>
+            <Plus size={15} /> New assessment
+          </Btn>
         }
       />
+
+      <div className="mb-5">
+        <Picker
+          label="Student"
+          value={who}
+          onChange={setWho}
+          options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: c.name }))]}
+        />
+      </div>
 
       <Segmented
         value={tab}
         onChange={setTab}
         className="mb-4"
         options={[
+          { value: "open", label: "Upcoming", count: upcoming.length },
+          { value: "closed", label: "Past", count: past.length },
           { value: "all", label: "All", count: rows.length },
-          { value: "mark", label: "To mark", count: count("mark") },
-          { value: "open", label: "Not done yet", count: count("open") },
-          { value: "marked", label: "Marked", count: count("marked") },
         ]}
       />
       <Table
@@ -428,7 +431,7 @@ export default function TeacherAssessments() {
         ]}
       >
         {shown.length === 0 ? (
-          <EmptyRow cols={6}>{rows.length ? "Nothing here." : "No assessments yet."}</EmptyRow>
+          <EmptyRow cols={6}>{tab === "open" ? "No upcoming assessments. Use New assessment to set one." : "Nothing here yet."}</EmptyRow>
         ) : (
           shown.map(({ a, student, state }) => {
             const sub = student ? submissionFor(db, a.id, student.id) : undefined;

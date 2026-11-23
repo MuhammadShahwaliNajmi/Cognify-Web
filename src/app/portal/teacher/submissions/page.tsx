@@ -4,12 +4,30 @@ import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Paperclip, Send, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {  } from "@/lib/portal/selectors";
+import { gradingText, scoreText } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { HOUR, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import { WorkAndFeedbackFiles, cleanPoint } from "@/components/portal/work";
 import type { Submission } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, EmptyRow, AutoTextarea, Field, Label, Modal, PageHeader, Picker, RowLink, Segmented, Status, Table, Td, fieldCls, labelCls } from "@/components/portal/ui";
+import {
+  Avatar,
+  Btn,
+  Chip,
+  EmptyRow,
+  AutoTextarea,
+  Field,
+  Label,
+  Modal,
+  PageHeader,
+  Picker,
+  RowLink,
+  Segmented,
+  Status,
+  Table,
+  Td,
+  fieldCls,
+  labelCls,
+} from "@/components/portal/ui";
 import { CommentBank, WorkThread } from "@/components/portal/thread";
 import { StudentCell } from "@/components/portal/student-cell";
 
@@ -28,8 +46,9 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
   const [strengths, setStrengths] = useState((sub.strengths ?? []).map(cleanPoint).join("\n"));
   const [improvements, setImprovements] = useState((sub.improvements ?? []).map(cleanPoint).join("\n"));
 
-  const n = Number(marks);
-  const marksOk = marks.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= a.maxMarks;
+  // feedback-only work stores a nominal 1; pass/fail and complete are 1 or 0
+  const n = a.grading === "none" ? 1 : Number(marks);
+  const marksOk = a.grading === "none" || (marks.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= a.maxMarks);
   const ok = marksOk && feedback.trim().length > 0;
   const late = new Date(sub.submittedAt).getTime() > new Date(a.dueAt).getTime();
 
@@ -59,37 +78,72 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
 
         <details className="group rounded-2xl bg-navy/[0.04] p-4">
           <summary className="cursor-pointer list-none text-[13px] font-semibold text-navy">
-            The task · {a.maxMarks} marks <span className="font-normal underline decoration-gold decoration-2 underline-offset-4 group-open:hidden">show</span>
+            The task · {gradingText(a)}{" "}
+            <span className="font-normal underline decoration-gold decoration-2 underline-offset-4 group-open:hidden">show</span>
           </summary>
           <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-navy">{a.brief}</p>
-          {db.questions[a.id] && <p className="mt-3 whitespace-pre-wrap border-t border-navy/10 pt-3 text-sm leading-relaxed text-navy">{db.questions[a.id]}</p>}
+          {db.questions[a.id] && (
+            <p className="mt-3 whitespace-pre-wrap border-t border-navy/10 pt-3 text-sm leading-relaxed text-navy">{db.questions[a.id]}</p>
+          )}
         </details>
 
-        <Field label={`Marks (out of ${a.maxMarks})`}>
-          <div className="mt-2 flex items-center gap-3">
-            <input
-              value={marks}
-              onChange={(e) => setMarks(e.target.value.replace(/[^\d.]/g, ""))}
-              inputMode="decimal"
-              placeholder="0"
-              aria-invalid={marks !== "" && !marksOk}
-              className={cn(fieldCls, "!mt-0 w-28 text-center text-xl font-semibold tabular-nums")}
-            />
-            <span className="text-lg font-medium text-navy">/ {a.maxMarks}</span>
-            {marksOk && <Chip tone="navy">{Math.round((n / a.maxMarks) * 100)}%</Chip>}
-          </div>
-        </Field>
-        {marks !== "" && !marksOk && <p className="-mt-2 text-xs font-medium text-navy">Enter a mark between 0 and {a.maxMarks}.</p>}
+        {(a.grading === "pass_fail" || a.grading === "complete") && (
+          <Field label="Result">
+            <div className="mt-2 flex gap-2">
+              {(a.grading === "pass_fail" ? ["Pass", "Fail"] : ["Complete", "Incomplete"]).map((label, i) => {
+                const v = i === 0 ? "1" : "0";
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={marks === v}
+                    onClick={() => setMarks(v)}
+                    className={cn(
+                      "min-h-[44px] rounded-full border px-5 text-[14px] font-semibold transition-colors focus-gold",
+                      marks === v ? "border-navy bg-navy-deep text-white" : "border-navy/20 text-navy hover:border-gold",
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+          </Field>
+        )}
+        {a.grading === "marks" && (
+          <Field label={`Marks (out of ${a.maxMarks})`}>
+            <div className="mt-2 flex items-center gap-3">
+              <input
+                value={marks}
+                onChange={(e) => setMarks(e.target.value.replace(/[^\d.]/g, ""))}
+                inputMode="decimal"
+                placeholder="0"
+                aria-invalid={marks !== "" && !marksOk}
+                className={cn(fieldCls, "!mt-0 w-28 text-center text-xl font-semibold tabular-nums")}
+              />
+              <span className="text-lg font-medium text-navy">/ {a.maxMarks}</span>
+              {marksOk && <Chip tone="navy">{Math.round((n / a.maxMarks) * 100)}%</Chip>}
+            </div>
+          </Field>
+        )}
+        {a.grading === "marks" && marks !== "" && !marksOk && (
+          <p className="-mt-2 text-xs font-medium text-navy">Enter a mark between 0 and {a.maxMarks}.</p>
+        )}
 
         <Field label="Overall feedback">
-          <AutoTextarea value={feedback} onChange={(e) => setFeedback(e.target.value)} minRows={5} placeholder="What level is this, and why?" />
+          <AutoTextarea
+            value={feedback}
+            onChange={(e) => setFeedback(e.target.value)}
+            minRows={5}
+            placeholder="What level is this, and why?"
+          />
           <CommentBank value={feedback} onInsert={(t) => setFeedback((v) => (v.trim() ? `${v.trim()} ${t}` : t))} />
         </Field>
         <Field label="What they did well">
           <AutoTextarea value={strengths} onChange={(e) => setStrengths(e.target.value)} placeholder="One point per line" />
           <CommentBank value={strengths} onInsert={(t) => setStrengths((v) => (v.trim() ? `${v.trim()}\n${t}` : t))} />
         </Field>
-        <Field label="To gain more marks">
+        <Field label={a.grading === "marks" ? "To gain more marks" : "To improve"}>
           <AutoTextarea value={improvements} onChange={(e) => setImprovements(e.target.value)} placeholder="One point per line" />
           <CommentBank value={improvements} onInsert={(t) => setImprovements((v) => (v.trim() ? `${v.trim()}\n${t}` : t))} />
         </Field>
@@ -113,7 +167,12 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
             disabled={!ok || busy}
             onClick={async () => {
               setBusy(true);
-              const saved = await markWork(sub.id, { marks: n, feedback: feedback.trim(), strengths: lines(strengths), improvements: lines(improvements) });
+              const saved = await markWork(sub.id, {
+                marks: n,
+                feedback: feedback.trim(),
+                strengths: lines(strengths),
+                improvements: lines(improvements),
+              });
               setBusy(false);
               if (!saved) return;
               toast(sub.status === "marked" ? "Feedback updated" : `Returned to ${st.name.split(" ")[0]}`);
@@ -123,7 +182,9 @@ function MarkForm({ sub, onReturned }: { sub: Submission; onReturned: () => void
             <Send size={16} />
             {busy ? "Saving…" : sub.status === "marked" ? "Update feedback" : "Return to student"}
           </Btn>
-          {sub.status === "marked" && sub.markedAt && <p className="mt-2 text-center text-xs text-navy">Returned {fmtRelative(sub.markedAt, now)}</p>}
+          {sub.status === "marked" && sub.markedAt && (
+            <p className="mt-2 text-center text-xs text-navy">Returned {fmtRelative(sub.markedAt, now)}</p>
+          )}
         </div>
       </div>
     </div>
@@ -222,7 +283,9 @@ function Submissions() {
   const next = at >= 0 && at < list.length - 1 ? list[at + 1] : null;
   const close = () => {
     setOpenId(null);
-    if (params.get("open")) router.replace("/portal/teacher/submissions/", { scroll: false });
+    // opened from another page: go back there; opened from an email link: stay on Submissions
+    if (params.get("back")) router.back();
+    else if (params.get("open")) router.replace("/portal/teacher/submissions/", { scroll: false });
   };
   // after returning one from "To mark", go straight to the next
   const afterReturn = () => (tab === "queue" && next ? setOpenId(next.id) : close());
@@ -236,7 +299,10 @@ function Submissions() {
           label="Student"
           value={who}
           onChange={setWho}
-          options={[{ value: "all", label: "All students" }, ...[...db.students].sort((a, b) => a.name.localeCompare(b.name)).map((s) => ({ value: s.id, label: s.name }))]}
+          options={[
+            { value: "all", label: "All students" },
+            ...[...db.students].sort((a, b) => a.name.localeCompare(b.name)).map((s) => ({ value: s.id, label: s.name })),
+          ]}
         />
       </div>
 
@@ -273,7 +339,7 @@ function Submissions() {
                     <span className="block font-medium">{a.title}</span>
                     <span className="block text-[12px]">{a.timeLimitMin ? "Timed assessment" : a.kind}</span>
                   </Td>
-                  <Td className="whitespace-nowrap" >
+                  <Td className="whitespace-nowrap">
                     <span title={`${fmtDate(x.submittedAt)}, ${fmtTime(x.submittedAt)}`}>{fmtRelative(x.submittedAt, now)}</span>
                   </Td>
                   <Td>
@@ -289,9 +355,7 @@ function Submissions() {
                   </Td>
                   <Td align="right" className="whitespace-nowrap tabular-nums">
                     {x.status === "marked" ? (
-                      <span className="font-semibold text-navy">
-                        {x.marks} <span className="font-normal text-navy">/ {a.maxMarks}</span>
-                      </span>
+                      <span className="font-semibold text-navy">{scoreText(a, x.marks)}</span>
                     ) : (
                       <span className="font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">Mark</span>
                     )}

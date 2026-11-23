@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cohortOf, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
-import { DAY, HOUR, fmtDate, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
+import { DAY, HOUR, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { flagKey, needsAttention, type Flag } from "@/lib/portal/insights";
 import { getSupabase } from "@/lib/supabase/client";
 import { CommentsToAnswer } from "@/components/portal/comments-to-answer";
-import { Btn, EmptyRow, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
+import { Btn, EmptyRow, Modal, RowLink, SectionTitle, Status, Table, Td, WelcomeBand } from "@/components/portal/ui";
 import { JoinButton, SessionStatus } from "@/components/portal/classroom";
 import { ClassDialog } from "@/components/portal/class-tools";
+import { StudentProfile } from "@/components/portal/student-profile";
 
 const dayKey = (iso: string) => new Date(iso).toDateString();
 
@@ -19,6 +20,9 @@ export default function TeacherDashboard() {
   const { db, me, now } = useTeacher();
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  // a student's profile opens here, so closing it keeps you on the dashboard
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const profile = db.students.find((s) => s.id === profileId);
 
   const upcoming = db.sessions.filter((s) => sessionState(s.start, s.durationMin, now) !== "ended");
   const todayKey = new Date(now).toDateString();
@@ -50,7 +54,12 @@ export default function TeacherDashboard() {
   const dismiss = async (studentId: string, flags: Flag[]) => {
     const keys = flags.map((f) => flagKey(studentId, f));
     setDismissed((d) => new Set(Array.from(d).concat(keys)));
-    await getSupabase()?.from("attention_dismissals").upsert(keys.map((key) => ({ key })), { onConflict: "member_id,key", ignoreDuplicates: true });
+    await getSupabase()
+      ?.from("attention_dismissals")
+      .upsert(
+        keys.map((key) => ({ key })),
+        { onConflict: "member_id,key", ignoreDuplicates: true },
+      );
   };
   const requests = db.requests.filter((r) => r.status === "pending" && db.sessions.some((s) => s.id === r.sessionId));
 
@@ -106,7 +115,10 @@ export default function TeacherDashboard() {
           {requests.length > 0 && (
             <section>
               <SectionTitle>Class requests</SectionTitle>
-              <Table minWidth={560} head={[{ label: "Student" }, { label: "Class" }, { label: "Request" }, { label: "Sent", align: "right" }]}>
+              <Table
+                minWidth={560}
+                head={[{ label: "Student" }, { label: "Class" }, { label: "Request" }, { label: "Sent", align: "right" }]}
+              >
                 {requests.map((r) => {
                   const s = db.sessions.find((x) => x.id === r.sessionId)!;
                   return (
@@ -119,7 +131,9 @@ export default function TeacherDashboard() {
                         {r.kind === "cancel" ? (
                           <Status tone="attention">Cancel</Status>
                         ) : (
-                          <Status tone="attention">Move to {r.proposedStart ? `${fmtDay(r.proposedStart, now)}, ${fmtTime(r.proposedStart)}` : "?"}</Status>
+                          <Status tone="attention">
+                            Move to {r.proposedStart ? `${fmtDay(r.proposedStart, now)}, ${fmtTime(r.proposedStart)}` : "?"}
+                          </Status>
                         )}
                       </Td>
                       <Td align="right" className="whitespace-nowrap">
@@ -144,7 +158,7 @@ export default function TeacherDashboard() {
                     <Td>{flags.map((f) => f.text).join(" · ")}</Td>
                     <Td align="right">
                       <div className="flex justify-end gap-2">
-                        <Btn variant="outline" size="sm" href={`/portal/teacher/students/?open=${st.id}`}>
+                        <Btn variant="outline" size="sm" onClick={() => setProfileId(st.id)}>
                           Open
                         </Btn>
                         <Btn variant="ghost" size="sm" onClick={() => dismiss(st.id, flags)} aria-label={`Dismiss for ${st.name}`}>
@@ -158,7 +172,6 @@ export default function TeacherDashboard() {
             </section>
           )}
 
-
           <section>
             <SectionTitle
               action={
@@ -169,7 +182,10 @@ export default function TeacherDashboard() {
             >
               To mark
             </SectionTitle>
-            <Table minWidth={520} head={[{ label: "Student" }, { label: "Assignment" }, { label: "Submitted" }, { label: "Due back", align: "right" }]}>
+            <Table
+              minWidth={520}
+              head={[{ label: "Student" }, { label: "Assignment" }, { label: "Submitted" }, { label: "Due back", align: "right" }]}
+            >
               {queue.length === 0 ? (
                 <EmptyRow cols={4}>Nothing to mark.</EmptyRow>
               ) : (
@@ -179,7 +195,7 @@ export default function TeacherDashboard() {
                   if (!st || !a) return null;
                   const left = new Date(x.submittedAt).getTime() + DAY - now;
                   return (
-                    <RowLink key={x.id} onClick={() => router.push(`/portal/teacher/submissions/?open=${x.id}`)}>
+                    <RowLink key={x.id} onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${x.id}`)}>
                       <Td className="font-medium">{st.name}</Td>
                       <Td>{a.title}</Td>
                       <Td className="whitespace-nowrap">{fmtRelative(x.submittedAt, now)}</Td>
@@ -197,10 +213,12 @@ export default function TeacherDashboard() {
             </Table>
           </section>
         </div>
-
       </div>
 
       <ClassDialog session={db.sessions.find((s) => s.id === openId) ?? null} onClose={() => setOpenId(null)} />
+      <Modal open={!!profile} onClose={() => setProfileId(null)} title={profile?.name ?? ""}>
+        {profile && <StudentProfile key={profile.id} s={profile} onArchived={() => setProfileId(null)} />}
+      </Modal>
     </>
   );
 }

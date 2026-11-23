@@ -7,34 +7,34 @@ import { cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
 import type { Announcement } from "@/lib/portal/types";
-import { Btn, Empty, Field, Modal, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
+import { Btn, Empty, Field, Modal, MultiPick, PageHeader, Rise, fieldCls } from "@/components/portal/ui";
 
-/** Announcements: post an announcement to everyone or one student, and see what's been sent. */
+/** Announcements: post to the students you pick, and see what's been sent. */
 export default function TeacherAnnouncements() {
-  const { db, me, now, addAnnouncement, deleteAnnouncement, toast } = useTeacher();
+  const { db, now, addAnnouncement, deleteAnnouncement, toast } = useTeacher();
   const [removeId, setRemoveId] = useState<string | null>(null);
   // "All my students" posts one copy per student: show (and delete) them as one
   const sent: (Announcement & { ids: string[]; to: string[] })[] = [];
   for (const n of db.announcements) {
     const same = sent.find(
-      (g) => g.title === n.title && g.body === n.body && Math.abs(new Date(g.at).getTime() - new Date(n.at).getTime()) < 120_000
+      (g) => g.title === n.title && g.body === n.body && Math.abs(new Date(g.at).getTime() - new Date(n.at).getTime()) < 120_000,
     );
-    const to = n.cohortId ? cohortOf(db, n.cohortId).name : "everyone";
+    const to = n.cohortId ? cohortOf(db, n.cohortId).name : "all students";
     if (same) {
       same.ids.push(n.id);
       same.to.push(to);
     } else sent.push({ ...n, ids: [n.id], to: [to] });
   }
   const removing = sent.find((n) => n.id === removeId);
-  const [to, setTo] = useState("all");
+  const [to, setTo] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
 
   const post = async () => {
     setBusy(true);
-    // the admin can post to everyone; other teachers post "all" to each of their own students
-    const targets = to !== "all" ? [to] : me.isAdmin ? [null] : db.cohorts.map((c) => c.id);
+    // one copy per student picked
+    const targets = to;
     let ok = targets.length > 0;
     for (const cohortId of targets) ok = (await addAnnouncement({ cohortId, title: title.trim(), body: body.trim() })) && ok;
     setBusy(false);
@@ -42,6 +42,7 @@ export default function TeacherAnnouncements() {
     toast("Announcement posted");
     setTitle("");
     setBody("");
+    setTo([]);
   };
 
   return (
@@ -50,17 +51,13 @@ export default function TeacherAnnouncements() {
 
       <Rise i={0}>
         <div className="rounded-2xl border border-navy/10 p-5 md:p-6">
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-[1fr_2fr]">
-            <Field label="Send to">
-              <select value={to} onChange={(e) => setTo(e.target.value)} className={fieldCls}>
-                <option value="all">{me.isAdmin ? "Everyone" : "All my students"}</option>
-                {db.cohorts.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+          <MultiPick
+            label="Send to"
+            value={to}
+            onChange={setTo}
+            options={[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name }))}
+          />
+          <div className="mt-5">
             <Field label="Headline">
               <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Assessment this Friday" className={fieldCls} />
             </Field>
@@ -71,7 +68,7 @@ export default function TeacherAnnouncements() {
             </Field>
           </div>
           <div className="mt-5">
-            <Btn variant="gold" disabled={!title.trim() || !body.trim() || busy} onClick={post}>
+            <Btn variant="gold" disabled={!to.length || !title.trim() || !body.trim() || busy} onClick={post}>
               <Megaphone size={15} />
               {busy ? "Posting…" : "Post announcement"}
             </Btn>
@@ -82,7 +79,11 @@ export default function TeacherAnnouncements() {
       <Rise i={1} className="mt-10">
         <h2 className="mb-3 text-[13px] font-semibold text-navy">Sent</h2>
         {sent.length === 0 ? (
-          <Empty icon={<Megaphone size={20} />} title="No announcements yet" text="Anything you post appears here and on your students' portals." />
+          <Empty
+            icon={<Megaphone size={20} />}
+            title="No announcements yet"
+            text="Anything you post appears here and on your students' portals."
+          />
         ) : (
           <ul className="divide-y divide-navy/10">
             {sent.map((n) => (
