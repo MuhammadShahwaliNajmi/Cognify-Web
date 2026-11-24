@@ -154,7 +154,7 @@ export function Shell({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 top-12 w-64 rounded-2xl border border-navy/10 bg-white p-2 shadow-[0_20px_50px_-20px_rgba(26,39,68,0.35)]"
+                    className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-navy/10 bg-white p-2 shadow-[0_20px_50px_-20px_rgba(26,39,68,0.35)]"
                   >
                     <div className="px-3 py-2.5">
                       <p className="truncate text-sm font-semibold text-navy">{me.name}</p>

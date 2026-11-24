@@ -52,6 +52,7 @@ export default function TeacherAnnouncements() {
       <Rise i={0}>
         <div className="rounded-2xl border border-navy/10 p-5 md:p-6">
           <MultiPick
+            single
             label="Send to"
             value={to}
             onChange={setTo}
