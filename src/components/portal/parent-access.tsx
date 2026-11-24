@@ -45,12 +45,20 @@ export function ParentAccess({ studentId }: { studentId: string }) {
         ))}
       </ul>
       <div className="mt-3 flex gap-2">
-        <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Parent's Google email" inputMode="email" className={fieldCls + " !mt-0"} />
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={emails.length ? "Another parent's Google email" : "Parent's Google email"}
+          inputMode="email"
+          className={fieldCls + " !mt-0"}
+        />
         <Btn
           variant="navy"
           disabled={!ok}
           onClick={async () => {
-            const { error } = (await getSupabase()?.from("parent_logins").insert({ email: draft.trim().toLowerCase(), student_id: Number(studentId) })) ?? { error: null };
+            const { error } = (await getSupabase()
+              ?.from("parent_logins")
+              .insert({ email: draft.trim().toLowerCase(), student_id: Number(studentId) })) ?? { error: null };
             if (error) return toast(error.code === "23505" ? "That email already has parent access." : `Couldn't add: ${error.message}`);
             setDraft("");
             setEmails(await load());

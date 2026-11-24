@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Trash2, UserPlus, UsersRound } from "lucide-react";
+import { Plus, Trash2, UserPlus, UsersRound, X } from "lucide-react";
 import { getSupabase } from "@/lib/supabase/client";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtDate } from "@/lib/portal/format";
@@ -140,9 +140,12 @@ export default function TeacherParents() {
 function AddParent({ students, initial, onAdded }: { students: { value: string; label: string }[]; initial: string; onAdded: () => void }) {
   const { toast } = useTeacher();
   const [studentId, setStudentId] = useState(initial || students[0]?.value || "");
-  const [email, setEmail] = useState("");
+  // as many parents as the family needs (mother, father, guardian…), each with their own Google email
+  const [emails, setEmails] = useState([""]);
   const [busy, setBusy] = useState(false);
-  const ok = studentId && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const valid = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  const filled = emails.filter((e) => e.trim());
+  const ok = studentId && filled.length > 0 && filled.every(valid);
   return (
     <div className="space-y-5">
       <Field label="Student">
@@ -154,35 +157,61 @@ function AddParent({ students, initial, onAdded }: { students: { value: string; 
           ))}
         </select>
       </Field>
-      <Field label="Parent's Google email">
-        <input
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          type="email"
-          inputMode="email"
-          autoComplete="off"
-          className={fieldCls}
-        />
+      <Field label={emails.length > 1 ? "Parents' Google emails" : "Parent's Google email"}>
+        <div className="space-y-2">
+          {emails.map((e, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                value={e}
+                onChange={(ev) => setEmails((xs) => xs.map((x, j) => (j === i ? ev.target.value : x)))}
+                type="email"
+                inputMode="email"
+                autoComplete="off"
+                aria-label={`Parent ${i + 1} email`}
+                className={fieldCls + " !mt-0"}
+              />
+              {emails.length > 1 && (
+                <button
+                  type="button"
+                  aria-label={`Remove parent ${i + 1}`}
+                  onClick={() => setEmails((xs) => xs.filter((_, j) => j !== i))}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
       </Field>
-      <Btn
-        variant="gold"
-        size="lg"
-        disabled={!ok || busy}
-        onClick={async () => {
-          setBusy(true);
-          const { error } = (await getSupabase()
-            ?.from("parent_logins")
-            .insert({ email: email.trim().toLowerCase(), student_id: Number(studentId) })) ?? {
-            error: null,
-          };
-          setBusy(false);
-          if (error) return toast(error.code === "23505" ? "That email already has parent access." : `Couldn't add: ${error.message}`);
-          toast("Added. They sign in at cognifypk.com/portal with that Google account.");
-          onAdded();
-        }}
-      >
-        <UserPlus size={16} /> {busy ? "Adding…" : "Add parent"}
-      </Btn>
+      <div className="flex flex-wrap items-center gap-3">
+        <Btn variant="outline" onClick={() => setEmails((xs) => [...xs, ""])}>
+          <Plus size={15} /> Another parent
+        </Btn>
+        <Btn
+          variant="gold"
+          disabled={!ok || busy}
+          onClick={async () => {
+            setBusy(true);
+            const rows = Array.from(new Set(filled.map((e) => e.trim().toLowerCase()))).map((email) => ({
+              email,
+              student_id: Number(studentId),
+            }));
+            const { error } = (await getSupabase()?.from("parent_logins").insert(rows)) ?? { error: null };
+            setBusy(false);
+            if (error)
+              return toast(error.code === "23505" ? "One of those emails already has parent access." : `Couldn't add: ${error.message}`);
+            toast(
+              rows.length > 1
+                ? `${rows.length} parents added. They sign in at cognifypk.com/portal.`
+                : "Added. They sign in at cognifypk.com/portal with that Google account.",
+            );
+            onAdded();
+          }}
+        >
+          <UserPlus size={16} /> {busy ? "Adding…" : filled.length > 1 ? `Add ${filled.length} parents` : "Add parent"}
+        </Btn>
+      </div>
     </div>
   );
 }
