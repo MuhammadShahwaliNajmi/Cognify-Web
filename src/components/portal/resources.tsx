@@ -170,6 +170,10 @@ function typeFor(folderName: string | undefined, mime: string): ResourceType {
   return "File";
 }
 
+/** Notes, Books and Other at the top level: every student has them, so they can't be renamed or deleted. */
+const isStarter = (f: { parentId: string | null; name: string }) =>
+  !f.parentId && ["notes", "books", "other"].includes(f.name.toLowerCase());
+
 const rowCls = "cursor-pointer transition-colors hover:bg-gold/[0.08]";
 const iconBtn = "grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold";
 
@@ -279,8 +283,8 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
             </span>
           ))}
         </nav>
-        {/* every student has the same three folders (Notes, Books, Other): files go inside them */}
-        {teacher && current && (
+        {/* every student starts with Notes, Books and Other (those three stay); add files and folders anywhere */}
+        {teacher && (
           <div className="flex flex-wrap items-center gap-2">
             <Btn variant="ghost" size="sm" onClick={() => setLinking(true)}>
               <Link2 size={14} /> Add link
@@ -362,8 +366,8 @@ export function FileBrowser({ cohortId, rootLabel, teacher = false }: { cohortId
                   {countIn(f.id)} item{countIn(f.id) === 1 ? "" : "s"}
                 </Td>
                 <Td>—</Td>
-                {teacher && !f.parentId && <Td align="right"> </Td>}
-                {teacher && f.parentId && (
+                {teacher && isStarter(f) && <Td align="right"> </Td>}
+                {teacher && !isStarter(f) && (
                   <Td align="right">
                     <span className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
                       <button

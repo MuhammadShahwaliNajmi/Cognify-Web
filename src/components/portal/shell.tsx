@@ -190,7 +190,8 @@ export function Shell({
         </div>
 
         <nav ref={tabsRef} aria-label="Portal" className="portal-tabs no-scrollbar relative mx-auto max-w-6xl overflow-x-auto px-3 md:px-6">
-          <div className="flex gap-1">
+          {/* evenly spaced: on wider screens the tabs share the bar's width */}
+          <div className="flex gap-1 md:gap-2">
             {nav.map((item) => {
               const on = isActive(item);
               return (
@@ -199,7 +200,7 @@ export function Shell({
                   href={item.children ? item.children[0].href : item.href}
                   aria-current={on ? "page" : undefined}
                   className={cn(
-                    "relative flex items-center gap-1.5 whitespace-nowrap px-3 pb-3 pt-4 text-[14px] font-medium tracking-tight transition-colors focus-gold",
+                    "relative flex items-center justify-center gap-1.5 whitespace-nowrap px-3 pb-3 pt-4 text-[14px] font-medium tracking-tight transition-colors focus-gold md:flex-1",
                     on ? "text-white" : "text-white/65 hover:text-white",
                   )}
                 >
