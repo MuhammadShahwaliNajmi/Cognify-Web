@@ -232,6 +232,8 @@ export type Auth = { role: Role; userId: string } | null;
 export type DB = {
   cohorts: Cohort[];
   students: Student[];
+  /** students whose portal access is turned off (teachers only): kept with all their work, can be turned back on */
+  inactive: Student[];
   /** teacher accounts the signed-in member may see */
   teachers: Teacher[];
   /** students taken out of the portal but not deleted (teachers only) */
@@ -253,6 +255,7 @@ export type DB = {
 export const EMPTY_DB: DB = {
   cohorts: [],
   students: [],
+  inactive: [],
   teachers: [],
   archived: [],
   timetable: [],

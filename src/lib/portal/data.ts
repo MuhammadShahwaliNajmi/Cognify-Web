@@ -22,6 +22,8 @@ export type Snapshot = {
     predicted: string | null;
     target: string | null;
     is_admin: boolean;
+    /** false: a student whose access is turned off (only teachers get these) */
+    active?: boolean;
   }[];
   cohorts: {
     id: Id;
@@ -175,17 +177,17 @@ export function toPortal(all: Snapshot): Portal {
     examOn: c.exam_on ?? "",
     isGroup: !!c.is_group,
   });
-  const students: Student[] = snap.members
-    .filter((m) => m.role === "student")
-    .map((m) => ({
-      id: id(m.id),
-      name: m.full_name,
-      email: m.email,
-      plan: m.plan ?? "Core",
-      cohortId: id(m.cohort_id),
-      predicted: m.predicted ?? "",
-      target: m.target ?? "",
-    }));
+  const toStudent = (m: Snapshot["members"][number]): Student => ({
+    id: id(m.id),
+    name: m.full_name,
+    email: m.email,
+    plan: m.plan ?? "Core",
+    cohortId: id(m.cohort_id),
+    predicted: m.predicted ?? "",
+    target: m.target ?? "",
+  });
+  const students: Student[] = snap.members.filter((m) => m.role === "student" && m.active !== false).map(toStudent);
+  const inactive: Student[] = snap.members.filter((m) => m.role === "student" && m.active === false).map(toStudent);
 
   const submissions: Submission[] = snap.submissions.map((s) => {
     const marked = s.marked_at !== null;
@@ -278,6 +280,7 @@ export function toPortal(all: Snapshot): Portal {
     me,
     db: {
       students,
+      inactive,
       teachers: snap.members
         .filter((m) => m.role === "teacher")
         .map((m) => ({ id: id(m.id), name: m.full_name, email: m.email, title: m.title ?? "", isAdmin: !!m.is_admin })),

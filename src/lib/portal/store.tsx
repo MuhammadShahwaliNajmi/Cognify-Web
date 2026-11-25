@@ -148,8 +148,10 @@ type Store = {
   }) => Promise<{ joinCode: string } | null>;
   /** teacher: add one more student to a group class */
   addToGroup: (cohortId: string, name: string, email: string) => Promise<boolean>;
-  /** teacher: take a student out of a group class (their past work stays) */
-  removeFromGroup: (memberId: string) => Promise<boolean>;
+  /** teacher: turn a student's portal access off or back on (nothing is deleted) */
+  setAccess: (memberId: string, on: boolean) => Promise<boolean>;
+  /** teacher: delete a student and everything about them (a one-to-one student's class goes too) */
+  deleteStudent: (memberId: string) => Promise<boolean>;
   /** admin: create a teacher account (they sign in with that Google email) */
   addTeacher: (t: { name: string; email: string; title?: string; admin?: boolean }) => Promise<boolean>;
   /** admin: make a teacher an admin, or take it away (the portal always keeps one) */
@@ -759,7 +761,19 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
         run("Adding the student", (api) =>
           api.rpc("add_to_group", { p_cohort: num(cohortId), p_name: name.trim(), p_email: email.trim() }),
         ),
-      removeFromGroup: (memberId) => run("Removing the student", (api) => api.rpc("remove_from_group", { p_member: num(memberId) })),
+      setAccess: (memberId, on) =>
+        run(on ? "Turning access on" : "Turning access off", (api) =>
+          api.from("members").update({ active: on }).eq("id", num(memberId)).eq("role", "student"),
+        ),
+      deleteStudent: (memberId) => {
+        const st = [...db.students, ...db.inactive].find((x) => x.id === memberId);
+        const group = st && db.cohorts.concat(db.archived).find((c) => c.id === st.cohortId)?.isGroup;
+        return run("Deleting the student", (api) =>
+          group || !st
+            ? api.from("members").delete().eq("id", num(memberId)).eq("role", "student")
+            : api.rpc("remove_student", { p_cohort: num(st.cohortId) }),
+        );
+      },
       addTeacher: (t) =>
         run("Adding the teacher", (api) =>
           api.from("members").insert({

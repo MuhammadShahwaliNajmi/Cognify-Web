@@ -26,9 +26,12 @@ export default function TeacherStudents() {
   const [archivedId, setArchivedId] = useState<string | null>(null);
   const archivedOpen = db.archived.find((c) => c.id === archivedId);
 
-  const students = [...db.students].sort((a, b) => a.name.localeCompare(b.name));
-  const open = db.students.find((s) => s.id === openId) ?? null;
-  const waiting = db.cohorts.filter((c) => !db.students.some((s) => s.cohortId === c.id));
+  // students whose access is off stay listed (marked), so they can be turned back on or deleted
+  const off = new Set(db.inactive.map((s) => s.id));
+  const everyone = [...db.students, ...db.inactive.filter((s) => db.cohorts.some((c) => c.id === s.cohortId))];
+  const students = everyone.sort((a, b) => a.name.localeCompare(b.name));
+  const open = everyone.find((s) => s.id === openId) ?? null;
+  const waiting = db.cohorts.filter((c) => !everyone.some((s) => s.cohortId === c.id));
 
   return (
     <>
@@ -70,7 +73,14 @@ export default function TeacherStudents() {
               return (
                 <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
                   <Td>
-                    <span className="block font-medium text-navy">{s.name}</span>
+                    <span className="block font-medium text-navy">
+                      {s.name}
+                      {off.has(s.id) && (
+                        <span className="ml-2 align-middle">
+                          <Status>Access off</Status>
+                        </span>
+                      )}
+                    </span>
                     <span className="block text-[12px] text-navy">{c.isGroup ? `Group: ${c.name}` : s.email}</span>
                   </Td>
                   <Td className="whitespace-nowrap">

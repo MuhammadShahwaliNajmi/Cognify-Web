@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Archive, ArchiveRestore, Copy, Plus, Trash2, UserPlus, X } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, Lock, Plus, Trash2, Unlock, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { attendancePct, averagePct, cohortOf, scoreText, studentsIn } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
@@ -10,7 +10,7 @@ import { ProgressReport } from "@/components/portal/report";
 import { ParentAccess } from "@/components/portal/parent-access";
 import { fmtDate, fmtTime, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
 import type { Student } from "@/lib/portal/types";
-import { Avatar, Btn, Chip, Field, Label, Stat, Segmented, fieldCls } from "@/components/portal/ui";
+import { Avatar, Btn, Chip, Field, Label, Stat, Status, Segmented, fieldCls } from "@/components/portal/ui";
 import { TrendChart } from "@/components/portal/charts";
 import { predictGrade } from "@/lib/portal/insights";
 import { ClassSetup, ScheduleForm } from "@/components/portal/class-tools";
@@ -76,13 +76,15 @@ function GradeForm({ s }: { s: Student }) {
 
 /** A group class's students: see who's in it, add one by Google email, or take one out. */
 function GroupMembers({ cohortId }: { cohortId: string }) {
-  const { db, addToGroup, removeFromGroup, toast } = useTeacher();
+  const { db, addToGroup, toast } = useTeacher();
   const c = cohortOf(db, cohortId);
-  const list = studentsIn(db, cohortId).sort((a, b) => a.name.localeCompare(b.name));
+  const list = [...studentsIn(db, cohortId), ...db.inactive.filter((x) => x.cohortId === cohortId)].sort((a, b) =>
+    a.name.localeCompare(b.name),
+  );
+  const off = new Set(db.inactive.map((x) => x.id));
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [removing, setRemoving] = useState<string | null>(null);
   const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   return (
     <div className="mt-6 rounded-2xl border border-navy/12 p-5">
@@ -91,37 +93,21 @@ function GroupMembers({ cohortId }: { cohortId: string }) {
       </Label>
       <ul className="mt-2 divide-y divide-navy/10">
         {list.map((st) => (
-          <li key={st.id} className="flex items-center justify-between gap-3 py-2.5">
-            <span className="min-w-0">
-              <span className="block truncate text-[14.5px] font-semibold text-navy">{st.name}</span>
-              <span className="block truncate text-[12.5px] text-navy">{st.email}</span>
-            </span>
-            {removing === st.id ? (
-              <span className="flex shrink-0 gap-2">
-                <Btn
-                  variant="navy"
-                  size="sm"
-                  onClick={async () => {
-                    if (await removeFromGroup(st.id)) toast(`${st.name} taken out of the group`);
-                    setRemoving(null);
-                  }}
-                >
-                  Take out
-                </Btn>
-                <Btn variant="ghost" size="sm" onClick={() => setRemoving(null)}>
-                  Keep
-                </Btn>
+          <li key={st.id} className="py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="min-w-0">
+                <span className="block truncate text-[14.5px] font-semibold text-navy">
+                  {st.name}
+                  {off.has(st.id) && (
+                    <span className="ml-2 align-middle">
+                      <Status>Access off</Status>
+                    </span>
+                  )}
+                </span>
+                <span className="block truncate text-[12.5px] text-navy">{st.email}</span>
               </span>
-            ) : (
-              <button
-                type="button"
-                aria-label={`Take ${st.name} out of the group`}
-                onClick={() => setRemoving(st.id)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
-              >
-                <X size={15} />
-              </button>
-            )}
+            </div>
+            <AccessControls s={st} compact />
           </li>
         ))}
       </ul>
@@ -158,6 +144,84 @@ function GroupMembers({ cohortId }: { cohortId: string }) {
         </Btn>
       </div>
       <p className="mt-2 text-[13px] text-navy">Students can also join with the group&apos;s join code above.</p>
+    </div>
+  );
+}
+
+/**
+ * The two choices for a student: turn their portal access off or back on (everything is kept),
+ * or delete them and everything about them for good (asks first).
+ */
+export function AccessControls({ s, compact = false, onDeleted }: { s: Student; compact?: boolean; onDeleted?: () => void }) {
+  const { db, setAccess, deleteStudent, toast } = useTeacher();
+  const on = !db.inactive.some((x) => x.id === s.id);
+  const group = cohortOf(db, s.cohortId).isGroup;
+  const [confirm, setConfirm] = useState<"off" | "delete" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const act = async (fn: () => Promise<boolean>, done: string, after?: () => void) => {
+    setBusy(true);
+    const ok = await fn();
+    setBusy(false);
+    setConfirm(null);
+    if (!ok) return;
+    toast(done);
+    after?.();
+  };
+  return (
+    <div className={compact ? "mt-2" : "mt-6 border-t border-navy/10 pt-5"}>
+      {!compact && <Label>Portal access</Label>}
+      {!compact && (
+        <p className="mt-1 text-[14px] text-navy">
+          {on ? `${s.name.split(" ")[0]} can sign in.` : `Access is off: ${s.name.split(" ")[0]} can't sign in. Their work is kept.`}
+        </p>
+      )}
+      {confirm === null ? (
+        <div className={cn("flex flex-wrap gap-2", !compact && "mt-3")}>
+          {on ? (
+            <Btn variant="outline" size="sm" disabled={busy} onClick={() => setConfirm("off")}>
+              <Lock size={14} /> Turn off access
+            </Btn>
+          ) : (
+            <Btn variant="navy" size="sm" disabled={busy} onClick={() => act(() => setAccess(s.id, true), `${s.name} can sign in again`)}>
+              <Unlock size={14} /> Turn on access
+            </Btn>
+          )}
+          <Btn variant="ghost" size="sm" disabled={busy} onClick={() => setConfirm("delete")}>
+            <Trash2 size={14} /> Delete student
+          </Btn>
+        </div>
+      ) : (
+        <div className="mt-2 rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
+          <p className="text-[15px] font-semibold text-navy">
+            {confirm === "off" ? `Turn off ${s.name}'s access?` : `Delete ${s.name} and everything about them?`}
+          </p>
+          <p className="mt-1 text-sm text-navy">
+            {confirm === "off"
+              ? "They can't sign in until you turn it back on. Their work, marks and attendance are kept."
+              : `Their hand-ins, marks, feedback, attendance, comments and parent logins are deleted for good.${
+                  group ? "" : " Their class, timetable and files go too."
+                } This can't be undone.`}
+          </p>
+          <div className="mt-3 flex gap-2.5">
+            <Btn
+              variant="navy"
+              size="sm"
+              disabled={busy}
+              onClick={() =>
+                confirm === "off"
+                  ? act(() => setAccess(s.id, false), `${s.name}'s access is off`)
+                  : act(() => deleteStudent(s.id), `${s.name} deleted`, onDeleted)
+              }
+            >
+              {confirm === "off" ? <Lock size={14} /> : <Trash2 size={14} />}
+              {busy ? "Working…" : confirm === "off" ? "Turn off" : "Delete for good"}
+            </Btn>
+            <Btn variant="ghost" size="sm" onClick={() => setConfirm(null)}>
+              Cancel
+            </Btn>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -295,7 +359,8 @@ export function StudentProfile({ s, onArchived }: { s: Student; onArchived: () =
           {cohortOf(db, s.cohortId).isGroup && <GroupMembers cohortId={s.cohortId} />}
           <RepeatingClasses cohortId={s.cohortId} />
           <TeacherOf cohortId={s.cohortId} />
-          <ArchiveStudent cohortId={s.cohortId} name={s.name} onArchived={onArchived} />
+          <AccessControls s={s} onDeleted={onArchived} />
+          {cohortOf(db, s.cohortId).isGroup && <ArchiveStudent cohortId={s.cohortId} name={s.name} onArchived={onArchived} />}
         </>
       )}
     </div>
