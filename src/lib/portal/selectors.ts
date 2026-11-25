@@ -1,7 +1,17 @@
 /** Small read-only lookups over the portal data, shared by several screens. */
 import type { Cohort, DB, Session } from "./types";
 
-const EMPTY_COHORT: Cohort = { id: "", name: "", board: "", subject: "", meetUrl: "", joinCode: "", teacherId: "", examOn: "" };
+const EMPTY_COHORT: Cohort = {
+  id: "",
+  name: "",
+  board: "",
+  subject: "",
+  meetUrl: "",
+  joinCode: "",
+  teacherId: "",
+  examOn: "",
+  isGroup: false,
+};
 
 export const cohortOf = (db: DB, id: string) => db.cohorts.find((c) => c.id === id) ?? EMPTY_COHORT;
 
@@ -31,6 +41,12 @@ export function attendancePct(db: DB, studentId: string, cohortId: string, now: 
 }
 
 /** Mean score across marked work, or null if nothing is marked yet. */
+/** The students in a class (one, or several in a group class). */
+export const studentsIn = (db: DB, cohortId: string) => db.students.filter((s) => s.cohortId === cohortId);
+
+/** How a class reads in pickers: "Zara Malik", or "IB Econ group (group)". */
+export const classLabel = (c: { name: string; isGroup?: boolean }) => (c.isGroup ? `${c.name} (group)` : c.name);
+
 /** Work marked out of a total (pass/fail, complete and feedback-only work have no percentage). */
 export const isScored = (a: { grading?: string }) => (a.grading ?? "marks") === "marks";
 

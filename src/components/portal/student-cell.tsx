@@ -13,7 +13,7 @@ export function StudentCell({ db, cohortId, name }: { db: DB; cohortId: string; 
       <Avatar name={who} size="sm" />
       <span className="min-w-0">
         <span className="block truncate text-[14.5px] font-semibold text-navy">{who}</span>
-        <span className="block truncate text-[12px] text-navy">{courseOf(c)}</span>
+        <span className="block truncate text-[12px] text-navy">{c.isGroup && name ? `${c.name} · ${courseOf(c)}` : courseOf(c)}</span>
       </span>
     </span>
   );

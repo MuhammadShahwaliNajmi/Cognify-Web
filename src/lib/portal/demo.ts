@@ -79,6 +79,20 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
       target: "",
       is_admin: false,
     },
+    // a group class: two students sharing one class
+    ...[
+      { id: 14, email: "ali.raza@example.com", full_name: "Ali Raza" },
+      { id: 15, email: "mehr.khan@example.com", full_name: "Mehr Khan" },
+    ].map((m) => ({
+      ...m,
+      role: "student" as const,
+      title: null,
+      plan: "Core" as const,
+      cohort_id: 106,
+      predicted: "",
+      target: "",
+      is_admin: false,
+    })),
   ];
   const cohorts: Snapshot["cohorts"] = [
     {
@@ -131,6 +145,17 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
       join_code: "P5LD-7RWA",
       teacher_id: 1,
       archived_at: at(-20 * DAY),
+    },
+    {
+      id: 106,
+      name: "IB Economics SL group",
+      board: "IB Diploma",
+      subject: "Economics",
+      meet_url: "https://meet.google.com/grp-econ-slx",
+      join_code: "G8RP-4SLQ",
+      teacher_id: 1,
+      archived_at: null,
+      is_group: true,
     },
   ];
   const timetable: Snapshot["timetable"] = [

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Megaphone, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { cohortOf } from "@/lib/portal/selectors";
+import { classLabel, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { fmtRelative } from "@/lib/portal/format";
 import type { Announcement } from "@/lib/portal/types";
@@ -56,7 +56,7 @@ export default function TeacherAnnouncements() {
             label="Send to"
             value={to}
             onChange={setTo}
-            options={[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name }))}
+            options={[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: classLabel(c) }))}
           />
           <div className="mt-5">
             <Field label="Headline">

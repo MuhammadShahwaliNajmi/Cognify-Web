@@ -1,5 +1,6 @@
 "use client";
 
+import { classLabel } from "@/lib/portal/selectors";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HardDrive } from "lucide-react";
@@ -45,7 +46,14 @@ function Resources() {
     <>
       <PageHeader
         title="Resources"
-        actions={<Picker label="Student" value={cohort.id} onChange={setCohortId} options={cohorts.map((c) => ({ value: c.id, label: c.name }))} />}
+        actions={
+          <Picker
+            label="Student"
+            value={cohort.id}
+            onChange={setCohortId}
+            options={cohorts.map((c) => ({ value: c.id, label: classLabel(c) }))}
+          />
+        }
       />
 
       {me.isAdmin && storage && !storage.connected && (

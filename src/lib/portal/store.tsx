@@ -142,7 +142,14 @@ type Store = {
     slots: { weekday: number; start: string; duration: number }[];
     /** admin only: the teacher the student belongs to (default: whoever adds them) */
     teacherId?: string;
+    /** a group class: `name` is the group's name; `students` are those whose Google emails are known */
+    group?: boolean;
+    students?: { name: string; email: string }[];
   }) => Promise<{ joinCode: string } | null>;
+  /** teacher: add one more student to a group class */
+  addToGroup: (cohortId: string, name: string, email: string) => Promise<boolean>;
+  /** teacher: take a student out of a group class (their past work stays) */
+  removeFromGroup: (memberId: string) => Promise<boolean>;
   /** admin: create a teacher account (they sign in with that Google email) */
   addTeacher: (t: { name: string; email: string; title?: string; admin?: boolean }) => Promise<boolean>;
   /** admin: make a teacher an admin, or take it away (the portal always keeps one) */
@@ -738,14 +745,21 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
           p_meet_url: st.meetUrl || null,
           p_slots: st.slots,
           p_teacher: st.teacherId ? num(st.teacherId) : null,
+          p_group: !!st.group,
+          p_students: st.students ?? [],
         });
         if (error) {
-          toast(`Adding the student failed: ${error.message}`);
+          toast(`${st.group ? "Adding the group" : "Adding the student"} failed: ${error.message}`);
           return null;
         }
         await reload();
         return { joinCode: (data as { join_code: string }).join_code };
       },
+      addToGroup: (cohortId, name, email) =>
+        run("Adding the student", (api) =>
+          api.rpc("add_to_group", { p_cohort: num(cohortId), p_name: name.trim(), p_email: email.trim() }),
+        ),
+      removeFromGroup: (memberId) => run("Removing the student", (api) => api.rpc("remove_from_group", { p_member: num(memberId) })),
       addTeacher: (t) =>
         run("Adding the teacher", (api) =>
           api.from("members").insert({

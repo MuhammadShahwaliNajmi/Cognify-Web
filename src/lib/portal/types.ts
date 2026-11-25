@@ -21,6 +21,8 @@ export type Cohort = {
   teacherId: string;
   /** the student's exam date (yyyy-mm-dd), "" if not set: the home screen counts down to it */
   examOn: string;
+  /** a group class: several students share it (timetable, Meet, work, files); one join code for all */
+  isGroup: boolean;
 };
 
 /** One weekly class time; "start" is HH:MM in Pakistan time. */

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarPlus } from "lucide-react";
-import { cohortOf, topicOf } from "@/lib/portal/selectors";
+import { classLabel, cohortOf, topicOf } from "@/lib/portal/selectors";
 import { projectSeries, ruleOf } from "@/lib/portal/series";
 import { useTeacher } from "@/lib/portal/store";
 import { dateInput, sessionState, timeInput } from "@/lib/portal/format";
@@ -30,7 +30,7 @@ export default function TeacherCalendar() {
       if (s.virtual || ruleOf(db, s)) return setMove({ session: s, start, durationMin });
       if (await rescheduleSession(s.id, start, durationMin)) toast("Class moved");
     },
-    [db, rescheduleSession, toast]
+    [db, rescheduleSession, toast],
   );
 
   const toEvent = useCallback(
@@ -45,7 +45,7 @@ export default function TeacherCalendar() {
       onClick: () => setOpen(s),
       onMove: sessionState(s.start, s.durationMin, now) === "upcoming" ? (start, d) => moved(s, start, d) : undefined,
     }),
-    [db, now, moved]
+    [db, now, moved],
   );
 
   const events: CalEvent[] = [
@@ -64,7 +64,7 @@ export default function TeacherCalendar() {
 
   const addAt = (at: Date) =>
     setAdding({ date: dateInput(at), start: timeInput(at), end: timeInput(new Date(at.getTime() + 60 * 60_000)) });
-  const shown = useMemo(() => (open && !open.virtual ? db.sessions.find((s) => s.id === open.id) ?? null : open), [open, db.sessions]);
+  const shown = useMemo(() => (open && !open.virtual ? (db.sessions.find((s) => s.id === open.id) ?? null) : open), [open, db.sessions]);
 
   return (
     <>
@@ -77,7 +77,7 @@ export default function TeacherCalendar() {
               label="Student"
               value={who}
               onChange={setWho}
-              options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: c.name }))]}
+              options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: classLabel(c) }))]}
             />
             <Btn
               variant="navy"

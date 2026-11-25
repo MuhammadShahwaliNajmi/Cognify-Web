@@ -6,7 +6,7 @@ import { Paperclip, Pencil, PenLine, Plus, RotateCcw, Trash2 } from "lucide-reac
 import { cn } from "@/lib/utils";
 import { useTeacher } from "@/lib/portal/store";
 import { uploadFile } from "@/lib/portal/storage";
-import { assessmentState, attemptFor, cohortOf, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
+import { assessmentState, attemptFor, classLabel, cohortOf, submissionFor, type AssessmentState } from "@/lib/portal/selectors";
 import { DAY, dateInput, fmtDate, fmtDuration, fmtTime, timeInput } from "@/lib/portal/format";
 import type { Assignment, Student } from "@/lib/portal/types";
 import {
@@ -97,7 +97,7 @@ function AssessmentForm({
           label="Student"
           value={forIds}
           onChange={setForIds}
-          options={cohorts.map((c) => ({ value: c.id, label: c.name }))}
+          options={cohorts.map((c) => ({ value: c.id, label: classLabel(c) }))}
         />
       )}
       <Field label="Title">
@@ -377,12 +377,18 @@ export default function TeacherAssessments() {
   const cohorts = [...db.cohorts].sort((a, b) => a.name.localeCompare(b.name));
   const rows = db.assignments
     .filter((a) => a.timeLimitMin && (who === "all" || a.cohortId === who))
-    .map((a) => {
-      const student = db.students.find((s) => s.cohortId === a.cohortId);
-      return { a, student, state: student ? assessmentState(db, a, student.id, now) : ("upcoming" as AssessmentState) };
+    // a group's assessment shows each student's attempt
+    .flatMap((a) => {
+      const who = db.students.filter((s) => s.cohortId === a.cohortId);
+      return (who.length ? who : [undefined]).map((student) => ({
+        a,
+        student,
+        state: student ? assessmentState(db, a, student.id, now) : ("upcoming" as AssessmentState),
+      }));
     })
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
-  const open = rows.find((r) => r.a.id === openId);
+  const rowKey = (r: { a: { id: string }; student?: { id: string } }) => `${r.a.id}|${r.student?.id ?? ""}`;
+  const open = rows.find((r) => rowKey(r) === openId);
   // same filters as Assignments (marking lives in Submissions)
   const [tab, setTab] = useState<"open" | "closed" | "all">("open");
   const upcoming = rows.filter((r) => new Date(r.a.dueAt).getTime() > now).reverse();
@@ -405,7 +411,7 @@ export default function TeacherAssessments() {
           label="Student"
           value={who}
           onChange={setWho}
-          options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: c.name }))]}
+          options={[{ value: "all", label: "All students" }, ...cohorts.map((c) => ({ value: c.id, label: classLabel(c) }))]}
         />
       </div>
 
@@ -436,7 +442,7 @@ export default function TeacherAssessments() {
           shown.map(({ a, student, state }) => {
             const sub = student ? submissionFor(db, a.id, student.id) : undefined;
             return (
-              <RowLink key={a.id} onClick={() => setOpenId(a.id)}>
+              <RowLink key={rowKey({ a, student })} onClick={() => setOpenId(rowKey({ a, student }))}>
                 <Td>
                   <StudentCell db={db} cohortId={a.cohortId} name={student?.name} />
                 </Td>

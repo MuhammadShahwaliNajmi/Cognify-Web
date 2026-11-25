@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, Copy, Plus, Trash2, UserPlus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { attendancePct, averagePct, cohortOf, scoreText } from "@/lib/portal/selectors";
+import { attendancePct, averagePct, cohortOf, scoreText, studentsIn } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { ProgressReport } from "@/components/portal/report";
 import { ParentAccess } from "@/components/portal/parent-access";
@@ -74,11 +74,101 @@ function GradeForm({ s }: { s: Student }) {
   );
 }
 
+/** A group class's students: see who's in it, add one by Google email, or take one out. */
+function GroupMembers({ cohortId }: { cohortId: string }) {
+  const { db, addToGroup, removeFromGroup, toast } = useTeacher();
+  const c = cohortOf(db, cohortId);
+  const list = studentsIn(db, cohortId).sort((a, b) => a.name.localeCompare(b.name));
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  return (
+    <div className="mt-6 rounded-2xl border border-navy/12 p-5">
+      <Label>
+        {c.name}: {list.length} student{list.length === 1 ? "" : "s"}
+      </Label>
+      <ul className="mt-2 divide-y divide-navy/10">
+        {list.map((st) => (
+          <li key={st.id} className="flex items-center justify-between gap-3 py-2.5">
+            <span className="min-w-0">
+              <span className="block truncate text-[14.5px] font-semibold text-navy">{st.name}</span>
+              <span className="block truncate text-[12.5px] text-navy">{st.email}</span>
+            </span>
+            {removing === st.id ? (
+              <span className="flex shrink-0 gap-2">
+                <Btn
+                  variant="navy"
+                  size="sm"
+                  onClick={async () => {
+                    if (await removeFromGroup(st.id)) toast(`${st.name} taken out of the group`);
+                    setRemoving(null);
+                  }}
+                >
+                  Take out
+                </Btn>
+                <Btn variant="ghost" size="sm" onClick={() => setRemoving(null)}>
+                  Keep
+                </Btn>
+              </span>
+            ) : (
+              <button
+                type="button"
+                aria-label={`Take ${st.name} out of the group`}
+                onClick={() => setRemoving(st.id)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1.3fr_auto]">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+          aria-label="New student's name"
+          className={fieldCls + " !mt-0"}
+        />
+        <input
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Google email"
+          inputMode="email"
+          aria-label="New student's Google email"
+          className={fieldCls + " !mt-0"}
+        />
+        <Btn
+          variant="navy"
+          disabled={!ok || busy}
+          onClick={async () => {
+            setBusy(true);
+            const done = await addToGroup(cohortId, name, email);
+            setBusy(false);
+            if (!done) return;
+            toast(`${name.trim() || email.trim()} added to the group`);
+            setName("");
+            setEmail("");
+          }}
+        >
+          <UserPlus size={14} /> Add
+        </Btn>
+      </div>
+      <p className="mt-2 text-[13px] text-navy">Students can also join with the group&apos;s join code above.</p>
+    </div>
+  );
+}
+
 /** A student who hasn't joined yet: their class set-up, timetable, teacher, archive. */
 export function PendingStudent({ cohortId, name, onArchived }: { cohortId: string; name: string; onArchived: () => void }) {
+  const { db } = useTeacher();
   return (
     <>
       <ClassSetup cohortId={cohortId} />
+      {cohortOf(db, cohortId).isGroup && <GroupMembers cohortId={cohortId} />}
       <RepeatingClasses cohortId={cohortId} />
       <TeacherOf cohortId={cohortId} />
       <ArchiveStudent cohortId={cohortId} name={name} onArchived={onArchived} />
@@ -202,6 +292,7 @@ export function StudentProfile({ s, onArchived }: { s: Student; onArchived: () =
           <div className="mt-6 border-t border-navy/10 pt-5">
             <ClassSetup cohortId={s.cohortId} />
           </div>
+          {cohortOf(db, s.cohortId).isGroup && <GroupMembers cohortId={s.cohortId} />}
           <RepeatingClasses cohortId={s.cohortId} />
           <TeacherOf cohortId={s.cohortId} />
           <ArchiveStudent cohortId={s.cohortId} name={s.name} onArchived={onArchived} />
@@ -373,21 +464,33 @@ function RepeatingClasses({ cohortId }: { cohortId: string }) {
 export function AddStudent({ onClose }: { onClose: () => void }) {
   const { db, me, addStudent, toast } = useTeacher();
   const [teacherId, setTeacherId] = useState(me.id);
+  const [group, setGroup] = useState(false);
   const [f, setF] = useState({ name: "", board: "IB", subject: "Economics", email: "", meetUrl: "" });
+  // a group's students: name + Google email (anyone left out joins with the group's code)
+  const [members, setMembers] = useState([
+    { name: "", email: "" },
+    { name: "", email: "" },
+  ]);
   const [slots, setSlots] = useState<Slot[]>([NEW_SLOT]);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ name: string; code: string; email: string } | null>(null);
+  const [done, setDone] = useState<{ name: string; code: string; email: string; group: boolean; added: number } | null>(null);
   const set = <K extends keyof typeof f>(k: K, v: string) => setF((x) => ({ ...x, [k]: v }));
-  const emailOk = !f.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim());
+  const isEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+  const emailOk = group ? members.every((m) => !m.email.trim() || isEmail(m.email)) : !f.email.trim() || isEmail(f.email);
   const meetOk = !f.meetUrl.trim() || /^https:\/\/meet\.google\.com\/[a-z]{3}-[a-z]{4}-[a-z]{3}$/.test(f.meetUrl.trim());
   const ok = f.name.trim() && emailOk && meetOk && slotsOk(slots);
+  const listed = members.filter((m) => m.email.trim()).map((m) => ({ name: m.name.trim(), email: m.email.trim().toLowerCase() }));
 
   if (done) {
     return (
       <div className="space-y-5">
         <p className="text-[15px] text-navy">
           <span className="font-semibold">{done.name}</span> has been added.
-          {done.email ? ` They can sign in with ${done.email} straight away.` : " Send them this join code:"}
+          {done.group
+            ? `${done.added ? ` ${done.added} student${done.added === 1 ? " can" : "s can"} sign in straight away.` : ""} Anyone else in the group joins with this code:`
+            : done.email
+              ? ` They can sign in with ${done.email} straight away.`
+              : " Send them this join code:"}
         </p>
         <div className="flex flex-wrap items-center gap-2.5">
           <span className="rounded-lg bg-navy-deep px-4 py-2 font-mono text-lg tracking-[0.2em] text-gold">{done.code}</span>
@@ -404,8 +507,21 @@ export function AddStudent({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-5">
-      <Field label="Student name">
-        <input value={f.name} onChange={(e) => set("name", e.target.value)} className={fieldCls} />
+      <Segmented
+        value={group ? "group" : "one"}
+        onChange={(v) => setGroup(v === "group")}
+        options={[
+          { value: "one", label: "One student" },
+          { value: "group", label: "Group class" },
+        ]}
+      />
+      <Field label={group ? "Group name" : "Student name"}>
+        <input
+          value={f.name}
+          onChange={(e) => set("name", e.target.value)}
+          placeholder={group ? "IB Economics HL group" : undefined}
+          className={fieldCls}
+        />
       </Field>
       {me.isAdmin && db.teachers.length > 1 && (
         <Field label="Teacher">
@@ -432,16 +548,55 @@ export function AddStudent({ onClose }: { onClose: () => void }) {
           <input value={f.subject} onChange={(e) => set("subject", e.target.value)} className={fieldCls} />
         </Field>
       </div>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <Field label="Student's Google email (optional)">
-          <input
-            value={f.email}
-            onChange={(e) => set("email", e.target.value)}
-            inputMode="email"
-            placeholder="Leave empty to use a join code"
-            className={fieldCls}
-          />
+      {group && (
+        <Field label="Students">
+          <div className="space-y-2">
+            {members.map((m, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1.3fr_auto] items-center gap-2">
+                <input
+                  value={m.name}
+                  onChange={(e) => setMembers((xs) => xs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))}
+                  placeholder="Name"
+                  aria-label={`Student ${i + 1} name`}
+                  className={fieldCls + " !mt-0"}
+                />
+                <input
+                  value={m.email}
+                  onChange={(e) => setMembers((xs) => xs.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))}
+                  placeholder="Google email"
+                  inputMode="email"
+                  aria-label={`Student ${i + 1} email`}
+                  className={fieldCls + " !mt-0"}
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove student ${i + 1}`}
+                  disabled={members.length === 1}
+                  onClick={() => setMembers((xs) => xs.filter((_, j) => j !== i))}
+                  className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] disabled:opacity-30 focus-gold"
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+          <Btn variant="outline" size="sm" className="mt-2.5" onClick={() => setMembers((xs) => [...xs, { name: "", email: "" }])}>
+            <Plus size={14} /> Another student
+          </Btn>
         </Field>
+      )}
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        {!group && (
+          <Field label="Student's Google email (optional)">
+            <input
+              value={f.email}
+              onChange={(e) => set("email", e.target.value)}
+              inputMode="email"
+              placeholder="Leave empty to use a join code"
+              className={fieldCls}
+            />
+          </Field>
+        )}
         <Field label="Google Meet link (optional)">
           <input
             value={f.meetUrl}
@@ -471,13 +626,15 @@ export function AddStudent({ onClose }: { onClose: () => void }) {
             meetUrl: f.meetUrl.trim(),
             teacherId: me.isAdmin ? teacherId : undefined,
             slots: toRpcSlots(slots),
+            group,
+            students: group ? listed : undefined,
           });
           setBusy(false);
-          if (res) setDone({ name: f.name.trim(), code: res.joinCode, email: f.email.trim() });
+          if (res) setDone({ name: f.name.trim(), code: res.joinCode, email: group ? "" : f.email.trim(), group, added: listed.length });
         }}
       >
         <UserPlus size={16} />
-        {busy ? "Adding…" : "Add student"}
+        {busy ? "Adding…" : group ? "Add group" : "Add student"}
       </Btn>
     </div>
   );
@@ -512,20 +669,22 @@ function TeacherOf({ cohortId }: { cohortId: string }) {
 
 /** Take a student out of the portal without deleting anything (asks first). */
 function ArchiveStudent({ cohortId, name, onArchived }: { cohortId: string; name: string; onArchived: () => void }) {
-  const { archiveStudent, toast } = useTeacher();
+  const { db, archiveStudent, toast } = useTeacher();
+  const group = cohortOf(db, cohortId).isGroup;
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   return (
     <div className="mt-6 border-t border-navy/10 pt-5">
       {!confirm ? (
         <Btn variant="ghost" size="sm" onClick={() => setConfirm(true)}>
-          <Archive size={14} /> Archive student
+          <Archive size={14} /> {group ? "Archive the whole group" : "Archive student"}
         </Btn>
       ) : (
         <div className="rounded-xl border-l-[3px] border-gold bg-navy/[0.04] p-4">
-          <p className="text-[15px] font-semibold text-navy">Archive {name}?</p>
+          <p className="text-[15px] font-semibold text-navy">Archive {group ? cohortOf(db, cohortId).name : name}?</p>
           <p className="mt-1 text-sm text-navy">
-            They lose access and their upcoming classes are removed. Nothing is deleted, and you can restore them.
+            {group ? "Every student in the group loses access" : "They lose access"} and upcoming classes are removed. Nothing is deleted,
+            and you can restore {group ? "the group" : "them"}.
           </p>
           <div className="mt-3 flex gap-2.5">
             <Btn
@@ -537,7 +696,7 @@ function ArchiveStudent({ cohortId, name, onArchived }: { cohortId: string; name
                 const ok = await archiveStudent(cohortId, true);
                 setBusy(false);
                 if (!ok) return;
-                toast(`${name} archived`);
+                toast(`${group ? cohortOf(db, cohortId).name : name} archived`);
                 onArchived();
               }}
             >

@@ -71,7 +71,7 @@ export default function TeacherStudents() {
                 <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
                   <Td>
                     <span className="block font-medium text-navy">{s.name}</span>
-                    <span className="block text-[12px] text-navy">{s.email}</span>
+                    <span className="block text-[12px] text-navy">{c.isGroup ? `Group: ${c.name}` : s.email}</span>
                   </Td>
                   <Td className="whitespace-nowrap">
                     {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
@@ -94,14 +94,16 @@ export default function TeacherStudents() {
               <RowLink key={c.id} onClick={() => setSetupId(c.id)}>
                 <Td>
                   <span className="block font-medium text-navy">{c.name}</span>
-                  <span className="block text-[12px] text-navy">Join code {c.joinCode}</span>
+                  <span className="block text-[12px] text-navy">
+                    {c.isGroup ? "Group · " : ""}Join code {c.joinCode}
+                  </span>
                 </Td>
                 <Td className="whitespace-nowrap">
                   {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
                   {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
                 </Td>
                 <Td colSpan={4} align="right">
-                  <Status tone="attention">Not joined yet</Status>
+                  <Status tone="attention">{c.isGroup ? "No students yet" : "Not joined yet"}</Status>
                 </Td>
               </RowLink>
             ))}

@@ -9,7 +9,7 @@ import { StudentCell } from "@/components/portal/student-cell";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
 import { ASSIGNMENT_KINDS, GRADINGS, type Assignment, type AssignmentKind, type Grading } from "@/lib/portal/types";
-import { gradingText, scoreText } from "@/lib/portal/selectors";
+import { classLabel, gradingText, scoreText, studentsIn } from "@/lib/portal/selectors";
 import { QuestionPaperField } from "@/components/portal/work";
 import {
   Btn,
@@ -75,7 +75,7 @@ function AssignmentForm({
           label="Student"
           value={forIds}
           onChange={setForIds}
-          options={db.cohorts.map((c) => ({ value: c.id, label: c.name }))}
+          options={db.cohorts.map((c) => ({ value: c.id, label: classLabel(c) }))}
         />
       )}
       <Field label="Title">
@@ -304,7 +304,7 @@ export default function TeacherAssignments() {
           onChange={setCohortId}
           options={[
             { value: "all", label: "All students" },
-            ...[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: c.name })),
+            ...[...db.cohorts].sort((a, b) => a.name.localeCompare(b.name)).map((c) => ({ value: c.id, label: classLabel(c) })),
           ]}
         />
       </div>
@@ -333,70 +333,78 @@ export default function TeacherAssignments() {
           {list.length === 0 ? (
             <EmptyRow cols={6}>{tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing here yet."}</EmptyRow>
           ) : (
-            list.map((a) => {
-              const sub = db.submissions.find((x) => x.assignmentId === a.id);
-              const due = new Date(a.dueAt).getTime() - now;
-              const cells = (
-                <>
-                  <Td>
-                    <StudentCell db={db} cohortId={a.cohortId} />
-                  </Td>
-                  <Td className="text-navy">
-                    <span className="inline-flex items-center gap-1.5 font-medium">
-                      {a.title}
-                      {(a.attachmentFileId || a.attachmentUrl) && (
-                        <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
+            list
+              .flatMap((a) => {
+                const who = studentsIn(db, a.cohortId);
+                return (who.length ? who : [undefined]).map((st) => ({ a, st }));
+              })
+              .map(({ a, st }) => {
+                const sub = st ? db.submissions.find((x) => x.assignmentId === a.id && x.studentId === st.id) : undefined;
+                const due = new Date(a.dueAt).getTime() - now;
+                const cells = (
+                  <>
+                    <Td>
+                      <StudentCell db={db} cohortId={a.cohortId} name={st?.name} />
+                    </Td>
+                    <Td className="text-navy">
+                      <span className="inline-flex items-center gap-1.5 font-medium">
+                        {a.title}
+                        {(a.attachmentFileId || a.attachmentUrl) && (
+                          <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
+                        )}
+                      </span>
+                      <span className="block text-[12px]">{a.kind}</span>
+                    </Td>
+                    <Td className="whitespace-nowrap">
+                      {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
+                    </Td>
+                    <Td>
+                      {sub?.status === "marked" ? (
+                        <Status tone="done">Returned</Status>
+                      ) : sub ? (
+                        <Status tone="attention">To mark</Status>
+                      ) : due < 0 ? (
+                        <Status tone="attention">Overdue</Status>
+                      ) : (
+                        <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
                       )}
-                    </span>
-                    <span className="block text-[12px]">{a.kind}</span>
-                  </Td>
-                  <Td className="whitespace-nowrap">
-                    {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
-                  </Td>
-                  <Td>
-                    {sub?.status === "marked" ? (
-                      <Status tone="done">Returned</Status>
-                    ) : sub ? (
-                      <Status tone="attention">To mark</Status>
-                    ) : due < 0 ? (
-                      <Status tone="attention">Overdue</Status>
-                    ) : (
-                      <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
-                    )}
-                  </Td>
-                  <Td align="right" className="whitespace-nowrap tabular-nums">
-                    {sub?.status === "marked" ? (
-                      <span className="font-semibold text-navy">{scoreText(a, sub.marks)}</span>
-                    ) : (
-                      <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
-                    )}
-                  </Td>
-                  <Td align="right">
-                    <button
-                      type="button"
-                      aria-label={`Edit ${a.title}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditId(a.id);
-                      }}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                  </Td>
-                </>
-              );
-              return sub ? (
-                <RowLink key={a.id} onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}>
-                  {cells}
-                </RowLink>
-              ) : (
-                <RowLink key={a.id} onClick={() => setEditId(a.id)}>
-                  {cells}
-                </RowLink>
-              );
-            })
+                    </Td>
+                    <Td align="right" className="whitespace-nowrap tabular-nums">
+                      {sub?.status === "marked" ? (
+                        <span className="font-semibold text-navy">{scoreText(a, sub.marks)}</span>
+                      ) : (
+                        <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
+                      )}
+                    </Td>
+                    <Td align="right">
+                      <button
+                        type="button"
+                        aria-label={`Edit ${a.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditId(a.id);
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </Td>
+                  </>
+                );
+                return sub ? (
+                  <RowLink
+                    key={`${a.id}-${st?.id ?? ""}`}
+                    onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}
+                  >
+                    {cells}
+                  </RowLink>
+                ) : (
+                  <RowLink key={`${a.id}-${st?.id ?? ""}`} onClick={() => setEditId(a.id)}>
+                    {cells}
+                  </RowLink>
+                );
+              })
           )}
         </Table>
       </div>
