@@ -79,7 +79,7 @@ export function Navbar() {
       <nav
         className={cn(
           "flex w-full items-center justify-between px-6 transition-all duration-500 lg:px-10",
-          scrolled ? "border-b border-navy/12 bg-white/85 py-3 backdrop-blur-xl" : "border-b border-transparent bg-transparent py-5",
+          scrolled ? "border-b border-navy/12 bg-white/[0.97] py-3" : "border-b border-transparent bg-transparent py-5",
         )}
       >
         <a href="#top" aria-label="Concept Lab home" className="flex items-center">

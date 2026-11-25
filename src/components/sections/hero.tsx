@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
+  useInView,
   useScroll,
   useSpring,
   useTransform,
@@ -41,11 +42,7 @@ function Line({ words, gold = false }: { words: string[]; gold?: boolean }) {
   return (
     <span className="block overflow-hidden pb-[0.14em]">
       {words.map((w, i) => (
-        <motion.span
-          key={i}
-          variants={wordV}
-          className={`inline-block ${gold ? "text-gold" : "text-navy"}`}
-        >
+        <motion.span key={i} variants={wordV} className={`inline-block ${gold ? "text-gold" : "text-navy"}`}>
           {w}
           {i < words.length - 1 ? " " : ""}
         </motion.span>
@@ -62,19 +59,21 @@ function Live({
   spread,
   ms,
   format,
+  paused = false,
 }: {
   base: number;
   spread: number;
   ms: number;
   format: (v: number) => string;
+  paused?: boolean;
 }) {
   const reduce = useReducedMotion();
   const [v, setV] = useState(base);
   useEffect(() => {
-    if (reduce) return;
+    if (reduce || paused) return;
     const id = setInterval(() => setV(base + (Math.random() - 0.5) * spread), ms);
     return () => clearInterval(id);
-  }, [base, spread, ms, reduce]);
+  }, [base, spread, ms, reduce, paused]);
   return <>{format(v)}</>;
 }
 
@@ -96,10 +95,12 @@ const EQY = S_KEY.map((s) => 140 - 0.21769 * s); // equilibrium y at each keyfra
 const EQDX = S_KEY.map((s) => s / 2); // eq-point translate (relative to base)
 const EQDY = S_KEY.map((s) => -0.21769 * s);
 
-function HeroChart() {
-  const reduce = useReducedMotion();
-  const draw = (delay: number) =>
-    reduce ? { duration: 0 } : { duration: 1.3, ease: [0.22, 1, 0.36, 1] as const, delay };
+/** `still`: drawn but not moving (off screen, or reduced motion) — nothing runs per frame.
+ *  `intro`: draw the curves in (first time only; coming back on screen just resumes the loop). */
+function HeroChart({ still = false, intro = true }: { still?: boolean; intro?: boolean }) {
+  const reduce = useReducedMotion() || still;
+  const first = intro && !reduce;
+  const draw = (delay: number) => (reduce ? { duration: 0 } : { duration: 1.3, ease: [0.22, 1, 0.36, 1] as const, delay });
   // one shared loop → demand curve, equilibrium point, guides & ticks stay locked together
   const loop = {
     duration: 6.5,
@@ -161,7 +162,7 @@ function HeroChart() {
         stroke="rgba(255,255,255,0.7)"
         strokeWidth={2.6}
         strokeLinecap="round"
-        initial={reduce ? false : { pathLength: 0 }}
+        initial={!first ? false : { pathLength: 0 }}
         animate={reduce ? {} : { pathLength: 1 }}
         transition={draw(0.5)}
       />
@@ -194,7 +195,7 @@ function HeroChart() {
           stroke="#D4B254"
           strokeWidth={3}
           strokeLinecap="round"
-          initial={reduce ? false : { pathLength: 0 }}
+          initial={!first ? false : { pathLength: 0 }}
           animate={reduce ? {} : { pathLength: 1 }}
           transition={draw(0.7)}
         />
@@ -215,7 +216,7 @@ function HeroChart() {
       </motion.g>
 
       {/* one-shot gold scan that sweeps across the chart on first load */}
-      {!reduce && (
+      {first && (
         <motion.rect
           y={56}
           width={50}
@@ -252,7 +253,7 @@ function HeroChart() {
         stroke="rgba(255,255,255,0.45)"
         strokeWidth={1.2}
         strokeDasharray="4 5"
-        initial={reduce ? false : { opacity: 0, x2: EQX[0], y1: EQY[0], y2: EQY[0] }}
+        initial={!first ? false : { opacity: 0, x2: EQX[0], y1: EQY[0], y2: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, x2: EQX, y1: EQY, y2: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.5, delay: 1.6 }, x2: loop, y1: loop, y2: loop }}
       />
@@ -264,7 +265,7 @@ function HeroChart() {
         stroke="rgba(255,255,255,0.45)"
         strokeWidth={1.2}
         strokeDasharray="4 5"
-        initial={reduce ? false : { opacity: 0, x1: EQX[0], x2: EQX[0], y1: EQY[0] }}
+        initial={!first ? false : { opacity: 0, x1: EQX[0], x2: EQX[0], y1: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, x1: EQX, x2: EQX, y1: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.5, delay: 1.6 }, x1: loop, x2: loop, y1: loop }}
       />
@@ -275,7 +276,7 @@ function HeroChart() {
         cy={EQY[0]}
         r={2.6}
         fill="#D4B254"
-        initial={reduce ? false : { opacity: 0, cy: EQY[0] }}
+        initial={!first ? false : { opacity: 0, cy: EQY[0] }}
         animate={reduce ? {} : { opacity: 1, cy: EQY }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cy: loop }}
       />
@@ -284,23 +285,19 @@ function HeroChart() {
         cy={214}
         r={2.6}
         fill="#D4B254"
-        initial={reduce ? false : { opacity: 0, cx: EQX[0] }}
+        initial={!first ? false : { opacity: 0, cx: EQX[0] }}
         animate={reduce ? {} : { opacity: 1, cx: EQX }}
         transition={reduce ? {} : { opacity: { duration: 0.4, delay: 1.8 }, cx: loop }}
       />
 
       {/* equilibrium point — glides along supply, always on the intersection */}
-      <motion.g
-        initial={{ x: 0, y: 0 }}
-        animate={reduce ? {} : { x: EQDX, y: EQDY }}
-        transition={reduce ? {} : loop}
-      >
+      <motion.g initial={{ x: 0, y: 0 }} animate={reduce ? {} : { x: EQDX, y: EQDY }} transition={reduce ? {} : loop}>
         <motion.circle
           cx={219}
           cy={140}
           r={16}
           fill="url(#eqGlow)"
-          initial={reduce ? false : { opacity: 0 }}
+          initial={!first ? false : { opacity: 0 }}
           animate={reduce ? {} : { opacity: [0.35, 0.75, 0.35] }}
           transition={reduce ? {} : { duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: 2 }}
         />
@@ -323,10 +320,10 @@ function HeroChart() {
           cy={140}
           r={5.5}
           fill="#D4B254"
-          initial={reduce ? false : { scale: 0 }}
+          initial={!first ? false : { scale: 0 }}
           animate={reduce ? {} : { scale: 1 }}
           transition={{ type: "spring", stiffness: 320, damping: 13, delay: 1.7 }}
-          style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212,178,84,0.9))" }}
+          style={{ transformOrigin: "219px 140px" }}
         />
         <motion.text
           x={230}
@@ -335,7 +332,7 @@ function HeroChart() {
           fontSize={12}
           fontWeight={600}
           fontFamily={MONO}
-          initial={reduce ? false : { opacity: 0 }}
+          initial={!first ? false : { opacity: 0 }}
           animate={reduce ? {} : { opacity: 1 }}
           transition={{ duration: 0.4, delay: 2 }}
         >
@@ -351,7 +348,7 @@ function HeroChart() {
    drawn — no live loops; this is a one-time reveal.                            */
 function IntroChart() {
   const ease = [0.22, 1, 0.36, 1] as const;
-  const SCALE = 0.34; // tighten the whole sequence (trimmed ~2s off the mobile intro)
+  const SCALE = 0.26; // tighten the whole sequence so it finishes inside the short mobile intro
   const drawIn = (delay: number, duration = 1.2) => ({
     pathLength: { duration: duration * SCALE, ease, delay: delay * SCALE },
     opacity: { duration: 0.3, delay: delay * SCALE },
@@ -527,7 +524,7 @@ function IntroChart() {
         cy={140}
         r={5.5}
         fill="#D4B254"
-        style={{ transformOrigin: "219px 140px", filter: "drop-shadow(0 0 5px rgba(212,178,84,0.9))" }}
+        style={{ transformOrigin: "219px 140px" }}
         initial={{ scale: 0 }}
         animate={{ scale: 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 13, delay: 2.6 }}
@@ -552,6 +549,13 @@ function IntroChart() {
 export function Hero() {
   const reduce = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
+  // the moving chart and ticking numbers only run while the hero is on screen
+  const onScreen = useInView(ref);
+  // the curves draw in once; coming back on screen just resumes the loop
+  const drawn = useRef(false);
+  useEffect(() => {
+    if (onScreen) drawn.current = true;
+  }, [onScreen]);
 
   // Scroll parallax + fade only on desktop — on mobile the panel sits below the
   // text, so fading the hero on scroll would blur it before it's fully seen.
@@ -566,13 +570,19 @@ export function Hero() {
 
   // Mobile-only intro: the equilibrium diagram draws itself, then swooshes away
   // to reveal the page (which loads underneath). Desktop/reduced-motion skip it.
+  // Shown once per visit (not on every return to the homepage), and a tap skips it.
   const [intro, setIntro] = useState(true);
   useEffect(() => {
-    if (reduce || !window.matchMedia("(max-width: 767px)").matches) {
+    let seen = false;
+    try {
+      seen = sessionStorage.getItem("cl-intro") === "1";
+      sessionStorage.setItem("cl-intro", "1");
+    } catch {}
+    if (seen || reduce || !window.matchMedia("(max-width: 767px)").matches) {
       setIntro(false);
       return;
     }
-    const t = window.setTimeout(() => setIntro(false), 3200);
+    const t = window.setTimeout(() => setIntro(false), 2600);
     return () => clearTimeout(t);
   }, [reduce]);
 
@@ -613,6 +623,7 @@ export function Hero() {
           <motion.div
             key="hero-intro"
             className="fixed inset-0 z-[60] flex items-center justify-center bg-white px-8 md:hidden"
+            onClick={() => setIntro(false)}
             initial={{ opacity: 1 }}
             exit={{
               opacity: 0,
@@ -631,9 +642,7 @@ export function Hero() {
               className="glass-navy flex w-full max-w-sm flex-col rounded-[28px] p-6"
             >
               <div className="mb-4 flex items-center justify-between">
-                <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
-                  Market Equilibrium
-                </span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">Market Equilibrium</span>
                 <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-gold">
                   <span className="h-1.5 w-1.5 animate-pulse-node rounded-full bg-gold" />
                   Live
@@ -700,15 +709,15 @@ export function Hero() {
               className="mt-8 flex items-center gap-4 text-base font-medium uppercase tracking-[0.18em] text-navy/75 md:gap-5 md:text-lg md:tracking-[0.3em]"
             >
               <span>Economics</span>
-              <span className="text-gold/70" aria-hidden="true">|</span>
+              <span className="text-gold/70" aria-hidden="true">
+                |
+              </span>
               <span>Business</span>
             </motion.div>
 
             {/* exam-board trust strip */}
             <motion.div variants={itemV} className="mt-8">
-              <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-navy/40">
-                Preparing students for
-              </p>
+              <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.24em] text-navy/40">Preparing students for</p>
               <div className="flex flex-nowrap items-center gap-x-3 md:flex-wrap md:gap-x-8 md:gap-y-4">
                 <img
                   src="/cambridge-logo.webp"
@@ -754,11 +763,9 @@ export function Hero() {
           >
             <div className="mb-4 flex items-center justify-between" style={{ transform: "translateZ(40px)" }}>
               <div className="flex items-baseline gap-2.5">
-                <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
-                  Market Equilibrium
-                </span>
+                <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">Market Equilibrium</span>
                 <span className="font-mono text-[13px] font-semibold tabular-nums text-white">
-                  {isDesktop ? <Live base={48.2} spread={0.6} ms={1300} format={fmtPrice} /> : fmtPrice(48.2)}
+                  {isDesktop ? <Live base={48.2} spread={0.6} ms={1300} format={fmtPrice} paused={!onScreen} /> : fmtPrice(48.2)}
                 </span>
               </div>
               <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-gold">
@@ -771,16 +778,13 @@ export function Hero() {
                 {/* Mount the animated chart only on desktop — on mobile the panel
                     is display:none, but its infinite SVG loops would still churn
                     the main thread every frame and stutter scrolling. */}
-                {isDesktop && <HeroChart />}
+                {isDesktop && <HeroChart key={onScreen ? "live" : "still"} still={!onScreen} intro={!drawn.current} />}
               </div>
             </div>
-            <div
-              className="mt-4 flex items-center justify-between border-t border-white/10 pt-4"
-              style={{ transform: "translateZ(30px)" }}
-            >
+            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-4" style={{ transform: "translateZ(30px)" }}>
               <span className="text-sm text-white/60">Equilibrium quantity</span>
               <span className="text-lg font-semibold tabular-nums text-gold">
-                {isDesktop ? <Live base={1240} spread={9} ms={1500} format={fmtQty} /> : fmtQty(1240)}
+                {isDesktop ? <Live base={1240} spread={9} ms={1500} format={fmtQty} paused={!onScreen} /> : fmtQty(1240)}
               </span>
             </div>
           </motion.div>

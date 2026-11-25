@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
 import { Play } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 import { SpotlightGrid } from "@/components/ui/spotlight-grid";
@@ -10,8 +10,7 @@ import { cn, spring } from "@/lib/utils";
 
 /* ---- chart geometry ---- */
 const XS = [40, 75, 110, 145, 180, 215, 250, 285];
-const toPath = (ys: number[], xs: number[] = XS) =>
-  ys.map((y, i) => `${i === 0 ? "M" : "L"}${xs[i]},${y}`).join(" ");
+const toPath = (ys: number[], xs: number[] = XS) => ys.map((y, i) => `${i === 0 ? "M" : "L"}${xs[i]},${y}`).join(" ");
 
 type Line = { ys: number[]; xs?: number[]; gold?: boolean; dashed?: boolean };
 type Model = {
@@ -30,16 +29,17 @@ const MODELS: Model[] = [
     cmd: "demand",
     domain: "Microeconomics",
     label: "Micro · demand & elasticity",
-    code: [
-      "import conceptlab.econ as ec",
-      'mkt = ec.market("good_x")',
-      "d = ec.demand(mkt).estimate()",
-      "print(d.ped, d.type)",
-    ],
+    code: ["import conceptlab.econ as ec", 'mkt = ec.market("good_x")', "d = ec.demand(mkt).estimate()", "print(d.ped, d.type)"],
     lines: [{ ys: [62, 80, 98, 114, 128, 140, 150, 158], gold: true }],
     scatter: [
-      [60, 70], [92, 86], [118, 104], [150, 112],
-      [176, 132], [208, 138], [238, 152], [272, 156],
+      [60, 70],
+      [92, 86],
+      [118, 104],
+      [150, 112],
+      [176, 132],
+      [208, 138],
+      [238, 152],
+      [272, 156],
     ],
     node: { x: 285, y: 158 },
     result: "PED ≈ −1.4 · elastic",
@@ -48,12 +48,7 @@ const MODELS: Model[] = [
     cmd: "inflation",
     domain: "Macroeconomics",
     label: "Macro · CPI & inflation",
-    code: [
-      "import conceptlab.macro as cl",
-      'cpi = cl.load("cpi_series")',
-      "m = cl.Inflation(cpi, target=2.0)",
-      "fit = m.solve()",
-    ],
+    code: ["import conceptlab.macro as cl", 'cpi = cl.load("cpi_series")', "m = cl.Inflation(cpi, target=2.0)", "fit = m.solve()"],
     lines: [
       { ys: [140, 118, 92, 72, 78, 98, 118, 128], gold: true },
       { ys: [146, 146, 146, 146, 146, 146, 146, 146], dashed: true },
@@ -71,23 +66,21 @@ const MODELS: Model[] = [
       "cost = bz.Cost(fixed=9000, var=6.5)",
       "be = bz.break_even(rev, cost)",
     ],
-    lines: [
-      { ys: [176, 154, 132, 110, 88, 66, 44, 30], gold: true },
-      { ys: [120, 116, 112, 108, 104, 100, 96, 92] },
-    ],
+    lines: [{ ys: [176, 154, 132, 110, 88, 66, 44, 30], gold: true }, { ys: [120, 116, 112, 108, 104, 100, 96, 92] }],
     node: { x: 149, y: 107 },
     result: "break-even Q = 1,240 units",
   },
 ];
 
 function ModelChart({ model, runKey }: { model: Model; runKey: number }) {
+  // the pulse only runs while the chart is on screen
+  const box = useRef<SVGSVGElement>(null);
   const reduce = useReducedMotion();
-  const draw = reduce
-    ? { duration: 0 }
-    : { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
+  const live = useInView(box);
+  const draw = reduce ? { duration: 0 } : { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const };
 
   return (
-    <svg viewBox="0 0 320 200" className="mx-auto h-full max-h-[210px] w-full max-w-[400px]">
+    <svg ref={box} viewBox="0 0 320 200" className="mx-auto h-full max-h-[210px] w-full max-w-[400px]">
       <g stroke="rgba(255,255,255,0.06)" strokeWidth={1}>
         {[60, 100, 140].map((y) => (
           <line key={y} x1={40} y1={y} x2={300} y2={y} />
@@ -139,7 +132,7 @@ function ModelChart({ model, runKey }: { model: Model; runKey: number }) {
           transition={{ type: "spring", stiffness: 380, damping: 13, delay: 0.7 }}
           style={{ transformOrigin: `${model.node.x}px ${model.node.y}px` }}
         />
-        {!reduce && (
+        {!reduce && live && (
           <motion.circle
             cx={model.node.x}
             cy={model.node.y}
@@ -254,8 +247,7 @@ export function Terminal() {
     sys: "text-white/40",
     ok: "text-white font-medium",
   };
-  const prefix = (l: LogLine) =>
-    l.kind === "sys" || l.kind === "ok" ? `> ${l.text}` : l.text;
+  const prefix = (l: LogLine) => (l.kind === "sys" || l.kind === "ok" ? `> ${l.text}` : l.text);
 
   return (
     <SpotlightGrid masked>
@@ -273,9 +265,7 @@ export function Terminal() {
             <Reveal>
               <div className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6">
                 <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <span className="font-mono text-[12px] text-white/55">
-                    The Lab Terminal
-                  </span>
+                  <span className="font-mono text-[12px] text-white/55">The Lab Terminal</span>
                   <span className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.2em] text-gold">
                     <span className={cn("h-1.5 w-1.5 rounded-full bg-gold", running && "animate-pulse-node")} />
                     {running ? "Running" : "Ready"}
@@ -303,9 +293,7 @@ export function Terminal() {
                 </div>
 
                 <div className="mt-4 border-t border-white/10 pt-4">
-                  <p className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">
-                    Choose a model
-                  </p>
+                  <p className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/40">Choose a model</p>
                   <div className="mb-4 flex flex-wrap gap-2">
                     {MODELS.map((m, i) => (
                       <button
@@ -315,7 +303,7 @@ export function Terminal() {
                           "rounded-full border px-4 py-1.5 text-[13px] font-medium tracking-tight transition-all duration-300 focus-gold",
                           selected === i
                             ? "border-gold bg-gold text-navy-deep shadow-[0_8px_20px_-8px_rgba(212,178,84,0.6)]"
-                            : "border-white/15 text-white/70 hover:border-gold hover:bg-gold hover:text-navy-deep"
+                            : "border-white/15 text-white/70 hover:border-gold hover:bg-gold hover:text-navy-deep",
                         )}
                       >
                         {m.domain}
@@ -327,9 +315,7 @@ export function Terminal() {
                       <Play size={15} className="fill-white" />
                       Run model
                     </LiquidButton>
-                    <span className="font-mono text-[12px] text-white/40">
-                      Active · {MODELS[selected].domain}
-                    </span>
+                    <span className="font-mono text-[12px] text-white/40">Active · {MODELS[selected].domain}</span>
                   </div>
                 </div>
               </div>
@@ -339,17 +325,11 @@ export function Terminal() {
             <Reveal delay={0.08}>
               <div ref={viewerRef} className="glass-navy-solid flex h-[472px] flex-col rounded-[24px] p-5 md:p-6 scroll-mt-20">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">
-                    Model Viewer
-                  </span>
+                  <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-white/55">Model Viewer</span>
                   {viewer ? (
-                    <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-semibold text-navy-deep">
-                      {viewer.domain}
-                    </span>
+                    <span className="rounded-full bg-gold px-3 py-1 text-[11px] font-semibold text-navy-deep">{viewer.domain}</span>
                   ) : (
-                    <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-medium text-white/50">
-                      Idle
-                    </span>
+                    <span className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-medium text-white/50">Idle</span>
                   )}
                 </div>
 

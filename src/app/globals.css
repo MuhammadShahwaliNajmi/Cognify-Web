@@ -46,14 +46,18 @@ body {
    with the monitor. The mobile/desktop layout switch itself is at md (768px). */
 /* Phones (<768) — mobile layout, fluid with the phone width. */
 @media (max-width: 767px) {
-  html { font-size: clamp(14px, 4vw, 18px); }
+  html {
+    font-size: clamp(14px, 4vw, 18px);
+  }
 }
 /* Tablets (768–1023, incl. iPad portrait) show the DESKTOP layout — scale the
    root font-size down so the whole rem-based layout shrinks to fit the narrower
    width and never overflows, but no further than still reads comfortably
    (12.3px at 768, meeting the desktop's 15px at 1024). */
 @media (min-width: 768px) and (max-width: 1023px) {
-  html { font-size: clamp(12px, 1.6vw, 15px); }
+  html {
+    font-size: clamp(12px, 1.6vw, 15px);
+  }
 }
 /* A portrait tablet is much taller than the hero's content: let the next
    section show instead of leaving the lower half of the screen empty. */
@@ -65,7 +69,9 @@ body {
 }
 /* Desktop (>=1024) — scales with the monitor: bigger = bigger, smaller = smaller. */
 @media (min-width: 1024px) {
-  html { font-size: clamp(15px, 1.02vw, 20px); }
+  html {
+    font-size: clamp(15px, 1.02vw, 20px);
+  }
 }
 
 ::selection {
@@ -88,7 +94,9 @@ body {
 ----------------------------------------------------------------- */
 .focus-gold:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--white), 0 0 0 4px var(--gold);
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 0 0 4px var(--gold);
   border-radius: 2px;
 }
 
@@ -116,19 +124,21 @@ body {
   z-index: 0;
   opacity: var(--spot-opacity, 0);
   transition: opacity 0.45s ease;
-  background: radial-gradient(
-    440px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(212,178,84, 0.1) 0%,
-    transparent 62%
-  );
+  background: radial-gradient(440px circle at var(--mx, 50%) var(--my, 50%), rgba(212, 178, 84, 0.1) 0%, transparent 62%);
 }
 
 .blink {
   animation: blink 1.1s steps(1) infinite;
 }
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
 }
 
 /* ---------------------------------------------------------------
@@ -141,8 +151,8 @@ body {
   pointer-events: none;
   background:
     radial-gradient(55rem 40rem at 8% -5%, rgba(26, 39, 68, 0.1), transparent 58%),
-    radial-gradient(48rem 38rem at 102% 95%, rgba(212,178,84, 0.14), transparent 58%),
-    radial-gradient(40rem 34rem at 80% 8%, rgba(212,178,84, 0.07), transparent 60%);
+    radial-gradient(48rem 38rem at 102% 95%, rgba(212, 178, 84, 0.14), transparent 58%),
+    radial-gradient(40rem 34rem at 80% 8%, rgba(212, 178, 84, 0.07), transparent 60%);
 }
 
 /* ---------------------------------------------------------------
@@ -154,25 +164,11 @@ body {
   box-shadow:
     0 36px 90px -34px rgba(8, 16, 33, 0.65),
     inset 0 1px 0 rgba(255, 255, 255, 0.14);
-  -webkit-backdrop-filter: blur(18px);
-  backdrop-filter: blur(18px);
 }
 
-/* Phones: backdrop blur is the single biggest scroll-jank source on mobile GPUs
-   (the backdrop is re-sampled and blurred every frame). Our glass surfaces are
-   near-opaque already, so dropping the blur is visually near-identical while
-   keeping scrolling at a smooth 60fps. glass-white leans a touch more opaque to
-   compensate for the lost frost. */
-@media (max-width: 767px) {
-  .glass-navy,
-  .glass-white {
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-  .glass-white {
-    background: rgba(255, 255, 255, 0.94);
-  }
-}
+/* No backdrop blur on any screen size: the backdrop is re-sampled and blurred every
+   frame (the biggest scroll-jank source, on laptops too). These surfaces are
+   near-opaque, so the blur was barely visible anyway. */
 
 .glass-navy-solid {
   background: #0e1a33;
@@ -183,11 +179,9 @@ body {
 }
 
 .glass-white {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.95);
   border: 1px solid rgba(26, 39, 68, 0.1);
   box-shadow: 0 14px 34px -14px rgba(26, 39, 68, 0.28);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
 }
 
 /* Moving specular sheen — the "liquid" wipe across a button */
