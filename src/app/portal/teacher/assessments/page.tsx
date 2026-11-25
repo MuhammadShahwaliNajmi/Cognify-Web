@@ -26,6 +26,7 @@ import {
   fieldCls,
 } from "@/components/portal/ui";
 import { StudentCell } from "@/components/portal/student-cell";
+import { GroupStatus, GroupWorkList, groupScore, groupWork } from "@/components/portal/group-work";
 import { QuestionPaperField, TypedAnswer, WorkFile, hasFile } from "@/components/portal/work";
 
 const STATE_LABEL: Record<AssessmentState, string> = {
@@ -375,20 +376,25 @@ export default function TeacherAssessments() {
   const editing = db.assignments.find((a) => a.id === editId);
 
   const cohorts = [...db.cohorts].sort((a, b) => a.name.localeCompare(b.name));
+  // one row per assessment; a group's row sums up its students (each attempt one click away)
   const rows = db.assignments
     .filter((a) => a.timeLimitMin && (who === "all" || a.cohortId === who))
-    // a group's assessment shows each student's attempt
-    .flatMap((a) => {
-      const who = db.students.filter((s) => s.cohortId === a.cohortId);
-      return (who.length ? who : [undefined]).map((student) => ({
-        a,
-        student,
-        state: student ? assessmentState(db, a, student.id, now) : ("upcoming" as AssessmentState),
-      }));
+    .map((a) => {
+      const group = cohortOf(db, a.cohortId).isGroup;
+      const student = group ? undefined : db.students.find((s) => s.cohortId === a.cohortId);
+      return { a, group, student, state: student ? assessmentState(db, a, student.id, now) : ("upcoming" as AssessmentState) };
     })
     .sort((x, y) => new Date(y.a.dueAt).getTime() - new Date(x.a.dueAt).getTime());
   const rowKey = (r: { a: { id: string }; student?: { id: string } }) => `${r.a.id}|${r.student?.id ?? ""}`;
-  const open = rows.find((r) => rowKey(r) === openId);
+  const [groupOpen, setGroupOpen] = useState<string | null>(null);
+  const groupA = db.assignments.find((a) => a.id === groupOpen);
+  // the attempt being looked at: "assessment|student"
+  const open = (() => {
+    if (!openId) return undefined;
+    const [aid, sid] = openId.split("|");
+    const a = db.assignments.find((x) => x.id === aid);
+    return a ? { a, student: db.students.find((s) => s.id === sid) } : undefined;
+  })();
   // same filters as Assignments (marking lives in Submissions)
   const [tab, setTab] = useState<"open" | "closed" | "all">("open");
   const upcoming = rows.filter((r) => new Date(r.a.dueAt).getTime() > now).reverse();
@@ -439,10 +445,11 @@ export default function TeacherAssessments() {
         {shown.length === 0 ? (
           <EmptyRow cols={6}>{tab === "open" ? "No upcoming assessments. Use New assessment to set one." : "Nothing here yet."}</EmptyRow>
         ) : (
-          shown.map(({ a, student, state }) => {
+          shown.map(({ a, group, student, state }) => {
             const sub = student ? submissionFor(db, a.id, student.id) : undefined;
+            const work = group ? groupWork(db, a, now) : [];
             return (
-              <RowLink key={rowKey({ a, student })} onClick={() => setOpenId(rowKey({ a, student }))}>
+              <RowLink key={a.id} onClick={() => (group ? setGroupOpen(a.id) : setOpenId(rowKey({ a, student })))}>
                 <Td>
                   <StudentCell db={db} cohortId={a.cohortId} name={student?.name} />
                 </Td>
@@ -454,10 +461,14 @@ export default function TeacherAssessments() {
                   {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
                 </Td>
                 <Td>
-                  <Status tone={tone(state)}>{student ? STATE_LABEL[state] : "Not joined"}</Status>
+                  {group ? <GroupStatus work={work} /> : <Status tone={tone(state)}>{student ? STATE_LABEL[state] : "Not joined"}</Status>}
                 </Td>
                 <Td align="right" className="whitespace-nowrap tabular-nums">
-                  {sub?.status === "marked" ? (
+                  {group ? (
+                    <span className={work.some((w) => w.sub?.status === "marked") ? "font-semibold text-navy" : "text-navy"}>
+                      {groupScore(a, work)}
+                    </span>
+                  ) : sub?.status === "marked" ? (
                     <span className="font-semibold">
                       {sub.marks} / {a.maxMarks}
                     </span>
@@ -497,6 +508,39 @@ export default function TeacherAssessments() {
         title="Edit assessment"
       >
         {editing && <AssessmentForm key={editing.id} cohorts={cohorts} editing={editing} onDone={() => setEditId(null)} />}
+      </Modal>
+
+      <Modal
+        open={!!groupA}
+        onClose={() => setGroupOpen(null)}
+        eyebrow={groupA ? `${cohortOf(db, groupA.cohortId).name} · start before ${fmtDate(groupA.dueAt)}` : undefined}
+        title={groupA?.title ?? ""}
+        actions={
+          groupA && (
+            <Btn
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setGroupOpen(null);
+                setEditId(groupA.id);
+              }}
+            >
+              <Pencil size={13} /> Edit
+            </Btn>
+          )
+        }
+      >
+        {groupA && (
+          <GroupWorkList
+            a={groupA}
+            work={groupWork(db, groupA, now)}
+            now={now}
+            onPick={(w) => {
+              setGroupOpen(null);
+              setOpenId(`${groupA.id}|${w.st.id}`);
+            }}
+          />
+        )}
       </Modal>
 
       <Modal open={!!open} onClose={() => setOpenId(null)} wide eyebrow={open?.student?.name} title={open?.a.title ?? ""}>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { cohortOf, topicOf } from "@/lib/portal/selectors";
+import { classLabel, cohortOf, topicOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { DAY, HOUR, fmtDateLong, fmtDay, fmtDuration, fmtRelative, fmtTime, sessionState } from "@/lib/portal/format";
 import { flagKey, needsAttention, type Flag } from "@/lib/portal/insights";
@@ -97,7 +97,7 @@ export default function TeacherDashboard() {
                   return (
                     <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
                       <Td className="whitespace-nowrap font-bold tabular-nums">{fmtTime(s.start)}</Td>
-                      <Td className="font-medium">{cohortOf(db, s.cohortId).name}</Td>
+                      <Td className="font-medium">{classLabel(cohortOf(db, s.cohortId))}</Td>
                       <Td>{topicOf(s) || s.title}</Td>
                       <Td align="right">
                         {/* stop the row click from also opening the dialog */}

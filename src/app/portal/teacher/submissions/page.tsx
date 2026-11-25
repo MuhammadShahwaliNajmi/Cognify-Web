@@ -4,7 +4,7 @@ import { Suspense, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Paperclip, Send, Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { gradingText, scoreText } from "@/lib/portal/selectors";
+import { classLabel, gradingText, scoreText } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { HOUR, fmtBytes, fmtDate, fmtDuration, fmtRelative, fmtTime } from "@/lib/portal/format";
 import { WorkAndFeedbackFiles, cleanPoint } from "@/components/portal/work";
@@ -264,7 +264,9 @@ function Submissions() {
   const [who, setWho] = useState("all");
   const [openId, setOpenId] = useState<string | null>(params.get("open"));
 
-  const subs = db.submissions.filter((x) => who === "all" || x.studentId === who);
+  // a student, or a whole group ("g:<class id>")
+  const inGroup = (studentId: string) => db.students.find((s) => s.id === studentId)?.cohortId === who.slice(2);
+  const subs = db.submissions.filter((x) => who === "all" || x.studentId === who || (who.startsWith("g:") && inGroup(x.studentId)));
   const queue = subs
     .filter((x) => x.status === "submitted")
     .sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime());
@@ -301,6 +303,7 @@ function Submissions() {
           onChange={setWho}
           options={[
             { value: "all", label: "All students" },
+            ...db.cohorts.filter((c) => c.isGroup).map((c) => ({ value: `g:${c.id}`, label: classLabel(c) })),
             ...[...db.students].sort((a, b) => a.name.localeCompare(b.name)).map((s) => ({ value: s.id, label: s.name })),
           ]}
         />

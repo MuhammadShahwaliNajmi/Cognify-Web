@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, UserPlus } from "lucide-react";
+import { Download, UserPlus, Users } from "lucide-react";
 import { attendancePct, averagePct, cohortOf } from "@/lib/portal/selectors";
 import { useTeacher } from "@/lib/portal/store";
 import { exportAttendance, exportGrades } from "@/lib/portal/export";
@@ -29,9 +29,47 @@ export default function TeacherStudents() {
   // students whose access is off stay listed (marked), so they can be turned back on or deleted
   const off = new Set(db.inactive.map((s) => s.id));
   const everyone = [...db.students, ...db.inactive.filter((s) => db.cohorts.some((c) => c.id === s.cohortId))];
-  const students = everyone.sort((a, b) => a.name.localeCompare(b.name));
   const open = everyone.find((s) => s.id === openId) ?? null;
-  const waiting = db.cohorts.filter((c) => !everyone.some((s) => s.cohortId === c.id));
+  // one-to-one students and groups in one alphabetical list; a group's students sit under its own row
+  const groups = db.cohorts.filter((c) => c.isGroup);
+  const entries = [
+    ...everyone.filter((st) => !cohortOf(db, st.cohortId).isGroup).map((st) => ({ name: st.name, st, group: undefined })),
+    ...groups.map((g) => ({ name: g.name, st: undefined, group: g })),
+  ].sort((a, b) => a.name.localeCompare(b.name));
+  const waiting = db.cohorts.filter((c) => !c.isGroup && !everyone.some((s) => s.cohortId === c.id));
+  const studentRow = (s: (typeof everyone)[number], inGroup: boolean) => {
+    const avg = averagePct(db, s.id);
+    const c = cohortOf(db, s.cohortId);
+    return (
+      <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
+        <Td className={inGroup ? "!pl-12" : undefined}>
+          <span className="block font-medium text-navy">
+            {s.name}
+            {off.has(s.id) && (
+              <span className="ml-2 align-middle">
+                <Status>Access off</Status>
+              </span>
+            )}
+          </span>
+          <span className="block text-[12px] text-navy">{s.email}</span>
+        </Td>
+        <Td className="whitespace-nowrap">
+          {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
+          {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
+        </Td>
+        <Td align="right" className="tabular-nums">
+          {attendancePct(db, s.id, s.cohortId, now)}%
+        </Td>
+        <Td align="right" className="tabular-nums">
+          {avg !== null ? `${avg}%` : "–"}
+        </Td>
+        <Td align="right" className="font-semibold text-navy">
+          {predictGrade(db, s, now)?.grade ?? "–"}
+        </Td>
+        <Td align="right">{s.target || "–"}</Td>
+      </RowLink>
+    );
+  };
 
   return (
     <>
@@ -63,57 +101,57 @@ export default function TeacherStudents() {
           { label: "Target", align: "right" },
         ]}
       >
-        {students.length === 0 && waiting.length === 0 ? (
+        {entries.length === 0 && waiting.length === 0 ? (
           <EmptyRow cols={6}>No students yet.</EmptyRow>
         ) : (
           <>
-            {students.map((s) => {
-              const avg = averagePct(db, s.id);
-              const c = cohortOf(db, s.cohortId);
-              return (
-                <RowLink key={s.id} onClick={() => setOpenId(s.id)}>
+            {entries.flatMap(({ st, group }) => {
+              if (!group) return [studentRow(st!, false)];
+              const members = everyone.filter((x) => x.cohortId === group.id).sort((a, b) => a.name.localeCompare(b.name));
+              return [
+                <RowLink key={`g${group.id}`} onClick={() => setSetupId(group.id)}>
                   <Td>
-                    <span className="block font-medium text-navy">
-                      {s.name}
-                      {off.has(s.id) && (
-                        <span className="ml-2 align-middle">
-                          <Status>Access off</Status>
+                    <span className="flex items-center gap-2.5">
+                      <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-gold text-navy-deep">
+                        <Users size={14} />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-navy">{group.name}</span>
+                        <span className="block text-[12px] text-navy">
+                          Group of {members.length} · join code {group.joinCode}
                         </span>
-                      )}
+                      </span>
                     </span>
-                    <span className="block text-[12px] text-navy">{c.isGroup ? `Group: ${c.name}` : s.email}</span>
                   </Td>
                   <Td className="whitespace-nowrap">
-                    {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
-                    {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
+                    {[group.board, group.subject].filter(Boolean).join(" · ") || "—"}
+                    {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(group.id)}</span>}
                   </Td>
-                  <Td align="right" className="tabular-nums">
-                    {attendancePct(db, s.id, s.cohortId, now)}%
+                  <Td colSpan={4} align="right">
+                    {members.length ? (
+                      <span className="text-[13px] font-semibold text-navy underline decoration-gold decoration-2 underline-offset-4">
+                        Group settings
+                      </span>
+                    ) : (
+                      <Status tone="attention">No students yet</Status>
+                    )}
                   </Td>
-                  <Td align="right" className="tabular-nums">
-                    {avg !== null ? `${avg}%` : "–"}
-                  </Td>
-                  <Td align="right" className="font-semibold text-navy">
-                    {predictGrade(db, s, now)?.grade ?? "–"}
-                  </Td>
-                  <Td align="right">{s.target || "–"}</Td>
-                </RowLink>
-              );
+                </RowLink>,
+                ...members.map((m) => studentRow(m, true)),
+              ];
             })}
             {waiting.map((c) => (
               <RowLink key={c.id} onClick={() => setSetupId(c.id)}>
                 <Td>
                   <span className="block font-medium text-navy">{c.name}</span>
-                  <span className="block text-[12px] text-navy">
-                    {c.isGroup ? "Group · " : ""}Join code {c.joinCode}
-                  </span>
+                  <span className="block text-[12px] text-navy">Join code {c.joinCode}</span>
                 </Td>
                 <Td className="whitespace-nowrap">
                   {[c.board, c.subject].filter(Boolean).join(" · ") || "—"}
                   {me.isAdmin && <span className="block text-[12px] text-navy">Teacher: {teacherName(c.id)}</span>}
                 </Td>
                 <Td colSpan={4} align="right">
-                  <Status tone="attention">{c.isGroup ? "No students yet" : "Not joined yet"}</Status>
+                  <Status tone="attention">Not joined yet</Status>
                 </Td>
               </RowLink>
             ))}
@@ -141,7 +179,7 @@ export default function TeacherStudents() {
       <Modal
         open={!!setupId}
         onClose={() => setSetupId(null)}
-        eyebrow="Not joined yet"
+        eyebrow={cohortOf(db, setupId ?? "").isGroup ? "Group class" : "Not joined yet"}
         title={db.cohorts.find((c) => c.id === setupId)?.name ?? ""}
       >
         {setupId && (

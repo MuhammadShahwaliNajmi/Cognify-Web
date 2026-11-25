@@ -8,7 +8,7 @@ import type { Snapshot } from "./data";
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-export function demoSnapshot(role: "teacher" | "student"): Snapshot {
+export function demoSnapshot(role: "teacher" | "student" | "group"): Snapshot {
   const now = Date.now();
   const at = (ms: number) => new Date(now + ms).toISOString();
   /** today (or +days) at a local hour */
@@ -164,6 +164,7 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
     { cohort_id: 102, weekday: 2, start_time: "19:00:00", duration_min: 60 },
     { cohort_id: 103, weekday: 3, start_time: "16:00:00", duration_min: 60 },
     { cohort_id: 103, weekday: 6, start_time: "11:00:00", duration_min: 75 },
+    { cohort_id: 106, weekday: 2, start_time: "17:00:00", duration_min: 90 },
   ];
 
   let sid = 0;
@@ -195,9 +196,13 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
     cls(102, day(5, 19), 60),
     cls(101, day(6, 18), 60),
     cls(101, day(9, 17, 30), 90),
+    // the group class: everyone shares the class, attendance is per student
+    cls(106, day(-7, 17), 90, undefined, { unit: "Macro objectives", attendance: { "14": true, "15": true } }),
+    cls(106, day(-0.5, 17), 90, undefined, { unit: "Fiscal policy", attendance: { "14": true, "15": false } }),
+    cls(106, day(1, 17), 90),
   ];
 
-  const folders: Snapshot["folders"] = [101, 102, 103, 104].flatMap((c, i) =>
+  const folders: Snapshot["folders"] = [101, 102, 103, 104, 106].flatMap((c, i) =>
     ["Notes", "Books", "Other"].map((name, j) => ({ id: 1000 + i * 10 + j, cohort_id: c, parent_id: null, name })),
   );
   const resources: Snapshot["resources"] = [
@@ -300,6 +305,9 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
     asg(8, 101, "Unit 2 test: market failure", "Assessment", "Market failure", at(2 * DAY), 20, 45),
     asg(9, 102, "Mid-term: theory of the firm", "Assessment", "Theory of the firm", at(-3 * DAY), 30, 60),
     asg(10, 103, "Quiz: business objectives", "Assessment", "Business objectives", at(5 * DAY), 15, 30),
+    asg(11, 106, "Evaluate expansionary fiscal policy", "Essay", "Evaluate expansionary fiscal policy", at(-1 * DAY), 15),
+    { ...asg(12, 106, "Macro objectives worksheet", "Worksheet", "Macro objectives worksheet", at(3 * DAY), 1), grading: "complete" },
+    asg(13, 106, "Unit 3 test: macroeconomics", "Assessment", "Unit 3 test: macroeconomics", at(4 * DAY), 25, 50),
   ];
   const sub = (
     id: number,
@@ -340,6 +348,9 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
       drive_file_id: null,
       answer_text: "A monopolist is a price maker because it faces the market demand curve…",
     }),
+    // the group: Ali's essay is marked, Mehr's is waiting
+    sub(6, 11, 14, at(-1.3 * DAY), 12),
+    sub(7, 11, 15, at(-1.1 * DAY), null),
   ];
 
   const snap: Snapshot = {
@@ -373,6 +384,13 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
         title: "Homework deadline moved",
         body: "The break-even worksheet is now due on Friday.",
         created_at: at(-9 * DAY),
+      },
+      {
+        id: 4,
+        cohort_id: 106,
+        title: "Group class moves online next week",
+        body: "Same time, same Meet link. Bring your fiscal policy notes.",
+        created_at: at(-2 * HOUR),
       },
     ],
     mastery: [
@@ -416,14 +434,16 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
   };
   if (role === "teacher") return snap;
 
-  // a student only ever receives their own class
-  const mine = 101;
+  // a student only ever receives their own class ("group": Ali, in the group class)
+  const mine = role === "group" ? 106 : 101;
+  const meId = role === "group" ? 14 : 11;
   const own = <T extends { cohort_id: number | null }>(rows: T[]) => rows.filter((r) => r.cohort_id === mine);
   const myAssignments = new Set(own(snap.assignments).map((a) => a.id));
   const mySessions = new Set(own(snap.sessions).map((s) => s.id));
   return {
     ...snap,
-    members: snap.members.filter((m) => m.id === 11),
+    me: meId,
+    members: snap.members.filter((m) => m.id === meId),
     cohorts: snap.cohorts.filter((c) => c.id === mine),
     timetable: own(snap.timetable),
     sessions: own(snap.sessions),
@@ -431,12 +451,12 @@ export function demoSnapshot(role: "teacher" | "student"): Snapshot {
     folders: own(snap.folders),
     assignments: own(snap.assignments),
     announcements: snap.announcements.filter((a) => a.cohort_id === null || a.cohort_id === mine),
-    submissions: snap.submissions.filter((x) => x.member_id === 11),
-    mastery: snap.mastery.filter((m) => m.member_id === 11),
-    requests: snap.requests.filter((r) => r.member_id === 11 && mySessions.has(r.session_id)),
-    attempts: snap.attempts.filter((t) => t.member_id === 11),
+    submissions: snap.submissions.filter((x) => x.member_id === meId),
+    mastery: snap.mastery.filter((m) => m.member_id === meId),
+    requests: snap.requests.filter((r) => r.member_id === meId && mySessions.has(r.session_id)),
+    attempts: snap.attempts.filter((t) => t.member_id === meId),
     questions: snap.questions.filter(
-      (q) => myAssignments.has(q.assignment_id) && snap.attempts.some((t) => t.member_id === 11 && t.assignment_id === q.assignment_id),
+      (q) => myAssignments.has(q.assignment_id) && snap.attempts.some((t) => t.member_id === meId && t.assignment_id === q.assignment_id),
     ),
   };
 }

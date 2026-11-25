@@ -9,8 +9,9 @@ import { StudentCell } from "@/components/portal/student-cell";
 import { uploadFile } from "@/lib/portal/storage";
 import { DAY, dateInput, fmtDate, fmtRelative, fmtTime, timeInput } from "@/lib/portal/format";
 import { ASSIGNMENT_KINDS, GRADINGS, type Assignment, type AssignmentKind, type Grading } from "@/lib/portal/types";
-import { classLabel, gradingText, scoreText, studentsIn } from "@/lib/portal/selectors";
+import { classLabel, cohortOf, gradingText, scoreText, studentsIn } from "@/lib/portal/selectors";
 import { QuestionPaperField } from "@/components/portal/work";
+import { GroupStatus, GroupWorkList, groupScore, groupWork } from "@/components/portal/group-work";
 import {
   Btn,
   EmptyRow,
@@ -274,6 +275,8 @@ export default function TeacherAssignments() {
   const [creating, setCreating] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [copyFrom, setCopyFrom] = useState<Assignment | null>(null);
+  const [groupOpen, setGroupOpen] = useState<string | null>(null);
+  const groupA = db.assignments.find((a) => a.id === groupOpen);
   const editing = db.assignments.find((a) => a.id === editId);
 
   // all students by default; pick one to narrow it down
@@ -333,81 +336,117 @@ export default function TeacherAssignments() {
           {list.length === 0 ? (
             <EmptyRow cols={6}>{tab === "open" ? "No open assignments. Use New assignment to set one." : "Nothing here yet."}</EmptyRow>
           ) : (
-            list
-              .flatMap((a) => {
-                const who = studentsIn(db, a.cohortId);
-                return (who.length ? who : [undefined]).map((st) => ({ a, st }));
-              })
-              .map(({ a, st }) => {
-                const sub = st ? db.submissions.find((x) => x.assignmentId === a.id && x.studentId === st.id) : undefined;
-                const due = new Date(a.dueAt).getTime() - now;
-                const cells = (
-                  <>
-                    <Td>
-                      <StudentCell db={db} cohortId={a.cohortId} name={st?.name} />
-                    </Td>
-                    <Td className="text-navy">
-                      <span className="inline-flex items-center gap-1.5 font-medium">
-                        {a.title}
-                        {(a.attachmentFileId || a.attachmentUrl) && (
-                          <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
-                        )}
+            list.map((a) => {
+              // a group class: one row for the group, each student's hand-in one click away
+              const group = cohortOf(db, a.cohortId).isGroup;
+              const work = group ? groupWork(db, a, now) : [];
+              const st = group ? undefined : studentsIn(db, a.cohortId)[0];
+              const sub = st ? db.submissions.find((x) => x.assignmentId === a.id && x.studentId === st.id) : undefined;
+              const due = new Date(a.dueAt).getTime() - now;
+              const cells = (
+                <>
+                  <Td>
+                    <StudentCell db={db} cohortId={a.cohortId} name={st?.name} />
+                  </Td>
+                  <Td className="text-navy">
+                    <span className="inline-flex items-center gap-1.5 font-medium">
+                      {a.title}
+                      {(a.attachmentFileId || a.attachmentUrl) && (
+                        <Paperclip size={13} aria-label="Question paper attached" className="shrink-0" />
+                      )}
+                    </span>
+                    <span className="block text-[12px]">{a.kind}</span>
+                  </Td>
+                  <Td className="whitespace-nowrap">
+                    {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
+                  </Td>
+                  <Td>
+                    {group ? (
+                      <GroupStatus work={work} />
+                    ) : sub?.status === "marked" ? (
+                      <Status tone="done">Returned</Status>
+                    ) : sub ? (
+                      <Status tone="attention">To mark</Status>
+                    ) : due < 0 ? (
+                      <Status tone="attention">Overdue</Status>
+                    ) : (
+                      <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
+                    )}
+                  </Td>
+                  <Td align="right" className="whitespace-nowrap tabular-nums">
+                    {group ? (
+                      <span className={work.some((w) => w.sub?.status === "marked") ? "font-semibold text-navy" : "text-navy"}>
+                        {groupScore(a, work)}
                       </span>
-                      <span className="block text-[12px]">{a.kind}</span>
-                    </Td>
-                    <Td className="whitespace-nowrap">
-                      {fmtDate(a.dueAt)}, {fmtTime(a.dueAt)}
-                    </Td>
-                    <Td>
-                      {sub?.status === "marked" ? (
-                        <Status tone="done">Returned</Status>
-                      ) : sub ? (
-                        <Status tone="attention">To mark</Status>
-                      ) : due < 0 ? (
-                        <Status tone="attention">Overdue</Status>
-                      ) : (
-                        <span className="text-navy">Due {fmtRelative(a.dueAt, now)}</span>
-                      )}
-                    </Td>
-                    <Td align="right" className="whitespace-nowrap tabular-nums">
-                      {sub?.status === "marked" ? (
-                        <span className="font-semibold text-navy">{scoreText(a, sub.marks)}</span>
-                      ) : (
-                        <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
-                      )}
-                    </Td>
-                    <Td align="right">
-                      <button
-                        type="button"
-                        aria-label={`Edit ${a.title}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditId(a.id);
-                        }}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    </Td>
-                  </>
-                );
-                return sub ? (
-                  <RowLink
-                    key={`${a.id}-${st?.id ?? ""}`}
-                    onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}
-                  >
-                    {cells}
-                  </RowLink>
-                ) : (
-                  <RowLink key={`${a.id}-${st?.id ?? ""}`} onClick={() => setEditId(a.id)}>
-                    {cells}
-                  </RowLink>
-                );
-              })
+                    ) : sub?.status === "marked" ? (
+                      <span className="font-semibold text-navy">{scoreText(a, sub.marks)}</span>
+                    ) : (
+                      <span className="text-navy">{a.grading === "marks" ? `– / ${a.maxMarks}` : gradingText(a)}</span>
+                    )}
+                  </Td>
+                  <Td align="right">
+                    <button
+                      type="button"
+                      aria-label={`Edit ${a.title}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditId(a.id);
+                      }}
+                      onKeyDown={(e) => e.stopPropagation()}
+                      className="grid h-10 w-10 place-items-center rounded-md text-navy hover:bg-navy/[0.06] focus-gold"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  </Td>
+                </>
+              );
+              return group ? (
+                <RowLink key={a.id} onClick={() => setGroupOpen(a.id)}>
+                  {cells}
+                </RowLink>
+              ) : sub ? (
+                <RowLink key={`${a.id}-${st?.id ?? ""}`} onClick={() => router.push(`/portal/teacher/submissions/?back=1&open=${sub.id}`)}>
+                  {cells}
+                </RowLink>
+              ) : (
+                <RowLink key={`${a.id}-${st?.id ?? ""}`} onClick={() => setEditId(a.id)}>
+                  {cells}
+                </RowLink>
+              );
+            })
           )}
         </Table>
       </div>
+
+      <Modal
+        open={!!groupA}
+        onClose={() => setGroupOpen(null)}
+        eyebrow={groupA ? `${cohortOf(db, groupA.cohortId).name} · due ${fmtDate(groupA.dueAt)}` : undefined}
+        title={groupA?.title ?? ""}
+        actions={
+          groupA && (
+            <Btn
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setGroupOpen(null);
+                setEditId(groupA.id);
+              }}
+            >
+              <Pencil size={13} /> Edit
+            </Btn>
+          )
+        }
+      >
+        {groupA && (
+          <GroupWorkList
+            a={groupA}
+            work={groupWork(db, groupA, now)}
+            now={now}
+            onPick={(w) => w.sub && router.push(`/portal/teacher/submissions/?back=1&open=${w.sub.id}`)}
+          />
+        )}
+      </Modal>
 
       <Modal open={creating} onClose={() => setCreating(false)} title="New assignment">
         <AssignmentForm cohortId={cohort?.id ?? ""} onDone={() => setCreating(false)} />

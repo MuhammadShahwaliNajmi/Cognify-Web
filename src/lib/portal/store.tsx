@@ -225,7 +225,7 @@ export function PortalProvider({ children }: { children: React.ReactNode }) {
       const asked = new URLSearchParams(window.location.search).get("demo");
       if (asked) sessionStorage.setItem("cl-demo", asked);
       const role = sessionStorage.getItem("cl-demo");
-      if (role === "teacher" || role === "student") {
+      if (role === "teacher" || role === "student" || role === "group") {
         import("./demo").then((m) => {
           setPortal(toPortal(m.demoSnapshot(role)));
           setStatus("ready");

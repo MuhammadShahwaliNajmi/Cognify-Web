@@ -83,7 +83,7 @@ export default function StudentDashboard() {
           {next && (
             <section>
               <SectionTitle>Next class</SectionTitle>
-              <NextClassCard session={next} />
+              <NextClassCard session={next} cohortLabel={cohortOf(db, me.cohortId).isGroup ? cohortOf(db, me.cohortId).name : undefined} />
             </section>
           )}
 

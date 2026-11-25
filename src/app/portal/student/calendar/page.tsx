@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { topicOf, workHref } from "@/lib/portal/selectors";
+import { cohortOf, topicOf, workHref } from "@/lib/portal/selectors";
 import { projectSeries } from "@/lib/portal/series";
 import { useStudent } from "@/lib/portal/store";
 import { sessionState } from "@/lib/portal/format";
@@ -28,12 +28,14 @@ export default function StudentCalendar() {
       start: s.start,
       durationMin: s.durationMin,
       title: s.title,
-      sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending") ? "Change requested" : topicOf(s) || `${s.durationMin} min`,
+      sub: db.requests.some((r) => r.sessionId === s.id && r.status === "pending")
+        ? "Change requested"
+        : topicOf(s) || `${s.durationMin} min`,
       kind: "class",
       live: sessionState(s.start, s.durationMin, now) === "live",
       onClick: () => setOpen(s),
     }),
-    [db.requests, now]
+    [db.requests, now],
   );
 
   const events: CalEvent[] = [
@@ -51,10 +53,13 @@ export default function StudentCalendar() {
   ];
   // repeating classes run on until stopped: draw the ones beyond what's stored
   const extra = useCallback(
-    (from: Date, to: Date) => projectSeries(db, from, to).filter((s) => s.cohortId === me.cohortId).map(toEvent),
-    [db, me.cohortId, toEvent]
+    (from: Date, to: Date) =>
+      projectSeries(db, from, to)
+        .filter((s) => s.cohortId === me.cohortId)
+        .map(toEvent),
+    [db, me.cohortId, toEvent],
   );
-  const shown = useMemo(() => (open && !open.virtual ? sessions.find((s) => s.id === open.id) ?? null : open), [open, sessions]);
+  const shown = useMemo(() => (open && !open.virtual ? (sessions.find((s) => s.id === open.id) ?? null) : open), [open, sessions]);
 
   return (
     <>
@@ -62,7 +67,7 @@ export default function StudentCalendar() {
         title="Calendar"
         actions={
           <>
-            <RequestChange />
+            {!cohortOf(db, me.cohortId).isGroup && <RequestChange />}
             <CalendarSync />
           </>
         }

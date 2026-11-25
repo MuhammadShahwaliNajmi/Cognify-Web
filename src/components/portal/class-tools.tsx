@@ -6,7 +6,18 @@ import { cn } from "@/lib/utils";
 import { cohortOf, meetLink, topicOf } from "@/lib/portal/selectors";
 import { DAY_LONG, DAY_SHORT, describeRule, isoDayOf, lastDayAfter, ruleOf, ymd, type Rule } from "@/lib/portal/series";
 import { usePortal } from "@/lib/portal/store";
-import { DAY, dateInput, fmtDateLong, fmtTime, isDriveUrl, sessionState, timeInput, minutesBetween, classLengthOk, fmtLength } from "@/lib/portal/format";
+import {
+  DAY,
+  dateInput,
+  fmtDateLong,
+  fmtTime,
+  isDriveUrl,
+  sessionState,
+  timeInput,
+  minutesBetween,
+  classLengthOk,
+  fmtLength,
+} from "@/lib/portal/format";
 import type { ClassRequest, Resource, Session } from "@/lib/portal/types";
 import { AutoTextarea, Btn, Field, Label, Modal, Status, fieldCls, labelCls } from "./ui";
 import { JoinButton, MeetLinkForm, useTick } from "./classroom";
@@ -51,7 +62,14 @@ export function repeatFrom(rule: Pick<Rule, "weekdays" | "everyWeeks" | "endsOn"
         : rule.weekdays.length === 1 && rule.weekdays[0] === isoDayOf(day)
           ? "weekly"
           : "custom";
-  return { ...base, mode, weekdays: rule.weekdays, everyWeeks: rule.everyWeeks, ends: rule.endsOn ? "on" : "never", endsOn: rule.endsOn ?? base.endsOn };
+  return {
+    ...base,
+    mode,
+    weekdays: rule.weekdays,
+    everyWeeks: rule.everyWeeks,
+    ends: rule.endsOn ? "on" : "never",
+    endsOn: rule.endsOn ?? base.endsOn,
+  };
 }
 
 /** Days / every N weeks / last day for the database, or null for a one-off class. */
@@ -63,7 +81,11 @@ export function ruleFrom(r: Repeat, day: string): RuleParts | null {
   const weekdays = r.weekdays.length ? [...r.weekdays].sort() : [isoDayOf(day)];
   const everyWeeks = clamp(r.everyWeeks || 1, 1, 12);
   const endsOn =
-    r.ends === "on" ? r.endsOn || null : r.ends === "after" ? lastDayAfter({ weekdays, everyWeeks, startsOn: day }, Math.max(1, r.count || 1)) : null;
+    r.ends === "on"
+      ? r.endsOn || null
+      : r.ends === "after"
+        ? lastDayAfter({ weekdays, everyWeeks, startsOn: day }, Math.max(1, r.count || 1))
+        : null;
   return { weekdays, everyWeeks, endsOn };
 }
 
@@ -123,7 +145,7 @@ function RepeatPicker({ value, onChange, day }: { value: Repeat; onChange: (r: R
                     onClick={() => set({ weekdays: on ? value.weekdays.filter((x) => x !== i + 1) : [...value.weekdays, i + 1].sort() })}
                     className={cn(
                       "grid h-9 w-9 place-items-center rounded-full text-[13px] font-semibold transition-colors focus-gold",
-                      on ? "bg-navy text-white" : "bg-navy/[0.06] text-navy hover:bg-navy/[0.12]"
+                      on ? "bg-navy text-white" : "bg-navy/[0.06] text-navy hover:bg-navy/[0.12]",
                     )}
                   >
                     {d.slice(0, 1)}
@@ -137,7 +159,13 @@ function RepeatPicker({ value, onChange, day }: { value: Repeat; onChange: (r: R
             <span className={labelCls}>Ends</span>
             <div className="mt-2 space-y-2.5 text-[15px] text-navy">
               <label className="flex items-center gap-2.5">
-                <input type="radio" name="ends" className={radio} checked={value.ends === "never"} onChange={() => set({ ends: "never" })} />
+                <input
+                  type="radio"
+                  name="ends"
+                  className={radio}
+                  checked={value.ends === "never"}
+                  onChange={() => set({ ends: "never" })}
+                />
                 Never
               </label>
               <label className="flex flex-wrap items-center gap-2.5">
@@ -152,7 +180,13 @@ function RepeatPicker({ value, onChange, day }: { value: Repeat; onChange: (r: R
                 />
               </label>
               <label className="flex flex-wrap items-center gap-2.5">
-                <input type="radio" name="ends" className={radio} checked={value.ends === "after"} onChange={() => set({ ends: "after" })} />
+                <input
+                  type="radio"
+                  name="ends"
+                  className={radio}
+                  checked={value.ends === "after"}
+                  onChange={() => set({ ends: "after" })}
+                />
                 After
                 <input
                   type="number"
@@ -304,7 +338,7 @@ function ScopePicker({ value, onChange, allowThis = true }: { value: Scope; onCh
           onClick={() => onChange(o.value)}
           className={cn(
             "rounded-full border px-3.5 py-1.5 text-[13px] font-semibold transition-colors focus-gold",
-            value === o.value ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]"
+            value === o.value ? "border-navy bg-navy text-white" : "border-navy/20 text-navy hover:bg-navy/[0.05]",
           )}
         >
           {o.label}
@@ -358,7 +392,8 @@ export function MoveSeriesDialog({
       {move && (
         <div className="space-y-5">
           <p className="text-[15px] text-navy">
-            New time: {fmtDateLong(move.start)}, {fmtTime(move.start)} – {fmtTime(new Date(new Date(move.start).getTime() + move.durationMin * 60_000).toISOString())}
+            New time: {fmtDateLong(move.start)}, {fmtTime(move.start)} –{" "}
+            {fmtTime(new Date(new Date(move.start).getTime() + move.durationMin * 60_000).toISOString())}
           </p>
           <div className="flex flex-col gap-2.5">
             {SCOPES.filter((o) => !move.session.virtual || o.value !== "this").map((o) => (
@@ -433,7 +468,12 @@ function NotesField({ session }: { session: Session }) {
   return (
     <div>
       <Field label="Lesson notes">
-        <AutoTextarea value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={4000} placeholder="What we covered, and what to do before next class" />
+        <AutoTextarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          maxLength={4000}
+          placeholder="What we covered, and what to do before next class"
+        />
       </Field>
       <Btn
         variant="navy"
@@ -456,7 +496,13 @@ function RecordingField({ session }: { session: Session }) {
     <div className="flex flex-wrap items-end gap-2.5">
       <div className="min-w-0 flex-1 basis-60">
         <Field label="Recording (Google Drive link)">
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://drive.google.com/file/d/…" inputMode="url" className={fieldCls} />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://drive.google.com/file/d/…"
+            inputMode="url"
+            className={fieldCls}
+          />
         </Field>
       </div>
       <Btn
@@ -473,7 +519,17 @@ function RecordingField({ session }: { session: Session }) {
 }
 
 /** Teacher: change a class — name, topic, time and how it repeats (Google Calendar's edit). */
-function EditClassForm({ session, rule, onDone, onCancel }: { session: Session; rule: Rule | null; onDone: () => void; onCancel: () => void }) {
+function EditClassForm({
+  session,
+  rule,
+  onDone,
+  onCancel,
+}: {
+  session: Session;
+  rule: Rule | null;
+  onDone: () => void;
+  onCancel: () => void;
+}) {
   const { addSession, addRepeatingClass, updateSeries, endSeries, editSession, deleteSession, rescheduleSession, toast } = usePortal();
   const start = new Date(session.start);
   const origDay = ymd(start);
@@ -493,12 +549,25 @@ function EditClassForm({ session, rule, onDone, onCancel }: { session: Session; 
   const next = new Date(`${f.date}T${f.time}`);
   const newRule = f.date ? ruleFrom(repeat, f.date) : null;
   const seriesEdit = !!rule && scope !== "this";
-  const valid = f.title.trim() && f.date && f.time && classLengthOk(length) && !Number.isNaN(next.getTime()) && next.getTime() + length * 60_000 > Date.now();
+  const valid =
+    f.title.trim() &&
+    f.date &&
+    f.time &&
+    classLengthOk(length) &&
+    !Number.isNaN(next.getTime()) &&
+    next.getTime() + length * 60_000 > Date.now();
 
   const save = async () => {
     const timeChanged = next.getTime() !== start.getTime() || length !== session.durationMin;
     const textChanged = f.title.trim() !== session.title || f.unit.trim() !== (session.unit ?? "");
-    const input = (r: RuleParts) => ({ title: f.title.trim(), unit: f.unit.trim(), startDate: f.date, start: f.time, durationMin: length, ...r });
+    const input = (r: RuleParts) => ({
+      title: f.title.trim(),
+      unit: f.unit.trim(),
+      startDate: f.date,
+      start: f.time,
+      durationMin: length,
+      ...r,
+    });
     setBusy(true);
     let ok = true;
     if (!rule && newRule) {
@@ -512,7 +581,14 @@ function EditClassForm({ session, rule, onDone, onCancel }: { session: Session; 
       ok = newRule
         ? await updateSeries(rule!.seriesId, scope as "all" | "following", from, input(newRule))
         : (await endSeries(rule!.seriesId, from)) &&
-          (await addSession({ cohortId: session.cohortId, title: f.title.trim(), strand: null, unit: f.unit.trim(), start: next.toISOString(), durationMin: length }));
+          (await addSession({
+            cohortId: session.cohortId,
+            title: f.title.trim(),
+            strand: null,
+            unit: f.unit.trim(),
+            start: next.toISOString(),
+            durationMin: length,
+          }));
     }
     setBusy(false);
     if (!ok) return;
@@ -570,7 +646,17 @@ function EditClassForm({ session, rule, onDone, onCancel }: { session: Session; 
 const fmtWhen = (iso: string) => `${fmtDateLong(iso)}, ${fmtTime(iso)}`;
 
 /** Student: ask to move or cancel a class. */
-export function RequestForm({ session, kind, onDone, onCancel }: { session: Session; kind: "reschedule" | "cancel"; onDone: () => void; onCancel: () => void }) {
+export function RequestForm({
+  session,
+  kind,
+  onDone,
+  onCancel,
+}: {
+  session: Session;
+  kind: "reschedule" | "cancel";
+  onDone: () => void;
+  onCancel: () => void;
+}) {
   const { auth, requestChange, toast } = usePortal();
   const start = new Date(session.start);
   const [date, setDate] = useState(dateInput(start));
@@ -578,7 +664,8 @@ export function RequestForm({ session, kind, onDone, onCancel }: { session: Sess
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const next = new Date(`${date}T${time}`);
-  const valid = note.trim().length > 0 && (kind === "cancel" || (date && time && next.getTime() > Date.now() && next.getTime() !== start.getTime()));
+  const valid =
+    note.trim().length > 0 && (kind === "cancel" || (date && time && next.getTime() > Date.now() && next.getTime() !== start.getTime()));
 
   return (
     <div className="rounded-xl border border-navy/15 p-4">
@@ -595,7 +682,12 @@ export function RequestForm({ session, kind, onDone, onCancel }: { session: Sess
       )}
       <div className="mt-4">
         <Field label="Reason">
-          <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 500))} placeholder="e.g. School trip that day" className={fieldCls} />
+          <input
+            value={note}
+            onChange={(e) => setNote(e.target.value.slice(0, 500))}
+            placeholder="e.g. School trip that day"
+            className={fieldCls}
+          />
         </Field>
       </div>
       <div className="mt-4 flex gap-2.5">
@@ -656,7 +748,12 @@ function RequestCard({ r, teacher }: { r: ClassRequest; teacher: boolean }) {
         <div className="mt-3 flex gap-2.5">
           {teacher ? (
             <>
-              <Btn variant="navy" size="sm" disabled={busy} onClick={() => act(() => resolveRequest(r.id, true), r.kind === "cancel" ? "Class cancelled" : "Class rescheduled")}>
+              <Btn
+                variant="navy"
+                size="sm"
+                disabled={busy}
+                onClick={() => act(() => resolveRequest(r.id, true), r.kind === "cancel" ? "Class cancelled" : "Class rescheduled")}
+              >
                 Approve
               </Btn>
               <Btn variant="ghost" size="sm" disabled={busy} onClick={() => act(() => resolveRequest(r.id, false), "Request declined")}>
@@ -729,7 +826,11 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
       <Modal
         open={!!s && !viewing}
         onClose={close}
-        eyebrow={s ? `${fmtDateLong(s.start)} · ${fmtTime(s.start)} – ${fmtTime(new Date(new Date(s.start).getTime() + s.durationMin * 60_000).toISOString())}` : undefined}
+        eyebrow={
+          s
+            ? `${fmtDateLong(s.start)} · ${fmtTime(s.start)} – ${fmtTime(new Date(new Date(s.start).getTime() + s.durationMin * 60_000).toISOString())}`
+            : undefined
+        }
         title={s ? (teacher ? cohort!.name : s.title) : ""}
       >
         {s && (
@@ -756,7 +857,8 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                     </Btn>
                   </>
                 )}
-                {!teacher && !parent && !virtual && !myPending && !moving && !cancelling && (
+                {/* a group's class is shared: one student can't move or cancel it for everyone */}
+                {!teacher && !parent && !virtual && !myPending && !moving && !cancelling && !cohortOf(db, s.cohortId).isGroup && (
                   <>
                     <Btn variant="outline" size="lg" onClick={() => setMoving(true)}>
                       <Pencil size={15} />
@@ -769,7 +871,12 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                   </>
                 )}
                 {teacher && link && !virtual && (
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="break-all text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4">
+                  <a
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-sm font-medium text-navy underline decoration-gold decoration-2 underline-offset-4"
+                  >
                     {link.replace("https://", "")}
                   </a>
                 )}
@@ -791,7 +898,9 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
               </div>
             )}
 
-            {!ended && teacher && moving && <EditClassForm key={s.id} session={s} rule={rule} onDone={close} onCancel={() => setMoving(false)} />}
+            {!ended && teacher && moving && (
+              <EditClassForm key={s.id} session={s} rule={rule} onDone={close} onCancel={() => setMoving(false)} />
+            )}
 
             {!ended && !teacher && !virtual && (moving || cancelling) && (
               <RequestForm
@@ -816,7 +925,13 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
             {ended && !teacher && me && (
               <p className="text-[15px] text-navy">
                 Attendance:{" "}
-                {s.attendance[me.id] ? <Status tone="done">Present</Status> : s.attendance[me.id] === false ? <Status>Absent</Status> : <Status>Not recorded yet</Status>}
+                {s.attendance[me.id] ? (
+                  <Status tone="done">Present</Status>
+                ) : s.attendance[me.id] === false ? (
+                  <Status>Absent</Status>
+                ) : (
+                  <Status>Not recorded yet</Status>
+                )}
               </p>
             )}
 
@@ -834,10 +949,20 @@ export function ClassDialog({ session, onClose }: { session: Session | null; onC
                           {mark === undefined && <span className="ml-2 text-[13px] font-semibold">· not taken</span>}
                         </span>
                         <div className="flex gap-2">
-                          <Btn variant={mark === true ? "navy" : "outline"} size="sm" aria-pressed={mark === true} onClick={() => mark !== true && setAttendance(s.id, st.id, true)}>
+                          <Btn
+                            variant={mark === true ? "navy" : "outline"}
+                            size="sm"
+                            aria-pressed={mark === true}
+                            onClick={() => mark !== true && setAttendance(s.id, st.id, true)}
+                          >
                             Present
                           </Btn>
-                          <Btn variant={mark === false ? "navy" : "outline"} size="sm" aria-pressed={mark === false} onClick={() => mark !== false && setAttendance(s.id, st.id, false)}>
+                          <Btn
+                            variant={mark === false ? "navy" : "outline"}
+                            size="sm"
+                            aria-pressed={mark === false}
+                            onClick={() => mark !== false && setAttendance(s.id, st.id, false)}
+                          >
                             Absent
                           </Btn>
                         </div>
